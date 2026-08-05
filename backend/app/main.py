@@ -25,6 +25,7 @@ from backend.app.api.summary import router as summary_router
 from backend.app.api.chat import router as chat_router
 from backend.app.api.report import router as report_router
 from backend.app.api.auth import router as auth_router
+from backend.app.database.database import init_db, shutdown_db
 
 from ai.config import RESULTS_DIR
 
@@ -40,6 +41,10 @@ async def lifespan(app: FastAPI):
 
     # Ensure results directory exists
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Initialize database
+    await init_db()
+    logger.info("Database initialized")
 
     # Initialize classifier
     init_classifier(settings)
@@ -64,6 +69,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await shutdown_ollama_client()
     shutdown_classifier()
+    await shutdown_db()
     logger.info("Shutting down Herbal-AI API")
 
 

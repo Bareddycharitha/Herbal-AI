@@ -179,6 +179,16 @@ class Settings(BaseSettings):
     logo_path: str = "backend/app/services/pdf/assets/logo.png"
 
     # ==========================================================
+    # Database
+    # ==========================================================
+    database_url: str = Field(
+        default_factory=lambda: (
+            "postgresql+asyncpg://postgres:postgres@localhost:5432/herbal_ai"
+        ),
+    )
+    alembic_config: str = "backend/alembic.ini"
+
+    # ==========================================================
     # Authentication
     # ==========================================================
     secret_key: str = Field(
