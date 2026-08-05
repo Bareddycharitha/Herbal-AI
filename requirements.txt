@@ -1,0 +1,53 @@
+# ===============================
+# Core Deep Learning
+# ===============================
+torch
+torchvision
+torchaudio
+timm
+
+# ===============================
+# Data Processing
+# ===============================
+numpy
+pandas
+scikit-learn
+scipy
+
+# ===============================
+# Image Processing
+# ===============================
+opencv-python
+Pillow
+albumentations
+
+# ===============================
+# Visualization
+# ===============================
+matplotlib
+tensorboard
+tqdm
+
+# ===============================
+# API (Future)
+# ===============================
+fastapi
+uvicorn
+python-multipart
+
+# ===============================
+# Utilities
+# ===============================
+PyYAML
+joblib
+
+# ===============================
+# Model Explainability (Future)
+# ===============================
+grad-cam
+
+# ===============================
+# Optional Notebook Support
+# ===============================
+jupyter
+ipykernel

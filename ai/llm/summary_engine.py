@@ -1,0 +1,199 @@
+"""
+Summary Engine
+
+Generates AI summaries for skin disease and herb predictions
+using the resilient async Ollama client.
+"""
+
+import asyncio
+from typing import Any
+
+from ai.llm.prompt_builder import (
+    build_summary_prompt,
+    build_herb_summary_prompt,
+)
+
+from ai.llm.ollama_client import OllamaClient, get_ollama_client
+
+
+class SummaryEngine:
+    """
+    Generates medical and herb summaries using Ollama LLM.
+
+    Uses async client with retry, circuit breaker, and fallback.
+    """
+
+    def __init__(self, client: OllamaClient = None):
+        self.client = client or get_ollama_client()
+
+    # ======================================================
+    # Skin Disease Summary
+    # ======================================================
+
+    def generate_summary(
+        self,
+        prediction: str,
+        confidence: float,
+        disease_information: dict,
+        herbs: list,
+    ) -> str:
+        """
+        Generate summary for skin disease prediction.
+
+        Runs async method synchronously for backward compatibility.
+        Handles case where event loop is already running (e.g., in tests).
+        """
+        if prediction == "Healthy Skin":
+            return (
+                "No visible skin disease was detected in the uploaded image. "
+                "Maintain a healthy skincare routine by cleansing regularly, "
+                "using sunscreen daily, moisturizing when needed, staying "
+                "hydrated, and eating a balanced diet. If you experience "
+                "itching, pain, redness, or any unusual skin changes that are "
+                "not visible in the image, consult a qualified dermatologist."
+            )
+
+        prompt = build_summary_prompt(
+            prediction,
+            confidence,
+            disease_information,
+            herbs,
+        )
+
+        # Run async method in event loop, handling case where loop is already running
+        try:
+            loop = asyncio.get_running_loop()
+            # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
+            import concurrent.futures
+            future = asyncio.run_coroutine_threadsafe(
+                self._generate_async(prompt, temperature=0.3, max_tokens=250), loop
+            )
+            result = future.result(timeout=60)
+        except RuntimeError:
+            # No running loop, safe to use run_until_complete
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(
+                self._generate_async(prompt, temperature=0.3, max_tokens=250)
+            )
+
+        if result["success"]:
+            return result["response"]
+
+        return (
+            "AI summary could not be generated.\n\n"
+            + result.get("error", "Unknown error")
+        )
+
+    async def generate_summary_async(
+        self,
+        prediction: str,
+        confidence: float,
+        disease_information: dict,
+        herbs: list,
+    ) -> str:
+        """Async version of generate_summary."""
+        if prediction == "Healthy Skin":
+            return (
+                "No visible skin disease was detected in the uploaded image. "
+                "Maintain a healthy skincare routine by cleansing regularly, "
+                "using sunscreen daily, moisturizing when needed, staying "
+                "hydrated, and eating a balanced diet. If you experience "
+                "itching, pain, redness, or any unusual skin changes that are "
+                "not visible in the image, consult a qualified dermatologist."
+            )
+
+        prompt = build_summary_prompt(
+            confidence,
+            disease_information,
+            herbs,
+        )
+
+        result = await self._generate_async(prompt, temperature=0.3, max_tokens=250)
+
+        if result["success"]:
+            return result["response"]
+
+        return (
+            "AI summary could not be generated.\n\n"
+            + result.get("error", "Unknown error")
+        )
+
+    # ======================================================
+    # Medicinal Herb Summary
+    # ======================================================
+
+    def generate_herb_summary(
+        self,
+        herb: str,
+        herb_information: dict,
+    ) -> str:
+        """Generate summary for herb identification."""
+        prompt = build_herb_summary_prompt(herb, herb_information)
+
+        # Run async method in event loop, handling case where loop is already running
+        try:
+            loop = asyncio.get_running_loop()
+            # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
+            import concurrent.futures
+            future = asyncio.run_coroutine_threadsafe(
+                self._generate_async(prompt, temperature=0.3, max_tokens=250), loop
+            )
+            result = future.result(timeout=60)
+        except RuntimeError:
+            # No running loop, safe to use run_until_complete
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(
+                self._generate_async(prompt, temperature=0.3, max_tokens=250)
+            )
+
+        if result["success"]:
+            return result["response"]
+
+        return (
+            "AI summary could not be generated.\n\n"
+            + result.get("error", "Unknown error")
+        )
+
+    async def generate_herb_summary_async(
+        self,
+        herb: str,
+        herb_information: dict,
+    ) -> str:
+        """Async version of generate_herb_summary."""
+        prompt = build_herb_summary_prompt(herb, herb_information)
+
+        result = await self._generate_async(prompt, temperature=0.3, max_tokens=250)
+
+        if result["success"]:
+            return result["response"]
+
+        return (
+            "AI summary could not be generated.\n\n"
+            + result.get("error", "Unknown error")
+        )
+
+    # ======================================================
+    # Internal Async Generation
+    # ======================================================
+
+    async def _generate_async(
+        self,
+        prompt: str,
+        temperature: float = 0.3,
+        max_tokens: int = 250,
+    ) -> dict[str, Any]:
+        """Internal async generation with error handling."""
+        return await self.client.generate(
+            prompt=prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            use_cache=True,
+        )

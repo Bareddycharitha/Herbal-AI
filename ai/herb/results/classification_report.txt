@@ -1,0 +1,46 @@
+               precision    recall  f1-score   support
+
+     Aloevera       1.00      1.00      1.00        19
+         Amla       1.00      1.00      1.00        11
+ Amruta_Balli       1.00      1.00      1.00         9
+        Arali       1.00      1.00      1.00        12
+       Ashoka       1.00      1.00      1.00        12
+  Ashwagandha       1.00      1.00      1.00        18
+      Avacado       1.00      1.00      1.00         9
+       Bamboo       1.00      1.00      1.00        15
+       Basale       1.00      1.00      1.00        11
+        Betel       1.00      1.00      1.00        13
+    Betel_Nut       1.00      1.00      1.00        17
+       Brahmi       1.00      1.00      1.00        16
+       Castor       1.00      1.00      1.00         9
+   Curry_Leaf       1.00      1.00      1.00        11
+   Doddapatre       1.00      0.93      0.96        14
+         Ekka       1.00      1.00      1.00        20
+       Ganike       1.00      1.00      1.00        13
+        Gauva       1.00      1.00      1.00        16
+     Geranium       1.00      1.00      1.00        15
+        Henna       0.94      0.94      0.94        16
+     Hibiscus       1.00      1.00      1.00        19
+        Honge       1.00      1.00      1.00        20
+      Insulin       1.00      1.00      1.00        14
+      Jasmine       1.00      1.00      1.00        21
+        Lemon       1.00      1.00      1.00        14
+  Lemon_grass       1.00      1.00      1.00        21
+        Mango       1.00      1.00      1.00        16
+         Mint       0.95      1.00      0.98        20
+     Nagadali       1.00      1.00      1.00        14
+         Neem       1.00      1.00      1.00        10
+ Nithyapushpa       1.00      1.00      1.00        11
+        Nooni       0.94      1.00      0.97        17
+      Pappaya       1.00      1.00      1.00         9
+       Pepper       1.00      1.00      1.00        20
+  Pomegranate       1.00      1.00      1.00        19
+Raktachandini       1.00      1.00      1.00        10
+         Rose       1.00      1.00      1.00        18
+       Sapota       1.00      1.00      1.00        11
+       Tulasi       1.00      0.93      0.96        14
+   Wood_sorel       1.00      1.00      1.00        21
+
+     accuracy                           0.99       595
+    macro avg       1.00      0.99      1.00       595
+ weighted avg       1.00      0.99      0.99       595
