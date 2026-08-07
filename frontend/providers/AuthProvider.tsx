@@ -8,85 +8,71 @@ import {
   type ReactNode,
 } from "react";
 import {
-  login as apiLogin,
-  register as apiRegister,
-  logout as apiLogout,
-  getAccessToken,
-  isAuthenticated,
-  getApiBaseUrl,
-} from "@/lib/api";
-import type { AuthTokens, User, LoginCredentials, RegisterCredentials } from "@/types";
+  useAuth as useClerkAuth,
+  useUser as useClerkUser,
+  ClerkProvider,
+} from "@clerk/nextjs";
+import type { AuthTokens, User } from "@/types";
 
 interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+function AuthProviderInner({ children }: { children: ReactNode }) {
+  const { isSignedIn, getToken, signOut } = useClerkAuth();
+  const { user: clerkUser } = useClerkUser();
   const [user, setUser] = useState<User | null>(null);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in on mount
-    const token = getAccessToken();
-    if (token) {
-      // Token exists — try to fetch user info
-      fetchUserProfile(token).then((profile) => {
-        setUser(profile);
-        setTokens({
-          access_token: token,
-          refresh_token: "",
-          expires_in: 0,
-          token_type: "bearer",
-        });
-      }).catch(() => {
-        // Token is invalid — clear it
-        apiLogout();
-      }).finally(() => {
-        setIsLoading(false);
-      });
-    } else {
+    if (!isSignedIn || !clerkUser) {
+      setUser(null);
+      setTokens(null);
       setIsLoading(false);
-    }
-  }, []);
-
-  async function fetchUserProfile(token: string): Promise<User> {
-    const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch user profile");
+      return;
     }
 
-    return response.json();
-  }
+    const loadToken = async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          setTokens({
+            access_token: token,
+            refresh_token: "",
+            expires_in: 0,
+            token_type: "bearer",
+          });
+        }
+      } catch {
+        // Token not available yet
+      }
 
-  async function login(credentials: LoginCredentials) {
-    const data = await apiLogin(credentials.email, credentials.password);
-    setTokens(data);
+      setUser({
+        id: clerkUser.id,
+        email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+        full_name:
+          clerkUser.fullName ??
+          clerkUser.firstName ??
+          clerkUser.lastName ??
+          null,
+        role: "user",
+        is_active: true,
+      });
+      setIsLoading(false);
+    };
 
-    // Fetch user profile after login
-    const profile = await fetchUserProfile(data.access_token);
-    setUser(profile);
-  }
+    loadToken();
+  }, [isSignedIn, clerkUser, getToken]);
 
-  async function register(credentials: RegisterCredentials) {
-    await apiRegister(credentials.email, credentials.password, credentials.full_name);
-  }
-
-  function logout() {
-    apiLogout();
+  async function logout() {
+    await signOut();
     setUser(null);
     setTokens(null);
   }
@@ -97,14 +83,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         tokens,
         isLoading,
-        isAuthenticated: !!user && !!getAccessToken(),
-        login,
-        register,
+        isAuthenticated: !!user && !!tokens?.access_token,
         logout,
       }}
     >
       {children}
     </AuthContext.Provider>
+  );
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return (
+    <ClerkProvider>
+      <AuthProviderInner>{children}</AuthProviderInner>
+    </ClerkProvider>
   );
 }
 

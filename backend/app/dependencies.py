@@ -2,37 +2,29 @@
 Authentication Dependencies
 
 FastAPI dependencies for authentication and authorization.
-Uses AuthService via dependency injection — no global state.
+Uses Clerk JWT verification for protected endpoints.
 """
 
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.database.session import get_db_session
-from backend.app.repositories.user_repository import UserRepository
 from backend.app.services.auth_service import AuthService
 from backend.app.schemas.user import UserRole, UserResponse
 from backend.app.exceptions import AuthenticationError, AuthorizationError
+from backend.app.utils.auth import verify_clerk_token
 
 
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+# OAuth2 scheme — Clerk tokens are Bearer tokens
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/me")
 
 
-def get_user_repository(
-    db: AsyncSession = Depends(get_db_session),
-) -> UserRepository:
-    """Dependency: get UserRepository instance."""
-    return UserRepository(db)
-
-
-def get_auth_service(
-    repository: UserRepository = Depends(get_user_repository),
-) -> AuthService:
+def get_auth_service() -> AuthService:
     """Dependency: get AuthService instance."""
+    from backend.app.repositories.profile_repository import ProfileRepository
+
+    repository = ProfileRepository()
     return AuthService(repository)
 
 
@@ -41,21 +33,19 @@ async def get_current_user(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> UserResponse:
     """
-    Get current authenticated user from access token.
+    Get current authenticated user from Clerk JWT.
 
     Raises:
         AuthenticationError: If token is invalid or user not found
     """
-    from backend.app.utils.auth import verify_token
-
-    payload = verify_token(token, "access")
+    payload = verify_clerk_token(token)
     if not payload:
         raise AuthenticationError("Invalid or expired token")
 
-    user = await auth_service.get_user_by_id(payload.sub)
+    user = await auth_service.get_user_from_token(token)
     if not user:
         raise AuthenticationError("Invalid or expired token")
-    if not user.is_active:
+    if not user.get("is_active", True):
         raise AuthenticationError("User account is deactivated")
 
     return UserResponse.model_validate(user)
@@ -83,60 +73,38 @@ async def get_optional_user(
     if not token:
         return None
 
-    from backend.app.utils.auth import verify_token
-    payload = verify_token(token, "access")
+    payload = verify_clerk_token(token)
     if not payload:
         return None
 
-    user = await auth_service.get_user_by_id(payload.sub)
-    if not user or not user.is_active:
+    user = await auth_service.get_user_from_token(token)
+    if not user or not user.get("is_active", True):
         return None
 
     return UserResponse.model_validate(user)
 
 
-def require_role(*roles: UserRole):
+def require_role(*roles: str):
     """
     Dependency factory for role-based access control.
 
     Usage:
-        @router.get("/admin", dependencies=[Depends(require_role(UserRole.ADMIN))])
+        @router.get("/admin", dependencies=[Depends(require_role("admin"))])
     """
+
     async def role_checker(
         current_user: UserResponse = Depends(get_current_user),
     ) -> UserResponse:
-        if current_user.role not in [r.value for r in roles]:
+        if current_user.role not in roles:
             raise AuthorizationError(
-                f"Requires one of roles: {[r.value for r in roles]}"
+                f"Requires one of roles: {roles}"
             )
         return current_user
+
     return role_checker
 
 
 # Convenience dependencies
-require_admin = require_role(UserRole.ADMIN)
-require_researcher = require_role(UserRole.RESEARCHER, UserRole.ADMIN)
-require_user = require_role(UserRole.USER, UserRole.RESEARCHER, UserRole.ADMIN)
-
-
-async def get_refresh_token_user(
-    refresh_token: str,
-    auth_service: AuthService = Depends(get_auth_service),
-) -> UserResponse:
-    """
-    Get user from refresh token for token refresh endpoint.
-
-    Raises:
-        AuthenticationError: If refresh token is invalid
-    """
-    from backend.app.utils.auth import verify_token
-
-    payload = verify_token(refresh_token, "refresh")
-    if not payload:
-        raise AuthenticationError("Invalid or expired refresh token")
-
-    user = await auth_service.get_user_by_id(payload.sub)
-    if not user or not user.is_active:
-        raise AuthenticationError("User not found or inactive")
-
-    return UserResponse.model_validate(user)
+require_admin = require_role("admin")
+require_researcher = require_role("researcher", "admin")
+require_user = require_role("user", "researcher", "admin")

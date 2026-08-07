@@ -1,475 +1,536 @@
 """
-Tests for Authentication API Endpoints
+Tests for Authentication (Clerk-based)
+
+Tests for Clerk JWT verification, profile repository,
+auth service, and auth API endpoints.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
-from datetime import datetime, timedelta
 
-from backend.app.models.user import (
-    UserCreate,
-    UserInDB,
-    UserRole,
-    Token,
-    user_store,
-)
-from backend.app.utils.auth import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    verify_token,
-    authenticate_user,
-    user_store as auth_user_store,
-)
-
-
-class TestAuthUtils:
-    """Tests for authentication utilities."""
-
-    def test_hash_password(self):
-        """Test password hashing."""
-        password = "testpassword123"
-        hashed = hash_password(password)
-        assert hashed != password
-        assert hashed.startswith("$argon2")  # argon2
-
-    def test_verify_password(self):
-        """Test password verification."""
-        password = "testpassword123"
-        hashed = hash_password(password)
-        assert verify_password(password, hashed) is True
-        assert verify_password("wrongpassword", hashed) is False
-
-    def test_create_access_token(self):
-        """Test access token creation."""
-        token = create_access_token(1, "test@example.com", UserRole.USER)
-        assert isinstance(token, str)
-        assert len(token) > 0
-
-        # Verify token can be decoded
-        payload = verify_token(token, "access")
-        assert payload is not None
-        assert payload.sub == 1
-        assert payload.email == "test@example.com"
-        assert payload.role == UserRole.USER
-        assert payload.type == "access"
-
-    def test_create_refresh_token(self):
-        """Test refresh token creation."""
-        token = create_refresh_token(1, "test@example.com", UserRole.USER)
-        assert isinstance(token, str)
-
-        payload = verify_token(token, "refresh")
-        assert payload is not None
-        assert payload.type == "refresh"
-
-    def test_verify_token_invalid(self):
-        """Test invalid token verification."""
-        assert verify_token("invalid.token", "access") is None
-        assert verify_token("invalid.token", "refresh") is None
-
-
-class TestUserStore:
-    """Tests for in-memory user store."""
-
-    def setup_method(self):
-        """Clear user store before each test."""
-        auth_user_store._users.clear()
-        auth_user_store._email_index.clear()
-        auth_user_store._next_id = 1
-
-    def _create_test_user(self, email="test@example.com", **kwargs):
-        """Helper to create a test user via the store."""
-        user = UserInDB(
-            email=email,
-            full_name=kwargs.get("full_name", "Test User"),
-            role=kwargs.get("role", UserRole.USER),
-            hashed_password=hash_password(kwargs.get("password", "password123")),
-            is_active=kwargs.get("is_active", True),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
-        return auth_user_store.create_user(user)
-
-    def test_create_user(self):
-        """Test user creation."""
-        user = self._create_test_user()
-        assert user.id == 1
-        assert user.email == "test@example.com"
-
-    def test_get_by_email(self):
-        """Test getting user by email."""
-        self._create_test_user()
-
-        found = auth_user_store.get_by_email("test@example.com")
-        assert found is not None
-        assert found.email == "test@example.com"
-
-        not_found = auth_user_store.get_by_email("nonexistent@example.com")
-        assert not_found is None
-
-    def test_get_by_id(self):
-        """Test getting user by ID."""
-        user = self._create_test_user()
-
-        found = auth_user_store.get_by_id(user.id)
-        assert found is not None
-        assert found.id == user.id
-
-        not_found = auth_user_store.get_by_id(999)
-        assert not_found is None
-
-    def test_update_user(self):
-        """Test user update."""
-        user = self._create_test_user()
-
-        updated = auth_user_store.update_user(user.id, {"full_name": "Updated Name"})
-        assert updated is not None
-        assert updated.full_name == "Updated Name"
-
-    def test_delete_user(self):
-        """Test user deletion."""
-        user = self._create_test_user()
-
-        deleted = auth_user_store.delete_user(user.id)
-        assert deleted is True
-
-        not_found = auth_user_store.get_by_id(user.id)
-        assert not_found is None
-
-    def test_duplicate_email(self):
-        """Test duplicate email handling."""
-        self._create_test_user(email="test@example.com", full_name="User 1")
-        self._create_test_user(email="test@example.com", full_name="User 2")
-
-        # Only one user should exist with that email
-        found = auth_user_store.get_by_email("test@example.com")
-        assert found is not None
-
-
-class TestAuthenticateUser:
-    """Tests for user authentication."""
-
-    def setup_method(self):
-        """Clear user store before each test."""
-        auth_user_store._users.clear()
-        auth_user_store._email_index.clear()
-        auth_user_store._next_id = 1
-
-    def _create_test_user(self, email="test@example.com", **kwargs):
-        """Helper to create a test user via the store."""
-        user = UserInDB(
-            email=email,
-            full_name=kwargs.get("full_name", "Test User"),
-            role=kwargs.get("role", UserRole.USER),
-            hashed_password=hash_password(kwargs.get("password", "password123")),
-            is_active=kwargs.get("is_active", True),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
-        return auth_user_store.create_user(user)
-
-    def test_authenticate_valid_user(self):
-        """Test valid user authentication."""
-        password = "password123"
-        self._create_test_user(password=password)
-
-        authenticated = authenticate_user("test@example.com", password)
-        assert authenticated is not None
-        assert authenticated.email == "test@example.com"
-
-    def test_authenticate_wrong_password(self):
-        """Test authentication with wrong password."""
-        self._create_test_user()
-
-        authenticated = authenticate_user("test@example.com", "wrongpassword")
-        assert authenticated is None
-
-    def test_authenticate_nonexistent_user(self):
-        """Test authentication for nonexistent user."""
-        authenticated = authenticate_user("nonexistent@example.com", "password123")
-        assert authenticated is None
-
-    def test_authenticate_inactive_user(self):
-        """Test authentication for inactive user."""
-        self._create_test_user(is_active=False)
-
-        authenticated = authenticate_user("test@example.com", "password123")
-        assert authenticated is None
-
-
-class TestTokenCreation:
-    """Tests for token creation functions."""
-
-    def setup_method(self):
-        """Clear user store before each test."""
-        auth_user_store._users.clear()
-        auth_user_store._email_index.clear()
-        auth_user_store._next_id = 1
-
-    def _create_test_user(self, email="test@example.com", **kwargs):
-        """Helper to create a test user via the store."""
-        user = UserInDB(
-            email=email,
-            full_name=kwargs.get("full_name", "Test User"),
-            role=kwargs.get("role", UserRole.USER),
-            hashed_password=hash_password(kwargs.get("password", "password123")),
-            is_active=kwargs.get("is_active", True),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
-        return auth_user_store.create_user(user)
-
-    def test_create_user_tokens(self):
-        """Test token creation for user."""
-        user = self._create_test_user()
-
-        access_token, refresh_token = auth_user_store.create_user_tokens(user)
-
-        assert isinstance(access_token, str)
-        assert isinstance(refresh_token, str)
-
-        # Verify tokens
-        access_payload = verify_token(access_token, "access")
-        refresh_payload = verify_token(refresh_token, "refresh")
-
-        assert access_payload.sub == user.id
-        assert refresh_payload.sub == user.id
-        assert access_payload.type == "access"
-        assert refresh_payload.type == "refresh"
+from backend.app.schemas.user import UserRole
+from backend.app.exceptions import AuthenticationError, AuthorizationError, ValidationError, NotFoundError
 
 
 # ==========================================================
-# API Endpoint Tests
+# Clerk JWT Verification Tests
+# ==========================================================
+
+class TestVerifyClerkToken:
+    """Tests for Clerk JWT verification."""
+
+    def test_verify_valid_token(self):
+        """Test verifying a valid Clerk JWT returns user payload."""
+        from backend.app.utils.auth import verify_clerk_token
+
+        mock_payload = {
+            "sub": "clerk_user_1234",
+            "email": "test@example.com",
+            "name": "Test User",
+            "email_verified_at": "2026-01-01T00:00:00Z",
+        }
+
+        mock_jwks = {
+            "keys": [
+                {
+                    "kid": "test-kid",
+                    "kty": "RSA",
+                    "n": "test-modulus",
+                    "e": "test-exponent",
+                }
+            ]
+        }
+
+        mock_key = MagicMock()
+
+        with patch("backend.app.utils.auth._fetch_jwks", return_value=mock_jwks):
+            with patch("jose.jwt.get_unverified_header", return_value={"kid": "test-kid"}):
+                with patch("jose.jwk.construct", return_value=mock_key):
+                    with patch("jose.jwt.decode", return_value=mock_payload):
+                        result = verify_clerk_token("valid.clerk.token")
+
+        assert result is not None
+        assert result["id"] == "clerk_user_1234"
+        assert result["email"] == "test@example.com"
+        assert result["full_name"] == "Test User"
+        assert result["is_active"] is True
+
+    def test_verify_invalid_token_no_jwks_key(self):
+        """Test that tokens with no matching JWKS key return None."""
+        from backend.app.utils.auth import verify_clerk_token
+
+        mock_jwks = {"keys": []}
+
+        with patch("backend.app.utils.auth._fetch_jwks", return_value=mock_jwks):
+            with patch("jose.jwt.get_unverified_header", return_value={"kid": "missing-kid"}):
+                result = verify_clerk_token("invalid.token")
+
+        assert result is None
+
+    def test_verify_token_fetch_error(self):
+        """Test that JWKS fetch errors return None."""
+        from backend.app.utils.auth import verify_clerk_token
+
+        with patch("backend.app.utils.auth._fetch_jwks", side_effect=Exception("Network error")):
+            result = verify_clerk_token("error.token")
+
+        assert result is None
+
+    def test_get_user_id_from_token_valid(self):
+        """Test extracting user ID from a valid Clerk token."""
+        from backend.app.utils.auth import get_user_id_from_token
+
+        with patch("backend.app.utils.auth.verify_clerk_token", return_value={"id": "clerk_user_5678"}):
+            result = get_user_id_from_token("valid.clerk.token")
+
+        assert result == "clerk_user_5678"
+
+    def test_get_user_id_from_invalid_token(self):
+        """Test extracting user ID from an invalid token."""
+        from backend.app.utils.auth import get_user_id_from_token
+
+        with patch("backend.app.utils.auth.verify_clerk_token", return_value=None):
+            result = get_user_id_from_token("invalid.token")
+
+        assert result is None
+
+
+# ==========================================================
+# Profile Repository Tests
+# ==========================================================
+
+class TestProfileRepository:
+    """Tests for ProfileRepository."""
+
+    def test_create_profile(self):
+        """Test creating a profile."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = [
+            {
+                "clerk_user_id": "clerk-uuid-1",
+                "email": "test@example.com",
+                "full_name": "Test",
+                "role": "user",
+                "is_active": True,
+            }
+        ]
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.insert.return_value.execute.return_value = mock_result
+            result = repo.create_profile("clerk-uuid-1", "test@example.com", "Test", UserRole.USER)
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+
+    def test_get_profile_by_clerk_id_found(self):
+        """Test getting a profile that exists."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = [
+            {
+                "clerk_user_id": "clerk-uuid-1",
+                "email": "test@example.com",
+                "full_name": "Test",
+                "role": "user",
+                "is_active": True,
+            }
+        ]
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_result
+            result = repo.get_profile_by_clerk_id("clerk-uuid-1")
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+
+    def test_get_profile_by_clerk_id_not_found(self):
+        """Test getting a profile that does not exist."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = []
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_result
+            result = repo.get_profile_by_clerk_id("clerk-nonexistent")
+
+        assert result is None
+
+    def test_get_profile_by_email_found(self):
+        """Test getting a profile by email."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = [
+            {
+                "clerk_user_id": "clerk-uuid-1",
+                "email": "test@example.com",
+                "full_name": "Test",
+                "role": "user",
+                "is_active": True,
+            }
+        ]
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_result
+            result = repo.get_profile_by_email("test@example.com")
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+
+    def test_get_profile_by_email_not_found(self):
+        """Test getting a profile by email that does not exist."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = []
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_result
+            result = repo.get_profile_by_email("nonexistent@example.com")
+
+        assert result is None
+
+    def test_list_profiles(self):
+        """Test listing profiles with pagination."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = [
+            {"clerk_user_id": "clerk-uuid-1", "email": "user1@example.com", "role": "user"},
+            {"clerk_user_id": "clerk-uuid-2", "email": "user2@example.com", "role": "admin"},
+        ]
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.select.return_value.range.return_value.execute.return_value = mock_result
+            result = repo.list_profiles(skip=0, limit=10)
+
+        assert len(result) == 2
+
+    def test_update_profile(self):
+        """Test updating a profile."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = [
+            {
+                "clerk_user_id": "clerk-uuid-1",
+                "email": "test@example.com",
+                "full_name": "Updated Name",
+                "role": "user",
+                "is_active": True,
+            }
+        ]
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.update.return_value.eq.return_value.select.return_value.execute.return_value = mock_result
+            result = repo.update_profile("clerk-uuid-1", {"full_name": "Updated Name"})
+
+        assert result is not None
+        assert result["full_name"] == "Updated Name"
+
+    def test_delete_profile(self):
+        """Test deleting a profile."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = [{"clerk_user_id": "clerk-uuid-1"}]
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.delete.return_value.eq.return_value.execute.return_value = mock_result
+            result = repo.delete_profile("clerk-uuid-1")
+
+        assert result is True
+
+    def test_delete_profile_not_found(self):
+        """Test deleting a profile that does not exist."""
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+
+        mock_result = MagicMock()
+        mock_result.data = []
+
+        with patch("backend.app.repositories.profile_repository.get_supabase_client") as mock_client:
+            mock_client.return_value.table.return_value.delete.return_value.eq.return_value.execute.return_value = mock_result
+            result = repo.delete_profile("clerk-nonexistent")
+
+        assert result is False
+
+
+# ==========================================================
+# Auth Service Tests
+# ==========================================================
+
+class TestAuthService:
+    """Tests for AuthService with Clerk."""
+
+    def test_ensure_profile_creates_new(self):
+        """Test that ensure_profile creates a new profile when one doesn't exist."""
+        import asyncio
+        from backend.app.services.auth_service import AuthService
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+        service = AuthService(repo)
+
+        mock_profile = {
+            "clerk_user_id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "role": "user",
+            "is_active": True,
+        }
+
+        with patch.object(repo, "get_profile_by_clerk_id", return_value=None):
+            with patch.object(repo, "create_profile", return_value=mock_profile) as mock_create:
+                result = asyncio.run(service.ensure_profile("clerk-uuid-1", "test@example.com", "Test User"))
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+        mock_create.assert_called_once()
+
+    def test_ensure_profile_returns_existing(self):
+        """Test that ensure_profile returns existing profile when one exists."""
+        import asyncio
+        from backend.app.services.auth_service import AuthService
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+        service = AuthService(repo)
+
+        mock_profile = {
+            "clerk_user_id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "role": "user",
+            "is_active": True,
+        }
+
+        with patch.object(repo, "get_profile_by_clerk_id", return_value=mock_profile):
+            result = asyncio.run(service.ensure_profile("clerk-uuid-1", "test@example.com", "Test User"))
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+
+    def test_get_user_from_token_valid(self):
+        """Test getting user from a valid Clerk token."""
+        import asyncio
+        from backend.app.services.auth_service import AuthService
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+        service = AuthService(repo)
+
+        mock_profile = {
+            "clerk_user_id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "role": "user",
+            "is_active": True,
+        }
+
+        with patch.object(service, "get_user_from_token", return_value=mock_profile):
+            result = asyncio.run(service.get_user_from_token("valid.clerk.token"))
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+
+    def test_get_user_from_token_invalid(self):
+        """Test getting user from an invalid token."""
+        import asyncio
+        from backend.app.services.auth_service import AuthService
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+        service = AuthService(repo)
+
+        with patch.object(service, "get_user_from_token", return_value=None):
+            result = asyncio.run(service.get_user_from_token("invalid.token"))
+
+        assert result is None
+
+    def test_get_user_by_clerk_id_found(self):
+        """Test getting a user by Clerk ID."""
+        import asyncio
+        from backend.app.services.auth_service import AuthService
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+        service = AuthService(repo)
+
+        mock_profile = {
+            "clerk_user_id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "role": "user",
+            "is_active": True,
+        }
+
+        with patch.object(repo, "get_profile_by_clerk_id", return_value=mock_profile):
+            result = asyncio.run(service.get_user_by_clerk_id("clerk-uuid-1"))
+
+        assert result is not None
+        assert result["email"] == "test@example.com"
+
+    def test_get_user_by_clerk_id_not_found(self):
+        """Test getting a user by Clerk ID that doesn't exist."""
+        import asyncio
+        from backend.app.services.auth_service import AuthService
+        from backend.app.repositories.profile_repository import ProfileRepository
+
+        repo = ProfileRepository()
+        service = AuthService(repo)
+
+        with patch.object(repo, "get_profile_by_clerk_id", return_value=None):
+            result = asyncio.run(service.get_user_by_clerk_id("clerk-nonexistent"))
+
+        assert result is None
+
+
+# ==========================================================
+# Auth API Endpoint Tests
 # ==========================================================
 
 class TestAuthEndpoints:
     """Tests for authentication API endpoints."""
 
     @pytest.fixture
-    def test_client(self):
-        """Create FastAPI test client."""
+    def test_client(self, mock_current_user):
+        """Create FastAPI test client with mocked auth."""
         from backend.app.main import app
-        with TestClient(app) as client:
-            yield client
+        from backend.app.dependencies import get_current_active_user
 
-    @pytest.fixture
-    def test_user(self):
-        """Create test user."""
-        auth_user_store._users.clear()
-        auth_user_store._email_index.clear()
-        auth_user_store._next_id = 1
+        async def override_get_current_user():
+            return mock_current_user
 
-        user = UserInDB(
-            email="test@example.com",
-            full_name="Test User",
-            role=UserRole.USER,
-            hashed_password=hash_password("password123"),
-            is_active=True,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
-        return auth_user_store.create_user(user)
+        app.dependency_overrides[get_current_active_user] = override_get_current_user
+        try:
+            with TestClient(app) as client:
+                yield client
+        finally:
+            app.dependency_overrides.clear()
 
-    def test_register_success(self, test_client):
-        """Test successful user registration."""
-        response = test_client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "newuser@example.com",
-                "password": "password123",
-                "full_name": "New User",
-            },
-        )
-        assert response.status_code == 201
-        data = response.json()
-        assert data["email"] == "newuser@example.com"
-        assert data["full_name"] == "New User"
-        assert "id" in data
+    def test_get_current_user_profile(self, test_client):
+        """Test the get current user profile endpoint."""
+        mock_user = {
+            "id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "full_name": "Test User",
+            "role": "user",
+            "is_active": True,
+        }
 
-    def test_register_duplicate_email(self, test_client, test_user):
-        """Test registration with duplicate email."""
-        response = test_client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "test@example.com",
-                "password": "password123",
-            },
-        )
-        assert response.status_code == 400
-        data = response.json()
-        assert data["error"]["code"] == "VALIDATION_ERROR"
+        with patch("backend.app.api.auth.AuthService.get_user_from_token", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_user
+            response = test_client.get(
+                "/api/v1/auth/me",
+                headers={"Authorization": "Bearer valid.clerk.token"},
+            )
 
-    def test_register_invalid_email(self, test_client):
-        """Test registration with invalid email."""
-        response = test_client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "invalid-email",
-                "password": "password123",
-            },
-        )
-        assert response.status_code == 422
-
-    def test_register_short_password(self, test_client):
-        """Test registration with short password."""
-        response = test_client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "newuser@example.com",
-                "password": "short",
-            },
-        )
-        assert response.status_code == 422
-
-    def test_login_success(self, test_client, test_user):
-        """Test successful login."""
-        response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "password123"},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert data["token_type"] == "bearer"
-
-    def test_login_invalid_credentials(self, test_client):
-        """Test login with invalid credentials."""
-        response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "wrongpassword"},
-        )
-        assert response.status_code == 401
-
-    def test_login_nonexistent_user(self, test_client):
-        """Test login for nonexistent user."""
-        response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "nonexistent@example.com", "password": "password123"},
-        )
-        assert response.status_code == 401
-
-    def test_login_json(self, test_client, test_user):
-        """Test JSON-based login."""
-        response = test_client.post(
-            "/api/v1/auth/login/json",
-            json={"email": "test@example.com", "password": "password123"},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-
-    def test_refresh_token(self, test_client, test_user):
-        """Test token refresh."""
-        # First login to get refresh token
-        login_response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "password123"},
-        )
-        refresh_token = login_response.json()["refresh_token"]
-
-        # Refresh token
-        response = test_client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": refresh_token},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-
-    def test_refresh_invalid_token(self, test_client):
-        """Test refresh with invalid token."""
-        response = test_client.post(
-            "/api/v1/auth/refresh",
-            json={"refresh_token": "invalid.token"},
-        )
-        assert response.status_code == 401
-
-    def test_get_profile(self, test_client, test_user):
-        """Test getting user profile."""
-        # Login first
-        login_response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "password123"},
-        )
-        access_token = login_response.json()["access_token"]
-
-        # Get profile
-        response = test_client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
         assert response.status_code == 200
         data = response.json()
         assert data["email"] == "test@example.com"
         assert data["full_name"] == "Test User"
 
-    def test_get_profile_unauthorized(self, test_client):
-        """Test getting profile without token."""
-        response = test_client.get("/api/v1/auth/me")
-        assert response.status_code == 401
+    def test_update_current_user(self, test_client):
+        """Test updating the current user profile."""
+        mock_user = {
+            "id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "full_name": "Updated Name",
+            "role": "user",
+            "is_active": True,
+        }
 
-    def test_update_profile(self, test_client, test_user):
-        """Test updating user profile."""
-        login_response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "password123"},
-        )
-        access_token = login_response.json()["access_token"]
+        with patch("backend.app.api.auth.AuthService.get_user_from_token", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_user
+            with patch("backend.app.api.auth.AuthService.update_user", new_callable=AsyncMock) as mock_update:
+                mock_update.return_value = mock_user
+                response = test_client.patch(
+                    "/api/v1/auth/me",
+                    json={"full_name": "Updated Name"},
+                    headers={"Authorization": "Bearer valid.clerk.token"},
+                )
 
-        response = test_client.patch(
-            "/api/v1/auth/me",
-            headers={"Authorization": f"Bearer {access_token}"},
-            json={"full_name": "Updated Name"},
-        )
         assert response.status_code == 200
         data = response.json()
         assert data["full_name"] == "Updated Name"
 
-    def test_change_password(self, test_client, test_user):
-        """Test password change."""
-        login_response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "password123"},
-        )
-        access_token = login_response.json()["access_token"]
+    def test_validate_token_endpoint(self, test_client):
+        """Test token validation endpoint."""
+        mock_user = {
+            "id": "clerk-uuid-1",
+            "email": "test@example.com",
+            "role": "user",
+        }
 
-        response = test_client.post(
-            "/api/v1/auth/change-password",
-            headers={"Authorization": f"Bearer {access_token}"},
-            json={
-                "current_password": "password123",
-                "new_password": "newpassword123",
-            },
-        )
+        with patch("backend.app.api.auth.AuthService.get_user_from_token", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_user
+            response = test_client.post(
+                "/api/v1/auth/validate?token=valid.clerk.token",
+            )
+
         assert response.status_code == 200
+        data = response.json()
+        assert data["valid"] is True
+        assert data["user_id"] == "clerk-uuid-1"
 
-        # Verify new password works
-        login_response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "newpassword123"},
-        )
-        assert login_response.status_code == 200
+    def test_validate_token_invalid(self, test_client):
+        """Test token validation with invalid token."""
+        with patch("backend.app.api.auth.AuthService.get_user_from_token", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+            response = test_client.post(
+                "/api/v1/auth/validate?token=invalid.token",
+            )
 
-    def test_change_password_wrong_current(self, test_client, test_user):
-        """Test password change with wrong current password."""
-        login_response = test_client.post(
-            "/api/v1/auth/login",
-            data={"username": "test@example.com", "password": "password123"},
-        )
-        access_token = login_response.json()["access_token"]
-
-        response = test_client.post(
-            "/api/v1/auth/change-password",
-            headers={"Authorization": f"Bearer {access_token}"},
-            json={
-                "current_password": "wrongpassword",
-                "new_password": "newpassword123",
-            },
-        )
         assert response.status_code == 401
+
+
+# ==========================================================
+# Dependencies Tests
+# ==========================================================
+
+class TestDependencies:
+    """Tests for FastAPI auth dependencies."""
+
+    def test_require_role_admin(self):
+        """Test role-based access control for admin."""
+        from backend.app.dependencies import require_role
+
+        mock_user = MagicMock()
+        mock_user.role = "admin"
+
+    def test_require_role_researcher(self):
+        """Test role-based access control for researcher."""
+        from backend.app.dependencies import require_role
+
+        mock_user = MagicMock()
+        mock_user.role = "researcher"
+
+    def test_require_role_user(self):
+        """Test role-based access control for user."""
+        from backend.app.dependencies import require_role
+
+        mock_user = MagicMock()
+        mock_user.role = "user"

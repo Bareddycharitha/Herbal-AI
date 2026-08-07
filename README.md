@@ -163,7 +163,7 @@ cd frontend
 
 npm install
 
-npm run dev
+uvicorn backend.app.main:app --reload
 ```
 
 ---

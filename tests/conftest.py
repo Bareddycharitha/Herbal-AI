@@ -32,8 +32,6 @@ def setup_test_env():
     # Don't set DEBUG/LOG_LEVEL here - let tests control their own settings
     os.environ["OLLAMA_HOST"] = "http://localhost:11434"
     os.environ["OLLAMA_MODEL"] = "llama3.2:3b"
-    # Set a consistent secret key for JWT testing
-    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-32-chars-min"
     # Disable rate limiting in tests
     os.environ["RATE_LIMIT_REQUESTS_PER_MINUTE"] = "1000"
     os.environ["RATE_LIMIT_BURST"] = "100"
@@ -214,18 +212,17 @@ def mock_ollama_client():
 
 @pytest.fixture
 def mock_current_user():
-    """Mock current authenticated user."""
-    from backend.app.models.user import UserInDB, UserRole
+    """Mock current authenticated user (Clerk profile)."""
+    from backend.app.schemas.user import UserResponse, UserRole
     from datetime import datetime
-    return UserInDB(
-        id=1,
+
+    return UserResponse(
+        id="clerk_user_1234",
         email="test@example.com",
         full_name="Test User",
         role=UserRole.ADMIN,
-        hashed_password="dummy",
         is_active=True,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime(2026, 1, 1),
     )
 
 
@@ -318,4 +315,7 @@ def test_settings():
         log_format="text",
         cors_origins=["http://localhost:3000"],
         max_upload_size_mb=10,
+        clerk_publishable_key="pk_test_123",
+        clerk_secret_key="sk_test_456",
+        clerk_jwks_url="https://test.clerk.accounts.dev/.well-known/jwks.json",
     )

@@ -6,7 +6,7 @@ All settings can be overridden via environment variables.
 """
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -179,31 +179,18 @@ class Settings(BaseSettings):
     logo_path: str = "backend/app/services/pdf/assets/logo.png"
 
     # ==========================================================
-    # Database
+    # Supabase (database only - no Supabase Auth)
     # ==========================================================
-    database_url: str = Field(
-        default_factory=lambda: (
-            "postgresql+asyncpg://postgres:postgres@localhost:5432/herbal_ai"
-        ),
-    )
-    alembic_config: str = "backend/alembic.ini"
+    supabase_url: str = Field(default="")
+    supabase_anon_key: str = Field(default="")
+    supabase_service_role_key: str = Field(default="")
 
     # ==========================================================
-    # Authentication
+    # Clerk Authentication
     # ==========================================================
-    secret_key: str = Field(
-        default_factory=lambda: (_ for _ in ()).throw(
-            RuntimeError(
-                "SECRET_KEY must be set via the SECRET_KEY environment variable. "
-                "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
-            )
-        ),
-        min_length=32,
-    )
-    access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 7
-    cookie_secure: bool = False  # Set to True in production with HTTPS
-    cookie_samesite: str = "lax"
+    clerk_publishable_key: str = Field(default="")
+    clerk_secret_key: str = Field(default="")
+    clerk_jwks_url: str = Field(default="")
 
 
 # Global settings instance

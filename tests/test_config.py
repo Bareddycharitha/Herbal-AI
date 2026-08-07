@@ -126,6 +126,42 @@ class TestSettings:
         settings = Settings()
         assert settings.cors_origins == ["https://a.com", "https://b.com"]
 
+    def test_supabase_url_env(self, monkeypatch):
+        """Test Supabase URL from environment."""
+        monkeypatch.setenv("SUPABASE_URL", "https://test.supabase.co")
+        settings = Settings()
+        assert settings.supabase_url == "https://test.supabase.co"
+
+    def test_supabase_anon_key_env(self, monkeypatch):
+        """Test Supabase anon key from environment."""
+        monkeypatch.setenv("SUPABASE_ANON_KEY", "test-anon-key")
+        settings = Settings()
+        assert settings.supabase_anon_key == "test-anon-key"
+
+    def test_supabase_service_role_key_env(self, monkeypatch):
+        """Test Supabase service role key from environment."""
+        monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "test-service-key")
+        settings = Settings()
+        assert settings.supabase_service_role_key == "test-service-key"
+
+    def test_clerk_publishable_key_env(self, monkeypatch):
+        """Test Clerk publishable key from environment."""
+        monkeypatch.setenv("CLERK_PUBLISHABLE_KEY", "pk_test_123")
+        settings = Settings()
+        assert settings.clerk_publishable_key == "pk_test_123"
+
+    def test_clerk_secret_key_env(self, monkeypatch):
+        """Test Clerk secret key from environment."""
+        monkeypatch.setenv("CLERK_SECRET_KEY", "sk_test_456")
+        settings = Settings()
+        assert settings.clerk_secret_key == "sk_test_456"
+
+    def test_clerk_jwks_url_env(self, monkeypatch):
+        """Test Clerk JWKS URL from environment."""
+        monkeypatch.setenv("CLERK_JWKS_URL", "https://test.clerk.accounts.dev/.well-known/jwks.json")
+        settings = Settings()
+        assert settings.clerk_jwks_url == "https://test.clerk.accounts.dev/.well-known/jwks.json"
+
     def test_environment_validation(self):
         """Test environment validation."""
         with pytest.raises(ValueError):

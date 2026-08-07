@@ -9,10 +9,10 @@ const api = axios.create({
 });
 
 // ── Auth Interceptor ──────────────────────────────────────
-// Automatically attaches the access token to every request.
+// Automatically attaches the Clerk JWT token to every request.
 
-api.interceptors.request.use((config) => {
-  const token = getAccessToken();
+api.interceptors.request.use(async (config) => {
+  const token = await getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -20,66 +20,67 @@ api.interceptors.request.use((config) => {
 });
 
 // ── Token helpers ──────────────────────────────────────────
+// Tokens are managed by Clerk, not localStorage.
 
-const ACCESS_TOKEN_KEY = "herb_ai_access_token";
-const REFRESH_TOKEN_KEY = "herb_ai_refresh_token";
-
-export function getAccessToken(): string | null {
+export async function getAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  try {
+    const { getToken } = await import("@clerk/nextjs");
+    const token = await getToken();
+    return token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  // Clerk manages refresh tokens internally; not exposed to the client.
+  return null;
 }
 
-export function setTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+export function setTokens(_accessToken: string, _refreshToken: string): void {
+  // Tokens are managed by Clerk, no manual storage needed.
 }
 
 export function clearTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  // Tokens are managed by Clerk, no manual clearing needed.
 }
 
-export function isAuthenticated(): boolean {
-  return !!getAccessToken();
+export async function isAuthenticated(): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+    return !!token;
+  } catch {
+    return false;
+  }
 }
 
 // ── Auth API ───────────────────────────────────────────────
+// Clerk handles signup, login, logout, email verification,
+// password reset, and Google OAuth on the frontend.
+// The backend only provides profile management endpoints.
 
-export async function login(email: string, password: string) {
-  const { data } = await api.post<{
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-    token_type: string;
-  }>("/api/v1/auth/login/json", { email, password });
-
-  setTokens(data.access_token, data.refresh_token);
-  return data;
+export async function login(_email: string, _password: string) {
+  // Clerk handles authentication on the frontend.
+  // This function is kept for API compatibility but
+  // delegates to Clerk's sign-in flow.
+  throw new Error("Use Clerk's SignIn component for login");
 }
 
 export async function register(
-  email: string,
-  password: string,
-  fullName?: string
+  _email: string,
+  _password: string,
+  _fullName?: string
 ) {
-  const { data } = await api.post<{
-    id: number;
-    email: string;
-    full_name: string;
-    role: string;
-    is_active: boolean;
-  }>("/api/v1/auth/register", { email, password, full_name: fullName });
-
-  return data;
+  // Clerk handles registration on the frontend.
+  // This function is kept for API compatibility but
+  // delegates to Clerk's sign-up flow.
+  throw new Error("Use Clerk's SignUp component for registration");
 }
 
 export async function logout() {
-  clearTokens();
+  const { signOut } = await import("@clerk/nextjs");
+  await signOut();
 }
 
 export function getApiBaseUrl() {

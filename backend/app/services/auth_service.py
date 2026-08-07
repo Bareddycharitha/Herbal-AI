@@ -2,183 +2,165 @@
 Auth Service
 
 Business logic layer for authentication and user management.
+Uses Clerk for authentication and Supabase PostgreSQL for
+profile persistence. No Supabase Auth is used.
 """
 
 from datetime import datetime, timezone
 from typing import Optional
 
 from backend.app.config import settings
-from backend.app.models.user import User
-from backend.app.repositories.user_repository import UserRepository
+from backend.app.repositories.profile_repository import ProfileRepository
 from backend.app.schemas.user import (
     UserCreate,
-    UserUpdate,
     UserRole,
 )
-from backend.app.utils.auth import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    verify_token,
-)
+from backend.app.utils.auth import verify_clerk_token
 from backend.app.exceptions import (
     AuthenticationError,
     ValidationError,
     NotFoundError,
     AuthorizationError,
 )
+from backend.app.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AuthService:
-    """Service layer for authentication and user management."""
+    """Service layer for authentication and user management.
 
-    def __init__(self, repository: UserRepository) -> None:
+    Delegates authentication to Clerk. Manages profiles,
+    authorization, and user metadata in Supabase PostgreSQL.
+    """
+
+    def __init__(self, repository: ProfileRepository) -> None:
         self._repository = repository
 
     # ------------------------------------------------------------------
-    # Authentication
+    # Profile Management
     # ------------------------------------------------------------------
 
-    async def authenticate_user(
-        self, email: str, password: str
-    ) -> Optional[User]:
-        """Authenticate user with email and password."""
-        user = await self._repository.get_by_email(email)
-        if not user:
-            return None
-        if not user.is_active:
-            return None
-        if not verify_password(password, user.hashed_password):
-            return None
-        return user
+    async def ensure_profile(
+        self,
+        clerk_user_id: str,
+        email: str,
+        full_name: str | None = None,
+    ) -> dict:
+        """Ensure a profile exists for the Clerk user.
+
+        If the profile does not exist, it is created automatically
+        with the default role of 'user'. This is called on first
+        successful authentication.
+
+        Args:
+            clerk_user_id: Clerk user ID from the `sub` claim.
+            email: User email address.
+            full_name: Optional full name.
+
+        Returns:
+            The existing or newly created profile dict.
+        """
+        profile = self._repository.get_profile_by_clerk_id(clerk_user_id)
+        if profile is not None:
+            return profile
+
+        # Auto-create profile on first authentication
+        profile = self._repository.create_profile(
+            clerk_user_id=clerk_user_id,
+            email=email,
+            full_name=full_name,
+            role=UserRole.USER,
+        )
+        logger.info(
+            "Auto-created profile for new Clerk user",
+            clerk_user_id=clerk_user_id,
+            email=email,
+        )
+        return profile
 
     # ------------------------------------------------------------------
-    # Registration
+    # User Lookup
     # ------------------------------------------------------------------
 
-    async def register_user(self, user_create: UserCreate) -> User:
-        """Register a new user."""
-        # Check if email already exists
-        existing = await self._repository.get_by_email(user_create.email)
-        if existing:
-            raise ValidationError(
-                message="Email already registered",
-                field="email",
-            )
-        return await self._repository.create(user_create)
+    async def get_user_from_token(
+        self, access_token: str
+    ) -> Optional[dict]:
+        """Get user profile from a Clerk JWT access token.
+
+        Verifies the token, then looks up the profile in the
+        database by Clerk user ID.
+
+        Args:
+            access_token: Clerk JWT access token.
+
+        Returns:
+            User profile dict if the token is valid and user exists,
+            None otherwise.
+        """
+        payload = verify_clerk_token(access_token)
+        if not payload:
+            return None
+
+        profile = self._repository.get_profile_by_clerk_id(payload["id"])
+        if not profile:
+            return None
+
+        return profile
+
+    async def get_user_by_clerk_id(
+        self, clerk_user_id: str
+    ) -> Optional[dict]:
+        """Get user profile by Clerk user ID."""
+        return self._repository.get_profile_by_clerk_id(clerk_user_id)
 
     # ------------------------------------------------------------------
     # User CRUD
     # ------------------------------------------------------------------
 
-    async def get_user_by_id(self, user_id: int) -> Optional[User]:
-        """Get user by ID."""
-        return await self._repository.get_by_id(user_id)
-
     async def list_users(
         self, skip: int = 0, limit: int = 100
-    ) -> list[User]:
-        """List all users with pagination."""
-        return await self._repository.list_users(skip=skip, limit=limit)
+    ) -> list[dict]:
+        """List all profiles with pagination."""
+        return self._repository.list_profiles(skip=skip, limit=limit)
 
     async def update_user(
-        self, user_id: int, updates: dict
-    ) -> Optional[User]:
-        """Update user fields. Returns updated user or None if email conflict."""
-        updated = await self._repository.update(user_id, updates)
-        return updated
+        self, clerk_user_id: str, updates: dict[str, object]
+    ) -> Optional[dict]:
+        """Update user profile fields. Returns updated profile or None."""
+        return self._repository.update_profile(clerk_user_id, updates)
 
-    async def delete_user(self, user_id: int) -> bool:
-        """Delete a user. Returns True if deleted, False if not found."""
-        return await self._repository.delete(user_id)
+    async def delete_user(self, clerk_user_id: str) -> bool:
+        """Delete a user profile. Returns True if deleted, False if not found."""
+        profile = self._repository.get_profile_by_clerk_id(clerk_user_id)
+        if not profile:
+            return False
 
-    # ------------------------------------------------------------------
-    # Password Management
-    # ------------------------------------------------------------------
-
-    async def change_password(
-        self, user_id: int, current_password: str, new_password: str
-    ) -> None:
-        """Change user password after verifying current password."""
-        user = await self._repository.get_by_id(user_id)
-        if not user:
-            raise NotFoundError("User", str(user_id))
-        if not verify_password(current_password, user.hashed_password):
-            raise AuthenticationError("Current password is incorrect")
-
-        new_hashed = hash_password(new_password)
-        now = datetime.now(timezone.utc)
-        await self._repository.update(user_id, {
-            "hashed_password": new_hashed,
-            "updated_at": now,
-        })
+        return self._repository.delete_profile(clerk_user_id)
 
     # ------------------------------------------------------------------
-    # Token Management
+    # Role Management
     # ------------------------------------------------------------------
 
-    def create_tokens(self, user: User) -> tuple[str, str]:
-        """Create access and refresh tokens for user."""
-        access_token = create_access_token(
-            user.id, user.email, user.role
+    async def update_user_role(
+        self, clerk_user_id: str, role: UserRole
+    ) -> Optional[dict]:
+        """Update a user's role. Returns updated profile or None."""
+        return self._repository.update_profile(
+            clerk_user_id, {"role": role.value}
         )
-        refresh_token = create_refresh_token(
-            user.id, user.email, user.role
-        )
-        return access_token, refresh_token
-
-    async def refresh_access_token(
-        self, refresh_token: str
-    ) -> Optional[str]:
-        """Create new access token from refresh token."""
-        payload = verify_token(refresh_token, "refresh")
-        if not payload:
-            return None
-
-        user = await self._repository.get_by_id(payload.sub)
-        if not user or not user.is_active:
-            return None
-
-        return create_access_token(user.id, user.email, user.role)
-
-    async def refresh_tokens(
-        self, refresh_token: str
-    ) -> Optional[tuple[str, str]]:
-        """Refresh both access and refresh tokens."""
-        new_access = await self.refresh_access_token(refresh_token)
-        if not new_access:
-            return None
-
-        # Get user for new refresh token rotation
-        payload = verify_token(refresh_token, "refresh")
-        if payload:
-            user = await self._repository.get_by_id(payload.sub)
-            if user:
-                new_refresh = create_refresh_token(
-                    user.id, user.email, user.role
-                )
-                return new_access, new_refresh
-
-        return new_access, refresh_token
 
     # ------------------------------------------------------------------
-    # Token Validation
+    # Helpers
     # ------------------------------------------------------------------
 
-    def get_user_from_token(self, token: str) -> Optional[User]:
-        """Get user from access token."""
-        payload = verify_token(token, "access")
-        if not payload:
-            return None
-        # Synchronous get_by_id needed here; we use the session directly
-        # This is a limitation of the sync context in utils/auth.py
-        # The actual implementation uses the repository via async
-        return None  # Handled by async get_user_from_token below
-
-    async def get_user_from_token_async(self, token: str) -> Optional[User]:
-        """Async version: get user from access token."""
-        payload = verify_token(token, "access")
-        if not payload:
-            return None
-        return await self._repository.get_by_id(payload.sub)
+    def _build_user_response(self, profile: dict) -> dict:
+        """Build a user response dict from a profile record."""
+        return {
+            "id": profile.get("clerk_user_id", ""),
+            "email": profile.get("email", ""),
+            "full_name": profile.get("full_name"),
+            "role": profile.get("role", "user"),
+            "is_active": profile.get("is_active", True),
+            "created_at": profile.get("created_at"),
+        }
