@@ -166,7 +166,7 @@ npm install
 uvicorn backend.app.main:app --reload
 ```
 
------
+----
 
 ## Backend
 
