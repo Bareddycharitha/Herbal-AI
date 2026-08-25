@@ -13,6 +13,7 @@ Features:
 import torch
 import torch.nn.functional as F
 import json
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional, Union
 import numpy as np
@@ -42,6 +43,10 @@ from .leaf_detector import LeafDetectorInference
 
 from ai.training.calibration import ModelWithTemperature
 from ai.training.ood_detection import EnergyBasedOOD, MSPBasedOOD, EntropyBasedOOD, CombinedOODDetector
+from ai.utils.model_loader import safe_load_checkpoint, ModelLoadError, ModelLoadStatus
+
+
+logger = logging.getLogger(__name__)
 
 
 # ==========================================================
@@ -115,7 +120,13 @@ class HerbInference:
 
         self.num_classes = len(self.class_mapping) if self.class_mapping else 100
 
-        # Load models
+        # Model load status tracking (for readiness checks)
+        self.load_status: ModelLoadStatus = ModelLoadStatus(
+            model_name="herb_classifier",
+            checkpoint_path=str(model_path or BEST_MODEL_PATH),
+        )
+
+        # Load models — fail loudly if required checkpoint is missing/corrupt
         self._load_models(model_path)
 
         # Leaf detector - only initialize if enabled and checkpoint exists
@@ -153,39 +164,54 @@ class HerbInference:
         print(f"  Calibration: {self.use_calibration}")
         print(f"  Classes: {self.num_classes}")
 
+        self.load_status.loaded = True
+
+    def _remap_checkpoint_keys(self, key: str) -> str:
+        """
+        Remap checkpoint keys for HerbClassifier architecture compatibility.
+
+        The herb model was trained with a wrapper module where the timm
+        backbone was named ``model`` and the classifier head was named
+        ``classifier`` (as nn.Sequential). At inference time, the
+        HerbClassifier uses ``backbone`` for the timm model and ``classifier``
+        for the head.
+
+        This remapping transforms checkpoint keys:
+        - ``model.classifier.X`` -> ``classifier.X`` (head weights)
+        - ``model.{other}``      -> ``backbone.{other}`` (backbone weights)
+        - ``arcface.*``           -> kept as-is (ArcFace head)
+        - ``classifier.*``        -> kept as-is (already correct)
+        - everything else         -> kept as-is
+
+        This is necessary because the training code saved the state dict
+        with a different module name (``model`` vs ``backbone``) than
+        the inference-time architecture uses.
+        """
+        if key.startswith("model.classifier."):
+            return "classifier." + key[len("model.classifier."):]
+        elif key.startswith("model."):
+            return "backbone." + key[6:]
+        # arcface, classifier, and all other keys stay the same
+        return key
+
     def _load_models(self, model_path):
-        """Load model(s) from checkpoint(s)."""
+        """Load model(s) from checkpoint(s) with safe loading.
+
+        Raises:
+            ModelLoadError: If checkpoint is missing or incompatible.
+        """
         if self.use_ensemble:
             self.models = []
-            for path in self.ensemble_paths:
+            for i, path in enumerate(self.ensemble_paths):
                 model = build_model(self.num_classes).to(self.device)
-                checkpoint = torch.load(path, map_location=self.device)
-
-                if "model_state_dict" in checkpoint:
-                    state_dict = checkpoint["model_state_dict"]
-                else:
-                    state_dict = checkpoint
-
-                # Handle old checkpoint format (model. -> backbone., model.classifier -> classifier)
-                new_state_dict = {}
-                for k, v in state_dict.items():
-                    if k.startswith("model."):
-                        # Check if it's the classifier
-                        if k.startswith("model.classifier."):
-                            # Map model.classifier.X -> classifier.X
-                            new_k = "classifier." + k[len("model.classifier."):]
-                        else:
-                            # Map model.XXX -> backbone.XXX
-                            new_k = "backbone." + k[6:]
-                    elif k.startswith("arcface."):
-                        new_k = k
-                    elif k.startswith("classifier."):
-                        new_k = k
-                    else:
-                        new_k = k
-                    new_state_dict[new_k] = v
-
-                model.load_state_dict(new_state_dict)
+                safe_load_checkpoint(
+                    checkpoint_path=path,
+                    model=model,
+                    model_name=f"herb_classifier_ensemble_{i}",
+                    remap_keys=self._remap_checkpoint_keys,
+                    strict=True,
+                )
+                logger.info("Loaded herb ensemble model", path=str(path), index=i)
                 self.models.append(model)
         else:
             if model_path is None:
@@ -193,42 +219,15 @@ class HerbInference:
 
             self.model = build_model(self.num_classes).to(self.device)
 
-            # Handle missing or incompatible checkpoint
-            if Path(model_path).exists():
-                try:
-                    checkpoint = torch.load(model_path, map_location=self.device)
-
-                    if "model_state_dict" in checkpoint:
-                        state_dict = checkpoint["model_state_dict"]
-                    else:
-                        state_dict = checkpoint
-
-                    # Handle old checkpoint format (model. -> backbone., model.classifier -> classifier)
-                    new_state_dict = {}
-                    for k, v in state_dict.items():
-                        if k.startswith("model."):
-                            # Check if it's the classifier
-                            if k.startswith("model.classifier."):
-                                # Map model.classifier.X -> classifier.X
-                                new_k = "classifier." + k[len("model.classifier."):]
-                            else:
-                                # Map model.XXX -> backbone.XXX
-                                new_k = "backbone." + k[6:]
-                        elif k.startswith("arcface."):
-                            new_k = k
-                        elif k.startswith("classifier."):
-                            new_k = k
-                        else:
-                            new_k = k
-                        new_state_dict[new_k] = v
-
-                    self.model.load_state_dict(new_state_dict)
-                    print(f"Loaded herb model from {model_path}")
-                except RuntimeError as e:
-                    print(f"Warning: Could not load checkpoint (architecture mismatch): {e}")
-                    print("Using randomly initialized weights")
-            else:
-                print(f"Checkpoint not found at {model_path}, using randomly initialized weights")
+            # Safe loading — raises ModelLoadError on failure
+            safe_load_checkpoint(
+                checkpoint_path=model_path,
+                model=self.model,
+                model_name="herb_classifier",
+                remap_keys=self._remap_checkpoint_keys,
+                strict=True,
+            )
+            logger.info("Loaded herb model", path=str(model_path))
 
     def _load_calibration(self, calibration_path):
         """Load temperature scaling calibration."""
@@ -366,11 +365,21 @@ class HerbInference:
         energy_score = self.energy_ood.compute_scores(image_tensor)[0]
         msp_score = self.msp_ood.compute_scores(image_tensor)[0]
         entropy_score = self.entropy_ood.compute_scores(image_tensor)[0]
-        combined_score = self.combined_ood.compute_combined_score(image_tensor)[0]
+        combined_score = self.combined_ood.compute_combined_score(
+            image_tensor,
+            thresholds={
+                'energy': OOD_ENERGY_THRESHOLD,
+                'msp': OOD_MSP_THRESHOLD,
+                'entropy': OOD_ENTROPY_THRESHOLD,
+            },
+        )[0]
 
-        is_ood = (energy_score > OOD_ENERGY_THRESHOLD or
-                  msp_score > OOD_MSP_THRESHOLD or
-                  entropy_score > OOD_ENTROPY_THRESHOLD)
+        # OOD detection using OR of all three detectors
+        # Each score: higher = more likely OOD
+        is_energy_ood = energy_score > OOD_ENERGY_THRESHOLD
+        is_msp_ood = msp_score > OOD_MSP_THRESHOLD
+        is_entropy_ood = entropy_score > OOD_ENTROPY_THRESHOLD
+        is_ood = is_energy_ood or is_msp_ood or is_entropy_ood
 
         # Step 4: Confidence Check
         is_confident = confidence >= CONFIDENCE_THRESHOLD and not is_ood

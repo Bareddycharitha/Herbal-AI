@@ -312,3 +312,233 @@ class TestHerbKnowledgeBase:
         kb = HerbKnowledgeBase(temp_kb_file)
         herbs = kb.list_herbs()
         assert herbs == ["Neem"]
+
+
+# ==========================================================
+# Integration Tests Against Real Knowledge Base Files
+# ==========================================================
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+KB_DIR = PROJECT_ROOT / "ai" / "datasets" / "knowledge_base"
+
+DISEASE_KB_PATH = KB_DIR / "disease_knowledge_base.json"
+HERBAL_KB_PATH = KB_DIR / "herbal_knowledge_base.json"
+CLASS_MAPPING_PATH = KB_DIR / "class_to_kb_mapping.json"
+
+# Fields expected in disease entries (used by KnowledgeBase.get_disease_information)
+REQUIRED_DISEASE_FIELDS = {
+    "id", "label", "description", "symptoms",
+    "self_care", "when_to_consult_doctor", "medical_disclaimer",
+}
+
+
+class TestDiseaseKnowledgeBaseIntegration:
+    """
+    Integration tests against the real disease knowledge base file.
+
+    These tests verify the actual production knowledge base JSON is valid,
+    well-structured, and contains the fields the application relies on.
+    """
+
+    def test_disease_kb_file_exists(self):
+        """Verify the disease knowledge base file exists on disk."""
+        assert DISEASE_KB_PATH.exists(), (
+            f"Disease knowledge base not found at {DISEASE_KB_PATH}"
+        )
+
+    def test_disease_kb_json_parses(self):
+        """Verify the disease knowledge base is valid JSON."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert isinstance(data, dict)
+
+    def test_disease_kb_has_diseases_key(self):
+        """Verify the knowledge base has a 'diseases' key."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert "diseases" in data
+        assert isinstance(data["diseases"], list)
+
+    def test_disease_kb_not_empty(self):
+        """Verify the knowledge base is not empty."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert len(data["diseases"]) > 0, "Disease knowledge base has no disease entries"
+
+    def test_disease_entries_have_required_fields(self):
+        """Verify every disease entry has the fields the application uses."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for disease in data["diseases"]:
+            label = disease.get("label", "<unknown>")
+            for field_name in REQUIRED_DISEASE_FIELDS:
+                assert field_name in disease, (
+                    f"Disease '{label}' is missing required field: {field_name}"
+                )
+
+    def test_disease_entries_have_recommended_herbs(self):
+        """Verify disease entries contain recommended_herbs lists."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for disease in data["diseases"]:
+            label = disease.get("label", "<unknown>")
+            assert "recommended_herbs" in disease, (
+                f"Disease '{label}' is missing 'recommended_herbs'"
+            )
+            assert isinstance(disease["recommended_herbs"], list)
+
+    def test_recommended_herbs_reference_valid_names(self):
+        """Verify recommended herb entries have a 'name' field."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for disease in data["diseases"]:
+            for herb in disease.get("recommended_herbs", []):
+                assert "name" in herb, (
+                    f"Recommended herb in '{disease.get('label')}' is missing 'name'"
+                )
+                assert isinstance(herb["name"], str)
+                assert len(herb["name"]) > 0
+
+    def test_recommended_herbs_exist_in_herbal_kb(self):
+        """Verify disease-recommended herbs exist in the herbal KB (where applicable)."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            disease_data = json.load(f)
+        with open(HERBAL_KB_PATH, "r", encoding="utf-8") as f:
+            herbal_data = json.load(f)
+        with open(CLASS_MAPPING_PATH, "r", encoding="utf-8") as f:
+            class_mapping = json.load(f)
+
+        herbal_keys = set(herbal_data.keys())
+        # Build set of all valid herb names (keys + mapped names)
+        all_valid_herbs = herbal_keys | set(class_mapping.values())
+
+        for disease in disease_data["diseases"]:
+            for herb in disease.get("recommended_herbs", []):
+                herb_name = herb["name"]
+                assert herb_name in all_valid_herbs, (
+                    f"Recommended herb '{herb_name}' for disease "
+                    f"'{disease.get('label')}' not found in herbal knowledge base"
+                )
+
+    def test_disease_labels_are_unique(self):
+        """Verify disease labels are unique."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        labels = [d["label"] for d in data["diseases"]]
+        assert len(labels) == len(set(labels)), (
+            f"Duplicate disease labels found: {[l for l in labels if labels.count(l) > 1]}"
+        )
+
+    def test_disease_kb_loads_via_knowledge_base_class(self):
+        """Verify the KnowledgeBase class can load the real disease KB."""
+        kb = KnowledgeBase(DISEASE_KB_PATH)
+        assert kb.disease_count > 0
+        # Verify we can look up at least one disease
+        diseases = kb.list_diseases()
+        assert len(diseases) > 0
+        # Pick one and look it up
+        info = kb.get_disease_information(diseases[0])
+        assert "description" in info
+
+    def test_disease_kb_has_metadata(self):
+        """Verify the knowledge base has metadata."""
+        with open(DISEASE_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert "metadata" in data
+        assert isinstance(data["metadata"], dict)
+
+
+class TestHerbalKnowledgeBaseIntegration:
+    """
+    Integration tests against the real herbal knowledge base file.
+    """
+
+    def test_herbal_kb_file_exists(self):
+        """Verify the herbal knowledge base file exists on disk."""
+        assert HERBAL_KB_PATH.exists(), (
+            f"Herbal knowledge base not found at {HERBAL_KB_PATH}"
+        )
+
+    def test_herbal_kb_json_parses(self):
+        """Verify the herbal knowledge base is valid JSON."""
+        with open(HERBAL_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert isinstance(data, dict)
+
+    def test_herbal_kb_not_empty(self):
+        """Verify the knowledge base is not empty."""
+        with open(HERBAL_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert len(data) > 0, "Herbal knowledge base has no entries"
+
+    def test_herbal_entries_have_required_fields(self):
+        """Verify every herb entry has the fields the application uses."""
+        # Fields returned by HerbalKnowledgeBase.get_herb
+        required_fields = {
+            "name", "botanical_name", "family", "active_compounds",
+            "phytochemicals", "benefits", "preparation_method",
+            "side_effects", "contraindications", "research_papers",
+            "skin_types", "evidence_level",
+        }
+        with open(HERBAL_KB_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for herb_name, herb_data in data.items():
+            for field_name in required_fields:
+                assert field_name in herb_data, (
+                    f"Herb '{herb_name}' is missing required field: {field_name}"
+                )
+
+    def test_herbal_kb_loads_via_herbal_knowledge_base_class(self):
+        """Verify the HerbalKnowledgeBase class can load the real herbal KB."""
+        kb = HerbalKnowledgeBase(HERBAL_KB_PATH)
+        assert kb.herb_count > 0
+        herbs = kb.list_herbs()
+        assert len(herbs) > 0
+
+    def test_herbal_kb_get_herb_returns_data(self):
+        """Verify get_herb returns properly formatted data for a known herb."""
+        kb = HerbalKnowledgeBase(HERBAL_KB_PATH)
+        herbs = kb.list_herbs()
+        first_herb_name = herbs[0]
+        herb = kb.get_herb(first_herb_name)
+        assert herb is not None
+        assert "name" in herb
+        assert "benefits" in herb
+        assert "botanical_name" in herb
+
+
+class TestClassMappingIntegration:
+    """
+    Integration tests against the real class-to-KB mapping file.
+    """
+
+    def test_class_mapping_file_exists(self):
+        """Verify the class-to-KB mapping file exists."""
+        assert CLASS_MAPPING_PATH.exists(), (
+            f"Class mapping not found at {CLASS_MAPPING_PATH}"
+        )
+
+    def test_class_mapping_json_parses(self):
+        """Verify the class mapping is valid JSON."""
+        with open(CLASS_MAPPING_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert isinstance(data, dict)
+
+    def test_class_mapping_not_empty(self):
+        """Verify the class mapping is not empty."""
+        with open(CLASS_MAPPING_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert len(data) > 0
+
+    def test_class_mapping_references_exist_in_herbal_kb(self):
+        """Verify all mapped KB keys exist in the herbal knowledge base."""
+        with open(CLASS_MAPPING_PATH, "r", encoding="utf-8") as f:
+            class_mapping = json.load(f)
+        with open(HERBAL_KB_PATH, "r", encoding="utf-8") as f:
+            herbal_data = json.load(f)
+
+        herbal_keys = set(herbal_data.keys())
+        for class_name, kb_key in class_mapping.items():
+            assert kb_key in herbal_keys, (
+                f"Class '{class_name}' maps to '{kb_key}' which is not in the herbal KB"
+            )

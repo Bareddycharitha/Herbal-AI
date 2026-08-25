@@ -254,28 +254,52 @@ class CombinedOODDetector:
         }
         return scores
 
-    def compute_combined_score(self, images, weights=None):
+    def compute_combined_score(self, images, weights=None, thresholds=None):
         """
         Compute weighted combination of scores.
+
+        Unlike the previous min-max per-batch normalization (which produces
+        a constant 0 for single-image inference), this method normalizes each
+        score by its absolute threshold so the result is meaningful regardless
+        of batch size.
 
         Args:
             images: Input images
             weights: Dict of weights for each detector
+            thresholds: Dict of thresholds for each detector.
+                Each score is normalized to [0, 1] by dividing by its threshold
+                (1.0 = at threshold boundary, >1.0 = above threshold).
+                Defaults to {energy: 10.0, msp: 0.5, entropy: 1.5}.
 
         Returns:
-            Combined OOD score (higher = more OOD)
+            Combined OOD score (higher = more OOD). For a single image,
+            a value of 1.0 means the average normalized score equals the threshold.
         """
         scores = self.compute_all_scores(images)
 
         if weights is None:
             weights = {'energy': 1.0, 'msp': 1.0, 'entropy': 1.0}
 
+        if thresholds is None:
+            thresholds = {'energy': 10.0, 'msp': 0.5, 'entropy': 1.5}
+
+        # Normalize each score by its absolute threshold (not batch-relative)
+        # This makes the combined score meaningful for single-image inference
+        weight_sum = 0.0
         combined = np.zeros_like(scores['energy'])
+
         for name, score in scores.items():
-            if name in weights:
-                # Normalize score to [0, 1] range
-                score_norm = (score - score.min()) / (score.max() - score.min() + 1e-10)
+            if name in weights and name in thresholds:
+                threshold = thresholds[name]
+                if threshold > 0:
+                    score_norm = score / threshold
+                else:
+                    score_norm = score
                 combined += weights[name] * score_norm
+                weight_sum += weights[name]
+
+        if weight_sum > 0:
+            combined /= weight_sum
 
         return combined
 

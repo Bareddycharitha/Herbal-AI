@@ -68,13 +68,19 @@ class LeafDetectorInference:
 
         self.model = build_leaf_detector().to(self.device)
 
+        # Leaf detector is optional — checkpoint may not exist
         if Path(model_path).exists():
-            checkpoint = torch.load(model_path, map_location=self.device)
-            if "model_state_dict" in checkpoint:
-                self.model.load_state_dict(checkpoint["model_state_dict"])
-            else:
-                self.model.load_state_dict(checkpoint)
-            print(f"Loaded leaf detector from {model_path}")
+            try:
+                checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+                if "model_state_dict" in checkpoint:
+                    self.model.load_state_dict(checkpoint["model_state_dict"])
+                else:
+                    self.model.load_state_dict(checkpoint)
+                print(f"Loaded leaf detector from {model_path}")
+            except Exception as e:
+                # Leaf detector is optional; log error but proceed with random weights
+                print(f"Warning: Could not load leaf detector checkpoint: {e}")
+                print("Leaf detector will use untrained weights")
         else:
             # Checkpoint not found - model uses random weights
             # Caller should handle this case (disable leaf detector)

@@ -9,7 +9,7 @@ from typing import Optional
 
 from fastapi import Depends
 from backend.app.config import Settings, get_settings
-
+from ai.utils.model_loader import ModelLoadStatus
 
 # Global instance for backward compatibility (will be replaced by DI)
 _classifier_instance: Optional["UniversalClassifier"] = None
@@ -35,6 +35,11 @@ class UniversalClassifier:
         )
 
         print("Universal Image Classifier Loaded (with OOD detection & calibration)")
+
+    @property
+    def model_load_status(self) -> ModelLoadStatus:
+        """Expose model load status for readiness checks."""
+        return self.inference.load_status
 
     def predict(self, image_path: str) -> dict:
         """

@@ -152,6 +152,22 @@ BEST_MODEL_PATH = CHECKPOINT_DIR / "best_model.pth"
 
 LAST_MODEL_PATH = CHECKPOINT_DIR / "last_model.pth"
 
+# ==========================================================
+# OOD Detection Thresholds (for 3-class universal classifier)
+# ==========================================================
+# Energy score: E(x) = -logsumexp(logits). For 3 classes, energy
+# ranges from very negative (confident ID) to positive (uncertain OOD).
+# Threshold 0.5 catches very anomalous inputs with strongly negative logits.
+OOD_ENERGY_THRESHOLD = 0.5
+# MSP score: 1 - max_softmax. Higher = more OOD. 0.5 means max_prob < 0.5.
+OOD_MSP_THRESHOLD = 0.5
+# Entropy: -sum(p*log(p)). Max for 3 classes = log(3) ≈ 1.099.
+# Threshold must be below log(3) to be achievable.
+# Using 0.9 (≈82% of max entropy) to catch moderately uncertain predictions.
+OOD_ENTROPY_THRESHOLD = 0.9
+# Calibration file
+CALIBRATION_PATH = CHECKPOINT_DIR / "temperature_scale.pth"
+
 TRAIN_HISTORY = RESULTS_DIR / "training_history.csv"
 
 # ==========================================================

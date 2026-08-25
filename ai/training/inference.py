@@ -35,12 +35,17 @@ from ai.config import (
     USE_GRADCAM_PLUS,
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from ai.models.efficientnet import build_model
 from ai.preprocessing.transforms import get_valid_transforms
 from ai.preprocessing.dataset import create_dataloaders
 from ai.explainability.gradcam_engine import GradCAM, overlay_heatmap
 from ai.training.calibration import ModelWithTemperature
 from ai.training.ood_detection import EnergyBasedOOD, MSPBasedOOD, EntropyBasedOOD, CombinedOODDetector
+from ai.utils.model_loader import safe_load_checkpoint, ModelLoadError
 
 from ai.utils.history import HistoryLogger
 
@@ -70,19 +75,23 @@ def load_class_names_from_checkpoint(checkpoint_path):
     """Load class names from checkpoint or dataset."""
     # Try to load from checkpoint metadata
     try:
-        checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+        checkpoint = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
         if "class_names" in checkpoint:
             return checkpoint["class_names"]
-    except:
-        pass
+    except (FileNotFoundError, RuntimeError, Exception) as e:
+        logger.warning(
+            "Could not load class names from checkpoint",
+            path=str(checkpoint_path),
+            error=str(e),
+        )
 
     # Fallback: load from dataset
     try:
         from ai.config import TRAIN_DIR
         _, _, class_names, _ = create_dataloaders(TRAIN_DIR)
         return class_names
-    except:
-        # Last resort: default 22 classes
+    except Exception:
+        # Last resort: default class names from config
         return [f"Class_{i}" for i in range(NUM_CLASSES)]
 
 
@@ -91,18 +100,18 @@ def load_class_names_from_checkpoint(checkpoint_path):
 # ==========================================================
 
 def load_model(model_path: Union[str, Path], num_classes: int = None):
-    """Load model from checkpoint."""
+    """Load model from checkpoint with safe loading."""
     if num_classes is None:
         num_classes = NUM_CLASSES
 
     model = build_model(num_classes=num_classes).to(DEVICE)
 
-    checkpoint = torch.load(model_path, map_location=DEVICE)
-
-    if "model_state_dict" in checkpoint:
-        model.load_state_dict(checkpoint["model_state_dict"])
-    else:
-        model.load_state_dict(checkpoint)
+    checkpoint = safe_load_checkpoint(
+        checkpoint_path=model_path,
+        model=model,
+        model_name="skin_disease_classifier",
+        strict=True,
+    )
 
     model.eval()
     return model
@@ -116,10 +125,14 @@ def load_calibrated_model(model_path: Union[str, Path], cal_path: Union[str, Pat
         cal_path = Path(model_path).parent / "temperature_scale.pth"
 
     if Path(cal_path).exists():
-        cal_checkpoint = torch.load(cal_path, map_location=DEVICE)
-        temperature = cal_checkpoint.get("temperature", 1.0)
-        model = ModelWithTemperature(model, temperature).to(DEVICE)
-        print(f"Loaded calibrated model with T={temperature:.4f}")
+        try:
+            cal_checkpoint = torch.load(cal_path, map_location=DEVICE, weights_only=False)
+            temperature = cal_checkpoint.get("temperature", 1.0)
+            model = ModelWithTemperature(model, temperature).to(DEVICE)
+            print(f"Loaded calibrated model with T={temperature:.4f}")
+        except Exception as e:
+            print(f"Warning: Could not load calibration checkpoint: {e}")
+            print("Proceeding with uncalibrated model")
     else:
         print("No calibration found, using uncalibrated model")
 
@@ -375,11 +388,21 @@ class SkinDiseaseInference:
         energy_score = self.energy_ood.compute_scores(image_tensor)[0]
         msp_score = self.msp_ood.compute_scores(image_tensor)[0]
         entropy_score = self.entropy_ood.compute_scores(image_tensor)[0]
-        combined_score = self.combined_ood.compute_combined_score(image_tensor)[0]
+        combined_score = self.combined_ood.compute_combined_score(
+            image_tensor,
+            thresholds={
+                'energy': OOD_ENERGY_THRESHOLD,
+                'msp': OOD_MSP_THRESHOLD,
+                'entropy': OOD_ENTROPY_THRESHOLD,
+            },
+        )[0]
 
-        is_ood = (energy_score > OOD_ENERGY_THRESHOLD or
-                  msp_score > OOD_MSP_THRESHOLD or
-                  entropy_score > OOD_ENTROPY_THRESHOLD)
+        # OOD detection using OR of all three detectors
+        # Each score: higher = more likely OOD
+        is_energy_ood = energy_score > OOD_ENERGY_THRESHOLD
+        is_msp_ood = msp_score > OOD_MSP_THRESHOLD
+        is_entropy_ood = entropy_score > OOD_ENTROPY_THRESHOLD
+        is_ood = is_energy_ood or is_msp_ood or is_entropy_ood
 
         # Grad-CAM
         gradcam_image = None

@@ -8,8 +8,13 @@ All settings can be overridden via environment variables.
 from pathlib import Path
 from typing import Union
 
-from pydantic import Field, field_validator
+import logging
+import warnings
+
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -29,6 +34,13 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     environment: str = Field(default="development", pattern="^(development|staging|production|test)$")
+
+    # Secret key for JWT signing, sessions, CSRF, etc.
+    # In production, this MUST be set via environment variable — no insecure default.
+    secret_key: str = Field(
+        default="dev-insecure-secret-key-change-in-production",
+        min_length=1,
+    )
 
     # ==========================================================
     # Server
@@ -191,6 +203,58 @@ class Settings(BaseSettings):
     clerk_publishable_key: str = Field(default="")
     clerk_secret_key: str = Field(default="")
     clerk_jwks_url: str = Field(default="")
+
+    # ==========================================================
+    # Production Validation
+    # ==========================================================
+
+    @model_validator(mode="after")
+    def validate_production_settings(self):
+        """Validate settings for production environment."""
+
+        if self.environment == "production":
+            # 1. Secret key must be non-empty and not the development default
+            dev_default = "dev-insecure-secret-key-change-in-production"
+            if not self.secret_key or self.secret_key == dev_default:
+                raise ValueError(
+                    "SECRET_KEY must be set to a non-default, non-empty value in production. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+                )
+            if len(self.secret_key) < 16:
+                raise ValueError(
+                    "SECRET_KEY must be at least 16 characters in production."
+                )
+
+            # 2. Debug must never be enabled in production
+            if self.debug:
+                raise ValueError(
+                    "DEBUG mode must not be enabled when ENVIRONMENT=production."
+                )
+
+            # 3. CORS: warn if only localhost origins are configured in production
+            localhost_origins = {
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            }
+            origins = set(self.cors_origins)
+            non_localhost = origins - localhost_origins
+            if not non_localhost:
+                logger.warning(
+                    "Production environment has only localhost CORS origins configured. "
+                    "Frontend clients will be unable to connect. Set CORS_ORIGINS to your "
+                    "production domain(s)."
+                )
+
+            # 4. Log level should not be DEBUG in production
+            if self.log_level == "DEBUG":
+                logger.warning(
+                    "DEBUG log level is enabled in production. "
+                    "Consider using INFO or higher for security."
+                )
+
+        return self
 
 
 # Global settings instance

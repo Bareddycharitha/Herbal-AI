@@ -19,6 +19,10 @@ from .config import (
     MODEL_NAME,
     ENSEMBLE_SIZE,
     ENSEMBLE_SEEDS,
+    OOD_ENERGY_THRESHOLD,
+    OOD_MSP_THRESHOLD,
+    OOD_ENTROPY_THRESHOLD,
+    CALIBRATION_PATH,
 )
 
 from .model import build_model
@@ -26,6 +30,7 @@ from .transforms import test_transform, get_tta_transforms
 
 from ai.training.calibration import ModelWithTemperature, compute_ece
 from ai.training.ood_detection import EnergyBasedOOD, MSPBasedOOD, EntropyBasedOOD, CombinedOODDetector
+from ai.utils.model_loader import safe_load_checkpoint, ModelLoadError, ModelLoadStatus
 
 
 CLASS_NAMES = {
@@ -65,13 +70,21 @@ class UniversalClassifierInference:
         self.ensemble_paths = ensemble_paths or []
         self.ood_threshold = ood_threshold
 
-        # Load models
+        # Model load status tracking (for readiness checks)
+        self.load_status: ModelLoadStatus = ModelLoadStatus(
+            model_name="universal_classifier",
+            checkpoint_path=str(model_path or BEST_MODEL_PATH),
+        )
+
+        # Load models — fail loudly if required checkpoint is missing/corrupt
         if self.use_ensemble:
             self.models = self._load_ensemble(ensemble_paths)
             print(f"Loaded ensemble of {len(self.models)} models")
         else:
             self.model = self._load_single_model(model_path)
             print("Loaded single model")
+
+        self.load_status.loaded = True
 
         # Calibration
         self.use_calibration = use_calibration
@@ -90,32 +103,33 @@ class UniversalClassifierInference:
             self.model.eval()
 
     def _load_single_model(self, model_path):
-        """Load a single model checkpoint."""
+        """Load a single model checkpoint with safe loading."""
         if model_path is None:
             model_path = BEST_MODEL_PATH
 
         model = build_model().to(self.device)
 
-        checkpoint = torch.load(model_path, map_location=self.device)
-
-        if "model_state_dict" in checkpoint:
-            model.load_state_dict(checkpoint["model_state_dict"])
-        else:
-            model.load_state_dict(checkpoint)
+        checkpoint = safe_load_checkpoint(
+            checkpoint_path=model_path,
+            model=model,
+            model_name="universal_classifier",
+            strict=True,
+        )
 
         return model
 
     def _load_ensemble(self, ensemble_paths):
-        """Load ensemble of models."""
+        """Load ensemble of models with safe loading."""
         models = []
-        for path in ensemble_paths:
+        for i, path in enumerate(ensemble_paths):
             model = build_model().to(self.device)
-            checkpoint = torch.load(path, map_location=self.device)
 
-            if "model_state_dict" in checkpoint:
-                model.load_state_dict(checkpoint["model_state_dict"])
-            else:
-                model.load_state_dict(checkpoint)
+            checkpoint = safe_load_checkpoint(
+                checkpoint_path=path,
+                model=model,
+                model_name=f"universal_classifier_ensemble_{i}",
+                strict=True,
+            )
 
             models.append(model)
 
@@ -219,10 +233,24 @@ class UniversalClassifierInference:
         energy_score = self.energy_ood.compute_scores(image_tensor)[0]
         msp_score = self.msp_ood.compute_scores(image_tensor)[0]
         entropy_score = self.entropy_ood.compute_scores(image_tensor)[0]
-        combined_score = self.combined_ood.compute_combined_score(image_tensor)[0]
+        combined_score = self.combined_ood.compute_combined_score(
+            image_tensor,
+            thresholds={
+                'energy': OOD_ENERGY_THRESHOLD,
+                'msp': OOD_MSP_THRESHOLD,
+                'entropy': OOD_ENTROPY_THRESHOLD,
+            },
+        )[0]
 
-        # Determine if OOD
-        is_ood = energy_score > self.ood_threshold
+        # Determine if OOD using OR of all three detectors.
+        # Each score: higher = more likely OOD.
+        # - Energy: lower (more negative) = ID, higher = OOD
+        # - MSP: 1 - max_softmax, higher = more OOD
+        # - Entropy: higher = more uncertain/OOD
+        is_energy_ood = energy_score > OOD_ENERGY_THRESHOLD
+        is_msp_ood = msp_score > OOD_MSP_THRESHOLD
+        is_entropy_ood = entropy_score > OOD_ENTROPY_THRESHOLD
+        is_ood = is_energy_ood or is_msp_ood or is_entropy_ood
 
         # Top-k predictions
         top_probs, top_indices = torch.topk(probs, k=min(3, NUM_CLASSES))

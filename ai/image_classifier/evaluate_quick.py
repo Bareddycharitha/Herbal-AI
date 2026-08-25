@@ -1,5 +1,5 @@
 """
-Evaluation script for Universal Image Classifier.
+Evaluation script for Universal Image Classifier (quick version).
 """
 import torch
 import numpy as np
@@ -67,7 +67,8 @@ def load_test_data() -> List[Tuple[Path, int]]:
             if image_path.is_file() and image_path.suffix.lower() in image_extensions:
                 samples.append((image_path, label))
 
-    return samples
+    # Return only first 10 samples for quick evaluation
+    return samples[:10]
 
 
 def evaluate_model() -> Dict:
@@ -79,7 +80,7 @@ def evaluate_model() -> Dict:
     """
     print("Loading test data...")
     samples = load_test_data()
-    print(f"Found {len(samples)} test images")
+    print(f"Found {len(samples)} test images (subset for quick evaluation)")
 
     if len(samples) == 0:
         raise ValueError("No test images found. Check TEST_DIRS in config.py")
