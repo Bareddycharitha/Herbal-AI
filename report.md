@@ -42,6 +42,8 @@
 | Framer Motion | 12.42.2 | Animations |
 | Axios | 1.18.1 | HTTP client |
 | next-themes | 0.4.6 | Dark/light mode |
+| **ESLint** | ^9 | Code quality & error detection |
+| **Prettier** | ^3.0.0 | Code formatting |
 
 ### Backend
 | Technology | Version | Purpose |
@@ -77,6 +79,8 @@
 | Prometheus Client | 0.20.0 | Metrics |
 | pytest | 8.3.4 | Testing |
 | pytest-asyncio | 0.24.0 | Async testing |
+| **ESLint** | ^9 | Code quality & error detection |
+| **Prettier** | ^3.0.0 | Code formatting |
 
 ### Infrastructure
 | Technology | Purpose |
@@ -93,6 +97,10 @@
 Herbal-AI/
 ├── .env.example                 # Environment template
 ├── .gitignore                   # Git ignore rules
+├── .eslintignore                # ESLint ignore rules
+├── .eslintrc.js                 # ESLint configuration
+├── .prettierignore              # Prettier ignore rules
+├── .prettierrc                  # Prettier configuration
 ├── pytest.ini                   # Pytest configuration
 ├── requirements.txt             # Root Python dependencies
 ├── README.md                    # Project overview
@@ -231,7 +239,7 @@ Herbal-AI/
 │   │   ├── UploadCard.tsx         # Drag-drop upload
 │   │   ├── ResultCard.tsx
 │   │   ├── ThemeToggle.tsx
-│   │   └── ui/                    # shadcn/ui components
+│   │   ├── ui/                    # shadcn/ui components
 │   ├── lib/
 │   │   ├── api.ts                 # Axios API client
 │   │   └── utils.ts
@@ -363,7 +371,7 @@ Herbal-AI/
 ┌─────────────────────────┐
 │ Universal Classifier    │  3-class EfficientNetV2-S
 │ (ai/image_classifier)   │  Returns: Skin/Medicinal/Other
-└───────────┬─────────────┘
+└───────┬─────────────┘
             │
       ┌─────┴─────┐
       ▼           ▼
@@ -429,6 +437,11 @@ npm run dev
 
 # Terminal 3: Ollama (if not running as service)
 ollama serve
+
+# Code Quality Tools
+npm run lint          # Check for code quality issues
+npm run lint:fix      # Auto-fix fixable issues
+npm run format        # Format code with Prettier
 ```
 
 ### Production
@@ -551,6 +564,51 @@ COOKIE_SAMESITE=lax
 
 ---
 
+## ✅ Implemented Code Quality Improvements
+
+To enhance maintainability, catch errors early, and ensure consistent code quality throughout the Herbal-AI codebase, the following developer tooling has been implemented:
+
+### ESLint & Prettier Setup
+- **ESLint** (`eslintrc.js`): Static analysis tool that identifies problematic patterns, enforces coding standards, and catches potential bugs
+- **Prettier** (`prettierrc`): Opinionated code formatter that enforces consistent styling
+- **Integration**: ESLint runs first to find/logic errors, then Prettier formats, then ESLint verifies again
+
+### Key Benefits for Medical AI Application
+1. **Error Prevention**: Catches type-related bugs, security vulnerabilities, and logical errors before runtime
+2. **Consistency**: Eliminates formatting debates and ensures uniform code appearance
+3. **Medical Compliance**: Facilitates auditing and review processes for healthcare software
+4. **Developer Efficiency**: Saves time on manual formatting and style nitpicking in pull requests
+5. **Safety Critical**: Particularly important for medical applications where code errors could have serious consequences
+
+### Specific Improvements Made
+- **Type Safety**: Enforced strict TypeScript rules (no `any`, explicit return types, etc.)
+- **Security**: Banned dangerous patterns like `eval()`, `__proto__`, and implicit globals
+- **Best Practices**: Required braces for control structures, strict equality (`===`), etc.
+- **Next.js Compliance**: Enforced use of Next.js Image component for optimization
+- **React Standards**: Enforced proper hooks usage and JSX formatting
+- **Formatting Standards**: Consistent spacing, quotes, semicolons, trailing commas, etc.
+
+### Usage Instructions
+```bash
+# Check for code quality issues
+npm run lint
+
+# Automatically fix fixable issues
+npm run lint:fix
+
+# Format all code with Prettier
+npm run format
+```
+
+### Files Added
+- `.eslintrc.js` - ESLint configuration with TypeScript/React/Next.js rules
+- `.prettierrc` - Prettier formatting standards
+- `.eslintignore` - Files/directories to exclude from ESLint
+- `.prettierignore` - Files/directories to exclude from Prettier
+- Updated `frontend/package.json` - Added lint/format scripts and dev dependencies
+
+---
+
 ## Security Features
 
 1. **File Upload Validation**
@@ -629,5 +687,6 @@ This project is for educational and research purposes. Please ensure compliance 
 
 ---
 
-*Last Updated: 2026-08-03*
-*Version: 1.0.0*
+---
+*Last Updated: 2026-08-25*
+*Version: 1.1.0*
