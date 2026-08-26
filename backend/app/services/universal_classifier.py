@@ -19,7 +19,7 @@ class UniversalClassifier:
     """
     Universal Image Classifier (3-class: Skin, Medicinal, Other)
 
-    Uses the inference module with ensemble, OOD detection, and calibration.
+    Uses the inference module with OOD detection and calibration.
     """
 
     def __init__(self, settings: Settings):
@@ -31,7 +31,6 @@ class UniversalClassifier:
             model_path=settings.universal_model_dir / "best_model.pth",
             use_calibration=True,
             calibration_path=settings.universal_model_dir / "temperature_scale.pth",
-            ood_threshold=0.5,
         )
 
         print("Universal Image Classifier Loaded (with OOD detection & calibration)")

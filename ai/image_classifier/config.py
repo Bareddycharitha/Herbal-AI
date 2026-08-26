@@ -171,8 +171,10 @@ CALIBRATION_PATH = CHECKPOINT_DIR / "temperature_scale.pth"
 TRAIN_HISTORY = RESULTS_DIR / "training_history.csv"
 
 # ==========================================================
-# ENSEMBLE
+# ENSEMBLE (DISABLED FOR PRODUCTION INFERENCE - SINGLE MODEL ONLY)
 # ==========================================================
 
-ENSEMBLE_SIZE = 3  # Number of models to ensemble
-ENSEMBLE_SEEDS = [42, 123, 456]
+# Ensemble training is supported but ensemble inference is disabled for production.
+# Only single model inference is used regardless of these settings.
+ENSEMBLE_SIZE = 1  # Number of models to ensemble (kept for training compatibility)
+ENSEMBLE_SEEDS = [42]  # Seeds for ensemble models (kept for training compatibility)

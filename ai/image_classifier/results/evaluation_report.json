@@ -1,0 +1,77 @@
+{
+  "overall_accuracy": 0.9931992903607333,
+  "per_class_accuracy": {
+    "Skin": 0.9948253557567918,
+    "Medicinal": 0.9992892679459844,
+    "Other": 0.9673659673659674
+  },
+  "confusion_matrix": [
+    [
+      1538,
+      1,
+      7
+    ],
+    [
+      0,
+      1406,
+      1
+    ],
+    [
+      14,
+      0,
+      415
+    ]
+  ],
+  "classification_report": {
+    "Skin": {
+      "precision": 0.990979381443299,
+      "recall": 0.9948253557567918,
+      "f1-score": 0.9928986442866365,
+      "support": 1546.0
+    },
+    "Medicinal": {
+      "precision": 0.9992892679459844,
+      "recall": 0.9992892679459844,
+      "f1-score": 0.9992892679459844,
+      "support": 1407.0
+    },
+    "Other": {
+      "precision": 0.9810874704491725,
+      "recall": 0.9673659673659674,
+      "f1-score": 0.9741784037558685,
+      "support": 429.0
+    },
+    "accuracy": 0.9931992903607333,
+    "macro avg": {
+      "precision": 0.9904520399461519,
+      "recall": 0.9871601970229146,
+      "f1-score": 0.9887887719961631,
+      "support": 3382.0
+    },
+    "weighted avg": {
+      "precision": 0.9931817411395728,
+      "recall": 0.9931992903607333,
+      "f1-score": 0.9931826845885298,
+      "support": 3382.0
+    }
+  },
+  "confidence_analysis": {
+    "avg_confidence_correct": 99.59598094671034,
+    "avg_confidence_incorrect": 82.33043478260869,
+    "high_confidence_incorrect_count": 9,
+    "high_confidence_incorrect_rate": 0.0026611472501478417,
+    "total_samples": 3382
+  },
+  "safety_metrics": {
+    "Skin_as_Other": 7,
+    "Skin_as_Other_rate": 0.004527813712807244,
+    "Medicinal_as_Other": 1,
+    "Medicinal_as_Other_rate": 0.0007107320540156361,
+    "Other_as_Skin": 14,
+    "Other_as_Skin_rate": 0.03263403263403263,
+    "Other_as_Medicinal": 0,
+    "Other_as_Medicinal_rate": 0.0
+  },
+  "failed_predictions_count": 23,
+  "processing_errors": 0
+}

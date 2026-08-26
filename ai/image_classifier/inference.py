@@ -1,7 +1,7 @@
 """
 Universal Image Classifier Inference
 
-Provides ensemble inference, OOD detection, and calibrated predictions.
+Provides single model inference with OOD detection and calibrated predictions.
 """
 
 import torch
@@ -17,8 +17,6 @@ from .config import (
     IMAGE_SIZE,
     NUM_CLASSES,
     MODEL_NAME,
-    ENSEMBLE_SIZE,
-    ENSEMBLE_SEEDS,
     OOD_ENERGY_THRESHOLD,
     OOD_MSP_THRESHOLD,
     OOD_ENTROPY_THRESHOLD,
@@ -26,7 +24,7 @@ from .config import (
 )
 
 from .model import build_model
-from .transforms import test_transform, get_tta_transforms
+from .transforms import test_transform
 
 from ai.training.calibration import ModelWithTemperature, compute_ece
 from ai.training.ood_detection import EnergyBasedOOD, MSPBasedOOD, EntropyBasedOOD, CombinedOODDetector
@@ -44,31 +42,24 @@ CLASS_NAMES_REV = {v: k for k, v in CLASS_NAMES.items()}
 
 class UniversalClassifierInference:
     """
-    Universal Image Classifier with ensemble, OOD detection, and calibration.
+    Universal Image Classifier with single model inference, OOD detection, and calibration.
     """
 
     def __init__(
         self,
         model_path: Optional[Union[str, Path]] = None,
-        ensemble_paths: Optional[List[Union[str, Path]]] = None,
         use_calibration: bool = True,
         calibration_path: Optional[Union[str, Path]] = None,
-        ood_threshold: float = 0.5,
     ):
         """
         Initialize the classifier.
 
         Args:
             model_path: Path to single model checkpoint
-            ensemble_paths: List of model paths for ensemble
             use_calibration: Whether to use temperature scaling
             calibration_path: Path to saved calibration temperature
-            ood_threshold: Threshold for OOD detection (energy score)
         """
         self.device = DEVICE
-        self.use_ensemble = ensemble_paths is not None and len(ensemble_paths) > 0
-        self.ensemble_paths = ensemble_paths or []
-        self.ood_threshold = ood_threshold
 
         # Model load status tracking (for readiness checks)
         self.load_status: ModelLoadStatus = ModelLoadStatus(
@@ -76,31 +67,34 @@ class UniversalClassifierInference:
             checkpoint_path=str(model_path or BEST_MODEL_PATH),
         )
 
-        # Load models — fail loudly if required checkpoint is missing/corrupt
-        if self.use_ensemble:
-            self.models = self._load_ensemble(ensemble_paths)
-            print(f"Loaded ensemble of {len(self.models)} models")
-        else:
-            self.model = self._load_single_model(model_path)
-            print("Loaded single model")
-
+        # Load model — fail loudly if required checkpoint is missing/corrupt
+        self.model = self._load_single_model(model_path)
         self.load_status.loaded = True
+
+        # Log successful model loading
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Universal Classifier initialized")
+        logger.info(f"Device: {self.device}")
+        logger.info(f"Checkpoint: {model_path or BEST_MODEL_PATH}")
 
         # Calibration
         self.use_calibration = use_calibration
         if use_calibration and calibration_path and Path(calibration_path).exists():
             self._load_calibration(calibration_path)
-            print(f"Loaded calibration from {calibration_path}")
+            logger.info(f"Loaded calibration from {calibration_path}")
+            logger.info("Calibration: enabled")
+        else:
+            logger.info("Calibration: disabled (no calibration file provided or use_calibration=False)")
 
         # OOD Detectors
         self._init_ood_detectors()
+        logger.info("OOD detection: enabled")
+        logger.info(f"OOD policy: Energy OR MSP OR Entropy")
+        logger.info(f"OOD thresholds - Energy: {OOD_ENERGY_THRESHOLD}, MSP: {OOD_MSP_THRESHOLD}, Entropy: {OOD_ENTROPY_THRESHOLD}")
 
-        # Set all models to eval
-        if self.use_ensemble:
-            for m in self.models:
-                m.eval()
-        else:
-            self.model.eval()
+        # Set model to eval
+        self.model.eval()
 
     def _load_single_model(self, model_path):
         """Load a single model checkpoint with safe loading."""
@@ -118,43 +112,16 @@ class UniversalClassifierInference:
 
         return model
 
-    def _load_ensemble(self, ensemble_paths):
-        """Load ensemble of models with safe loading."""
-        models = []
-        for i, path in enumerate(ensemble_paths):
-            model = build_model().to(self.device)
-
-            checkpoint = safe_load_checkpoint(
-                checkpoint_path=path,
-                model=model,
-                model_name=f"universal_classifier_ensemble_{i}",
-                strict=True,
-            )
-
-            models.append(model)
-
-        return models
-
     def _load_calibration(self, calibration_path):
         """Load temperature scaling calibration."""
         checkpoint = torch.load(calibration_path, map_location=self.device)
         temperature = checkpoint.get("temperature", 1.0)
 
-        if self.use_ensemble:
-            self.models = [
-                ModelWithTemperature(m, temperature).to(self.device)
-                for m in self.models
-            ]
-        else:
-            self.model = ModelWithTemperature(self.model, temperature).to(self.device)
+        self.model = ModelWithTemperature(self.model, temperature).to(self.device)
 
     def _init_ood_detectors(self):
         """Initialize OOD detectors."""
-        if self.use_ensemble:
-            # Use first model for OOD detection
-            base_model = self.models[0]
-        else:
-            base_model = self.model
+        base_model = self.model
 
         # Energy-based OOD
         self.energy_ood = EnergyBasedOOD(base_model, self.device)
@@ -165,7 +132,7 @@ class UniversalClassifierInference:
         # Entropy-based OOD
         self.entropy_ood = EntropyBasedOOD(base_model, self.device)
 
-        # Combined detector
+        # Combined detector (kept for diagnostic purposes, but not used in decision)
         self.combined_ood = CombinedOODDetector(base_model, self.device)
 
     def _preprocess(self, image: Union[str, Path, Image.Image, np.ndarray]) -> torch.Tensor:
@@ -186,18 +153,6 @@ class UniversalClassifierInference:
                 logits = model(image_tensor)
         return logits
 
-    def _get_logits_ensemble(self, image_tensor):
-        """Get averaged logits from ensemble."""
-        all_logits = []
-
-        for model in self.models:
-            logits = self._get_logits_single(model, image_tensor)
-            all_logits.append(logits)
-
-        # Average logits
-        avg_logits = torch.stack(all_logits).mean(dim=0)
-        return avg_logits
-
     def predict(
         self,
         image: Union[str, Path, Image.Image, np.ndarray],
@@ -215,11 +170,8 @@ class UniversalClassifierInference:
         """
         image_tensor = self._preprocess(image)
 
-        # Get logits
-        if self.use_ensemble:
-            logits = self._get_logits_ensemble(image_tensor)
-        else:
-            logits = self._get_logits_single(self.model, image_tensor)
+        # Get logits from single model
+        logits = self._get_logits_single(self.model, image_tensor)
 
         # Probabilities
         probs = F.softmax(logits, dim=1)
@@ -233,6 +185,8 @@ class UniversalClassifierInference:
         energy_score = self.energy_ood.compute_scores(image_tensor)[0]
         msp_score = self.msp_ood.compute_scores(image_tensor)[0]
         entropy_score = self.entropy_ood.compute_scores(image_tensor)[0]
+
+        # Combined score (for diagnostic purposes only)
         combined_score = self.combined_ood.compute_combined_score(
             image_tensor,
             thresholds={
@@ -270,7 +224,7 @@ class UniversalClassifierInference:
                 "energy": round(float(energy_score), 4),
                 "msp": round(float(msp_score), 4),
                 "entropy": round(float(entropy_score), 4),
-                "combined": round(float(combined_score), 4),
+                "combined": round(float(combined_score), 4),  # Diagnostic only
             },
         }
 
@@ -309,34 +263,8 @@ class UniversalClassifierInference:
             "energy": float(self.energy_ood.compute_scores(image_tensor)[0]),
             "msp": float(self.msp_ood.compute_scores(image_tensor)[0]),
             "entropy": float(self.entropy_ood.compute_scores(image_tensor)[0]),
-            "combined": float(self.combined_ood.compute_combined_score(image_tensor)[0]),
+            "combined": float(self.combined_ood.compute_combined_score(image_tensor)[0]),  # Diagnostic only
         }
-
-
-# ==========================================================
-# Singleton Instance (for backward compatibility)
-# ==========================================================
-
-classifier = UniversalClassifierInference()
-
-
-# ==========================================================
-# Convenience Functions
-# ==========================================================
-
-def predict_image(image_path: str) -> Dict:
-    """Convenience function for single image prediction."""
-    return classifier.predict(image_path)
-
-
-def predict_batch(image_paths: List[str]) -> List[Dict]:
-    """Convenience function for batch prediction."""
-    return classifier.predict_batch(image_paths)
-
-
-def get_ood_scores(image_path: str) -> Dict:
-    """Convenience function for OOD scores."""
-    return classifier.get_ood_scores(image_path)
 
 
 # ==========================================================
@@ -351,7 +279,9 @@ if __name__ == "__main__":
     else:
         image_path = input("Enter image path: ")
 
-    result = predict_image(image_path)
+    # Create classifier instance for CLI testing
+    classifier = UniversalClassifierInference()
+    result = classifier.predict(image_path)
 
     print("\n" + "=" * 60)
     print("PREDICTION RESULT")

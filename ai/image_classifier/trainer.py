@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 from torch.utils.data import DataLoader, ConcatDataset, WeightedRandomSampler
 
@@ -584,7 +585,7 @@ def train_ensemble():
 # ==========================================================
 
 if __name__ == "__main__":
-    import numpy as np
+    
 
     # Train single model
     model = train()
