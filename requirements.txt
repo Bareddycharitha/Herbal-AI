@@ -1,53 +1,90 @@
-# ===============================
+# ==========================================================
+# Herbal-AI Production Requirements
+# ==========================================================
+
+# --------------------------
 # Core Deep Learning
-# ===============================
+# --------------------------
 torch
 torchvision
-torchaudio
 timm
 
-# ===============================
-# Data Processing
-# ===============================
+# --------------------------
+# API & Server
+# --------------------------
+fastapi
+uvicorn[standard]
+python-multipart
+
+# --------------------------
+# Configuration & Validation
+# --------------------------
+pydantic
+pydantic-settings
+python-dotenv
+PyYAML
+email-validator
+
+# --------------------------
+# Image Processing
+# --------------------------
+Pillow
+opencv-python-headless
+albumentations
+
+# --------------------------
+# Data & Machine Learning
+# --------------------------
 numpy
 pandas
 scikit-learn
 scipy
-
-# ===============================
-# Image Processing
-# ===============================
-opencv-python
-Pillow
-albumentations
-
-# ===============================
-# Visualization
-# ===============================
-matplotlib
-tensorboard
-tqdm
-
-# ===============================
-# API (Future)
-# ===============================
-fastapi
-uvicorn
-python-multipart
-
-# ===============================
-# Utilities
-# ===============================
-PyYAML
 joblib
 
-# ===============================
-# Model Explainability (Future)
-# ===============================
+# --------------------------
+# Model Explainability
+# --------------------------
 grad-cam
 
-# ===============================
-# Optional Notebook Support
-# ===============================
-jupyter
-ipykernel
+# --------------------------
+# HTTP & Async
+# --------------------------
+httpx
+anyio
+
+# --------------------------
+# Logging & Monitoring
+# --------------------------
+structlog
+slowapi
+prometheus-client
+
+# --------------------------
+# Authentication & Security
+# --------------------------
+python-jose
+cryptography
+passlib
+bcrypt
+
+# --------------------------
+# Database
+# --------------------------
+supabase
+SQLAlchemy
+
+# --------------------------
+# File Validation
+# --------------------------
+python-magic-bin
+
+# --------------------------
+# PDF Reports
+# --------------------------
+reportlab
+
+# --------------------------
+# Utilities
+# --------------------------
+requests
+tqdm

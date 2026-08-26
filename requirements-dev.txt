@@ -1,0 +1,37 @@
+# ==========================================================
+# Herbal-AI Development Requirements
+# ==========================================================
+
+# Install production dependencies first
+-r requirements.txt
+
+# --------------------------
+# Testing
+# --------------------------
+pytest
+pytest-asyncio
+
+# --------------------------
+# Development
+# --------------------------
+ipython
+debugpy
+
+# --------------------------
+# Notebooks
+# --------------------------
+jupyter
+ipykernel
+
+# --------------------------
+# ML Development & Visualization
+# --------------------------
+matplotlib
+seaborn
+tensorboard
+
+# --------------------------
+# Security / Dependency Checks
+# --------------------------
+pip-audit
+safety
