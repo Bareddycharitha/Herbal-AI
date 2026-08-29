@@ -110,14 +110,33 @@ def verify_clerk_token(token: str) -> Optional[dict]:
             },
         )
 
+        # Extract user information from payload
+        user_id = payload.get("sub", "")
+        email = payload.get("email", "")
+        full_name = payload.get("name")
+
+        # Warn if email is missing from token (should be configured in Clerk JWT template)
+        if not email:
+            logger.warning(
+                "Clerk JWT missing email claim. "
+                "Configure Clerk JWT template to include email claim for proper user identification."
+            )
+
+        # Extract role from public_claims if available, otherwise default to 'user'
+        role = "user"
+        public_claims = payload.get("public_claims")
+        if isinstance(public_claims, dict):
+            role = public_claims.get("role", "user")
+
+        # Determine if user is active based on email verification
+        is_active = True
+
         return {
-            "id": payload.get("sub", ""),
-            "email": payload.get("email", ""),
-            "full_name": payload.get("name"),
-            "role": payload.get("public_claims", {}).get("role", "user")
-            if isinstance(payload.get("public_claims"), dict)
-            else "user",
-            "is_active": payload.get("email_verified_at") is not None,
+            "id": user_id,
+            "email": email,
+            "full_name": full_name,
+            "role": role,
+            "is_active": is_active,
         }
 
     except ExpiredSignatureError:

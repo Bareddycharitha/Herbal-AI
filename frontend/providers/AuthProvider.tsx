@@ -37,38 +37,73 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       setTokens(null);
       setIsLoading(false);
       return;
-    }
+    };
 
-    const loadToken = async () => {
+    const loadUser = async () => {
       try {
         const token = await getToken();
         if (token) {
+          // Set the token getter for API interceptor
+          const { setTokenGetter } = await import("@/lib/api");
+          setTokenGetter(() => getToken());
+
           setTokens({
             access_token: token,
             refresh_token: "",
             expires_in: 0,
             token_type: "bearer",
           });
-        }
-      } catch {
-        // Token not available yet
-      }
 
-      setUser({
-        id: clerkUser.id,
-        email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
-        full_name:
-          clerkUser.fullName ??
-          clerkUser.firstName ??
-          clerkUser.lastName ??
-          null,
-        role: "user",
-        is_active: true,
-      });
-      setIsLoading(false);
+          // Call backend to get normalized user profile (triggers auto-creation if needed)
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+          } else {
+            // Fallback to Clerk data if backend call fails
+            setUser({
+              id: clerkUser.id,
+              email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+              full_name:
+                clerkUser.fullName ??
+                clerkUser.firstName ??
+                clerkUser.lastName ??
+                "",
+              role: "user",
+              is_active: true,
+            });
+          }
+        } else {
+          setUser(null);
+          setTokens(null);
+        }
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+        // Fallback to Clerk data on error
+        setUser({
+          id: clerkUser.id,
+          email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+          full_name:
+            clerkUser.fullName ??
+            clerkUser.firstName ??
+            clerkUser.lastName ??
+            "",
+          role: "user",
+          is_active: true,
+        });
+        setTokens(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    loadToken();
+    loadUser();
   }, [isSignedIn, clerkUser, getToken]);
 
   async function logout() {

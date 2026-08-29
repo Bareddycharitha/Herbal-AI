@@ -172,3 +172,5 @@ secrets/
 !requirements.txt
 !pytest.ini
 =======
+
+.env.example

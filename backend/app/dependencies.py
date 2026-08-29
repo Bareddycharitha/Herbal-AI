@@ -42,7 +42,7 @@ async def get_current_user(
     if not payload:
         raise AuthenticationError("Invalid or expired token")
 
-    user = await auth_service.get_user_from_token(token)
+    user = await auth_service.get_user_from_verified_token(payload)
     if not user:
         raise AuthenticationError("Invalid or expired token")
     if not user.get("is_active", True):
@@ -77,7 +77,7 @@ async def get_optional_user(
     if not payload:
         return None
 
-    user = await auth_service.get_user_from_token(token)
+    user = await auth_service.get_user_from_verified_token(payload)
     if not user or not user.get("is_active", True):
         return None
 

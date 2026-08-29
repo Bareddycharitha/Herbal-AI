@@ -89,24 +89,52 @@ class AuthService:
         """Get user profile from a Clerk JWT access token.
 
         Verifies the token, then looks up the profile in the
-        database by Clerk user ID.
+        database by Clerk user ID. If the profile does not exist,
+        it is created automatically.
 
         Args:
             access_token: Clerk JWT access token.
 
         Returns:
-            User profile dict if the token is valid and user exists,
+            User profile dict if the token is valid,
             None otherwise.
         """
         payload = verify_clerk_token(access_token)
         if not payload:
             return None
 
-        profile = self._repository.get_profile_by_clerk_id(payload["id"])
-        if not profile:
-            return None
+        return await self.get_user_from_verified_token(payload)
 
-        return profile
+    async def get_user_from_verified_token(
+        self, payload: dict
+    ) -> Optional[dict]:
+        """Get user profile from a verified Clerk token payload.
+
+        Looks up the profile in the database by Clerk user ID.
+        If the profile does not exist, it is created automatically.
+
+        Args:
+            payload: Verified Clerk token payload.
+
+        Returns:
+            User profile dict if the token is valid,
+            None otherwise.
+        """
+        profile = self._repository.get_profile_by_clerk_id(payload["id"])
+        if profile is not None:
+            return profile
+
+        # Auto-create profile on first authentication
+        try:
+            profile = await self.ensure_profile(
+                clerk_user_id=payload["id"],
+                email=payload.get("email", ""),
+                full_name=payload.get("full_name"),
+            )
+            return profile
+        except Exception:
+            # If profile creation fails, return None to indicate authentication failure
+            return None
 
     async def get_user_by_clerk_id(
         self, clerk_user_id: str

@@ -63,11 +63,11 @@ async def generate_summary(
         logger = get_logger(__name__)
         logger.error("Summary generation failed", err=str(e), error_type=type(e).__name__)
 
-        # Check if it's an Ollama-related error
-        if "ollama" in str(e).lower() or "connection" in str(e).lower():
+        # Check if it's an LLM-related error
+        if "connection" in str(e).lower() or "timeout" in str(e).lower():
             raise LLMError(
                 message=f"Failed to generate summary: {e}",
-                model=settings.ollama_model,
+                model=settings.openrouter_model,
                 retryable=True,
             )
 

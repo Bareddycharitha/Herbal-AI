@@ -13,18 +13,18 @@ from ai.llm.prompt_builder import (
     build_herb_summary_prompt,
 )
 
-from ai.llm.ollama_client import OllamaClient, get_ollama_client
+from ai.llm.openrouter_client import OpenRouterClient, get_openrouter_client
 
 
 class SummaryEngine:
     """
-    Generates medical and herb summaries using Ollama LLM.
+    Generates medical and herb summaries using OpenRouter LLM.
 
     Uses async client with retry, circuit breaker, and fallback.
     """
 
-    def __init__(self, client: OllamaClient = None):
-        self.client = client or get_ollama_client()
+    def __init__(self, client: OpenRouterClient = None):
+        self.client = client or get_openrouter_client()
 
     # ======================================================
     # Skin Disease Summary
@@ -107,6 +107,7 @@ class SummaryEngine:
             )
 
         prompt = build_summary_prompt(
+            prediction,
             confidence,
             disease_information,
             herbs,

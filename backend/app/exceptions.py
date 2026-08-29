@@ -231,7 +231,7 @@ class ModelArchitectureMismatchError(ModelError):
 
 
 class LLMError(HerbalAIError):
-    """Raised when LLM (Ollama) operations fail."""
+    """Raised when LLM operations fail."""
 
     def __init__(
         self,

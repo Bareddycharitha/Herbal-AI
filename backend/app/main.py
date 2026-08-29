@@ -18,7 +18,7 @@ from backend.app.middleware import RequestIDMiddleware, LoggingMiddleware, RateL
 from backend.app.exception_handlers import register_exception_handlers
 from backend.app.services.universal_classifier import init_classifier, shutdown_classifier, get_classifier
 from backend.app.utils.logging import setup_logging, get_logger
-from ai.llm.ollama_client import init_ollama_client, shutdown_ollama_client, get_ollama_client
+from ai.llm.openrouter_client import init_openrouter_client, shutdown_openrouter_client, get_openrouter_client
 from ai.utils.model_loader import check_checkpoint_status
 from backend.app.api.herb import router as herb_router
 from backend.app.api.prediction import router as prediction_router
@@ -61,12 +61,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Herb model failed to load at startup", error=str(e))
 
-    # Initialize Ollama client (optional — does not block startup)
+    # Initialize OpenRouter client (optional — does not block startup)
     try:
-        await init_ollama_client()
-        logger.info("Ollama client initialized")
+        await init_openrouter_client()
+        logger.info("OpenRouter client initialized")
     except Exception as e:
-        logger.warning("Ollama client initialization failed (optional service)", error=str(e))
+        logger.warning("OpenRouter client initialization failed (optional service)", error=str(e))
 
     # Log configuration (non-sensitive)
     logger.info(
@@ -74,14 +74,13 @@ async def lifespan(app: FastAPI):
         host=settings.host,
         port=settings.port,
         device=settings.torch_device,
-        ollama_host=settings.ollama_host,
-        ollama_model=settings.ollama_model,
+        openrouter_model=settings.openrouter_model,
     )
 
     yield
 
     # Shutdown
-    await shutdown_ollama_client()
+    await shutdown_openrouter_client()
     shutdown_classifier()
     logger.info("Shutting down Herbal-AI API")
 
@@ -260,24 +259,37 @@ async def readiness_check():
         all_ready = False
 
     # ==========================================================
-    # Ollama (optional — does not block readiness)
+    # OpenRouter (optional — does not block readiness)
     # ==========================================================
 
-    ollama_status = "unavailable"
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(f"{settings.ollama_host}/api/tags")
-            ollama_ok = response.status_code == 200
-            ollama_status = "ok" if ollama_ok else "unreachable"
-    except Exception as e:
-        ollama_status = "error"
+    openrouter_status = "unavailable"
+    if settings.openrouter_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                # Test OpenRouter API with a simple models endpoint request
+                headers = {"Authorization": f"Bearer {settings.openrouter_api_key}"}
+                if settings.openrouter_http_referer:
+                    headers["HTTP-Referer"] = settings.openrouter_http_referer
+                if settings.openrouter_app_name:
+                    headers["X-Title"] = settings.openrouter_app_name
 
-    checks["ollama"] = {
-        "status": ollama_status,
-        "host": settings.ollama_host,
-        "model": settings.ollama_model,
+                response = await client.get(
+                    "https://openrouter.ai/api/v1/models",
+                    headers=headers,
+                    timeout=5.0
+                )
+                openrouter_ok = response.status_code == 200
+                openrouter_status = "ok" if openrouter_ok else "unreachable"
+        except Exception as e:
+            openrouter_status = "error"
+    else:
+        openrouter_status = "not_configured"
+
+    checks["openrouter"] = {
+        "status": openrouter_status,
+        "model": settings.openrouter_model,
         "required": False,
-        "impact": "AI summaries will use fallback templates. ML predictions remain fully functional.",
+        "impact": "AI summaries and chatbot responses will use fallback behavior if unavailable.",
     }
 
     # ==========================================================

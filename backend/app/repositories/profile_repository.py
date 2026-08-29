@@ -45,21 +45,33 @@ class ProfileRepository:
             The created profile dict.
         """
         supabase = get_supabase_client()
-        result = supabase.table("profiles").insert(
-            {
-                "clerk_user_id": clerk_user_id,
-                "email": email,
-                "full_name": full_name,
-                "role": role.value,
-                "is_active": True,
-            }
-        ).execute()
+        try:
+            result = supabase.table("profiles").insert(
+                {
+                    "clerk_user_id": clerk_user_id,
+                    "email": email,
+                    "full_name": full_name,
+                    "role": role.value,
+                    "is_active": True,
+                }
+            ).execute()
 
-        if result.data:
-            return result.data[0]
-        raise RuntimeError(
-            f"Failed to create profile for user {clerk_user_id}"
-        )
+            if result.data:
+                return result.data[0]
+            raise RuntimeError(
+                f"Failed to create profile for user {clerk_user_id}"
+            )
+        except Exception as e:
+            # Handle race condition where another request created the profile first
+            if "duplicate key" in str(e).lower() or "unique constraint" in str(e).lower():
+                # Fetch the existing profile created by the concurrent request
+                existing_profile = self.get_profile_by_clerk_id(clerk_user_id)
+                if existing_profile:
+                    return existing_profile
+            # Re-raise if it's not a duplicate key error or if we couldn't fetch existing
+            raise RuntimeError(
+                f"Failed to create profile for user {clerk_user_id}: {str(e)}"
+            ) from e
 
     # ------------------------------------------------------------------
     # Read

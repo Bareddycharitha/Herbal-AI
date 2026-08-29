@@ -1,0 +1,578 @@
+Herbal-AI Complete MLOps & Deployment Roadmap
+PHASE 0 — Freeze the Application
+
+Goal: Stop changing models unnecessarily and establish a stable baseline.
+
+Tasks
+Finalize Universal Image Classifier
+Finalize Herb Identification Model
+Finalize Skin Disease Model
+Finalize OOD detection
+Finalize calibration
+Finalize knowledge bases
+Complete end-to-end API testing
+Freeze validated checkpoints
+Output
+Herbal-AI v1.0 Baseline
+
+This is important because DVC and MLflow should track a stable system.
+
+PHASE 1 — GitHub & Project Cleanup
+Goal
+
+Make the repository professional and deployment-ready.
+
+Tasks
+Herbal-AI/
+│
+├── ai/
+│   ├── image_classifier/
+│   ├── herb/
+│   ├── skin_disease/
+│   ├── datasets/
+│   └── utils/
+│
+├── backend/
+│
+├── frontend/
+│
+├── tests/
+│
+├── docker/
+│
+├── k8s/
+│
+├── monitoring/
+│
+├── scripts/
+│
+├── .github/
+│   └── workflows/
+│
+├── dvc.yaml
+├── params.yaml
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── README.md
+We will ensure
+Proper .gitignore
+.env.example
+No secrets in GitHub
+No unnecessary datasets in Git
+No huge checkpoints directly in Git
+Proper README
+Architecture diagram
+Installation instructions
+PHASE 2 — DVC
+Goal
+
+Version and reproduce your ML assets.
+
+Your project has something more complex than your capstone because you have multiple models and datasets.
+
+DVC will track
+Datasets
+    ↓
+Skin Disease Dataset
+Medicinal Leaf Dataset
+Medicinal Plant Dataset
+Other Objects Dataset
+
+Models
+    ↓
+Universal Classifier
+Herb Classifier
+Skin Disease Classifier
+
+Artifacts
+    ↓
+Checkpoints
+Evaluation Results
+Calibration Files
+Metrics
+Example structure
+ai/
+├── datasets/
+│   ├── SkinDisease/
+│   ├── Medicinal_Leaf_dataset/
+│   ├── Medicinal_plant_dataset/
+│   └── OtherObjects/
+│
+├── image_classifier/
+│   ├── checkpoints/
+│   └── results/
+│
+├── herb/
+│   ├── checkpoints/
+│   └── results/
+│
+└── skin_disease/
+    ├── checkpoints/
+    └── results/
+DVC pipeline
+Data
+ ↓
+Validation
+ ↓
+Preprocessing
+ ↓
+Training
+ ↓
+Evaluation
+ ↓
+Calibration
+ ↓
+Model Registry
+
+We'll create reproducible pipelines using:
+
+dvc.yaml
+params.yaml
+
+Potential pipeline:
+
+prepare
+   ↓
+train_universal
+   ↓
+evaluate_universal
+   ↓
+calibrate_universal
+
+And similarly for the other models.
+
+PHASE 3 — MLflow
+Goal
+
+Track every experiment professionally.
+
+For each training run, MLflow should record:
+
+Parameters
+model_name
+learning_rate
+batch_size
+epochs
+image_size
+optimizer
+weight_decay
+seed
+label_smoothing
+focal_loss
+Metrics
+train_loss
+validation_loss
+train_accuracy
+validation_accuracy
+f1_score
+precision
+recall
+Herbal-AI-specific metrics
+
+For the Universal Classifier:
+
+Skin Accuracy
+Medicinal Accuracy
+Other Accuracy
+
+Skin → Other errors
+Medicinal → Other errors
+Other → Skin errors
+
+OOD Detection Rate
+High Confidence Error Rate
+
+This is especially valuable for interviews because you can explain:
+
+"I didn't evaluate the model only using accuracy. Since the classifier acts as a routing layer, I designed safety-oriented metrics to measure dangerous misrouting errors."
+
+That is a very strong resume/project explanation.
+
+MLflow structure
+Experiment
+│
+├── Universal Classifier
+│   ├── Run 1
+│   ├── Run 2
+│   └── Best Model
+│
+├── Herb Classifier
+│   ├── Run 1
+│   └── Best Model
+│
+└── Skin Disease Classifier
+    ├── Run 1
+    └── Best Model
+
+We can use DagsHub + MLflow, like your capstone, or another MLflow backend later depending on the final architecture.
+
+PHASE 4 — Model Registry
+
+This is an improvement over a basic project.
+
+Instead of:
+
+best_model.pth
+
+only being a file, we will logically track:
+
+Model
+Version
+Metrics
+Dataset Version
+Git Commit
+Training Parameters
+Stage
+
+Example:
+
+UniversalClassifier
+
+Version 1
+Accuracy: 99.32%
+Status: Production Candidate
+Git Commit: abc123
+Dataset Version: v1
+
+This makes your project much more professional.
+
+PHASE 5 — Testing
+
+Before Docker and AWS, we create a proper automated testing system.
+
+Unit tests
+Dataset tests
+Model loading tests
+Inference tests
+OOD tests
+Calibration tests
+Knowledge base tests
+API tests
+/predict
+/herb
+/health
+/readiness
+Model tests
+Skin image → Skin pipeline
+
+Medicinal plant → Medicinal pipeline
+
+Bottle/object → Other
+
+OOD image → rejection/safe handling
+Regression tests
+
+We will keep a small fixed dataset:
+
+tests/
+└── fixtures/
+    ├── skin/
+    ├── medicinal/
+    └── other/
+
+Whenever you modify the model:
+
+pytest
+
+The system verifies that the pipeline still works.
+
+PHASE 6 — Docker
+
+We'll containerize the application.
+
+Likely architecture:
+
+Frontend Container
+        │
+        ▼
+FastAPI Backend Container
+        │
+        ├──── Universal Classifier
+        │
+        ├──── Skin Disease Model
+        │
+        ├──── Herb Model
+        │
+        └──── Ollama / LLM
+
+We need to carefully decide how to deploy Ollama.
+
+For local development:
+
+Docker Compose
+
+Possible services:
+
+frontend
+backend
+ollama
+
+Then:
+
+docker compose up
+PHASE 7 — CI/CD with GitHub Actions
+
+This will automatically run whenever you push code.
+
+Developer Push
+      ↓
+GitHub
+      ↓
+GitHub Actions
+      ↓
+Run Tests
+      ↓
+Model Validation
+      ↓
+Build Docker Image
+      ↓
+Push Image to AWS ECR
+      ↓
+Deploy
+Pipeline stages
+1. Checkout Code
+
+2. Install Dependencies
+
+3. Run Unit Tests
+
+4. Run API Tests
+
+5. Run Model Tests
+
+6. Build Docker Image
+
+7. Security/Configuration Checks
+
+8. Push to AWS ECR
+
+9. Deploy to Kubernetes
+PHASE 8 — AWS
+
+Your previous capstone used AWS, and we'll build on that experience.
+
+AWS S3
+
+Used for:
+
+DVC Remote Storage
+
+Datasets
+Model Checkpoints
+Model Artifacts
+Evaluation Artifacts
+
+Architecture:
+
+Local DVC
+     ↓
+AWS S3
+     ↓
+Versioned ML Assets
+AWS ECR
+
+Stores Docker images.
+
+GitHub Actions
+       ↓
+Docker Build
+       ↓
+AWS ECR
+       ↓
+Kubernetes Deployment
+PHASE 9 — Kubernetes / EKS
+
+This will be one of the strongest parts of your resume.
+
+Architecture:
+
+Internet
+    ↓
+Load Balancer
+    ↓
+Ingress
+    ↓
+Frontend Service
+    ↓
+Backend Service
+    ↓
+AI Models
+
+Kubernetes components:
+
+Deployment
+Service
+ConfigMap
+Secrets
+Ingress
+HPA
+Backend
+backend-deployment.yaml
+backend-service.yaml
+Frontend
+frontend-deployment.yaml
+frontend-service.yaml
+Configuration
+configmap.yaml
+secrets.yaml
+PHASE 10 — Monitoring
+
+Like your capstone:
+
+Application
+     ↓
+Prometheus
+     ↓
+Grafana
+
+We'll monitor:
+
+API
+Request Count
+Error Rate
+Response Time
+Latency
+ML
+Prediction Count
+Confidence Distribution
+OOD Detection Rate
+Prediction Distribution
+Model Errors
+Infrastructure
+CPU
+Memory
+GPU (if available)
+Container Health
+Pod Restarts
+PHASE 11 — Production Security
+
+Before public deployment:
+
+Secrets Management
+JWT Security
+CORS Restrictions
+Rate Limiting
+File Upload Validation
+Image Size Limits
+Input Sanitization
+Secure Headers
+HTTPS
+Environment Separation
+
+You already have some of these implemented, so we'll audit rather than rebuild everything.
+
+PHASE 12 — Final Deployment
+
+Final architecture:
+
+                    USER
+                     │
+                     ▼
+               Frontend
+                     │
+                     ▼
+              Load Balancer
+                     │
+                     ▼
+               Kubernetes
+                     │
+            ┌────────┴────────┐
+            ▼                 ▼
+       FastAPI API        AI Services
+            │
+            ├──────────────┐
+            ▼              ▼
+      Universal Model   Other Models
+            │
+            ▼
+      Intelligent Routing
+            │
+       ┌────┴─────┐
+       ▼          ▼
+   Skin Model   Herb Model
+       │          │
+       └────┬─────┘
+            ▼
+      Knowledge Base
+            │
+            ▼
+           LLM
+            │
+            ▼
+        Response
+The exact order we should follow
+
+This is important. We should not jump randomly between technologies.
+
+Step 1
+
+✅ Complete model fixes — done
+
+Step 2
+
+🔄 Final application freeze + complete testing
+
+Step 3
+
+GitHub cleanup and production repository structure
+
+Step 4
+
+DVC setup and dataset/model versioning
+
+Step 5
+
+MLflow experiment tracking
+
+Step 6
+
+DVC pipelines for reproducible training
+
+Step 7
+
+Complete automated testing
+
+Step 8
+
+Dockerize the complete application
+
+Step 9
+
+Local Docker Compose testing
+
+Step 10
+
+GitHub Actions CI
+
+Step 11
+
+AWS setup (S3 + ECR)
+
+Step 12
+
+Push Docker images to ECR
+
+Step 13
+
+Kubernetes manifests
+
+Step 14
+
+Deploy to AWS EKS
+
+Step 15
+
+Prometheus monitoring
+
+Step 16
+
+Grafana dashboards
+
+Step 17
+
+Production security audit
+
+Step 18
+
+Final public deployment

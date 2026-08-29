@@ -9,18 +9,18 @@ import asyncio
 from typing import Any
 
 from ai.llm.prompt_builder import build_chat_prompt
-from ai.llm.ollama_client import OllamaClient, get_ollama_client
+from ai.llm.openrouter_client import OpenRouterClient, get_openrouter_client
 
 
 class ChatbotEngine:
     """
     Chatbot for Herbal-AI with context-aware responses.
 
-    Uses async Ollama client with retry, circuit breaker, and fallback.
+    Uses async OpenRouter client with retry, circuit breaker, and fallback.
     """
 
-    def __init__(self, client: OllamaClient = None):
-        self.client = client or get_ollama_client()
+    def __init__(self, client: OpenRouterClient = None):
+        self.client = client or get_openrouter_client()
 
     def ask(
         self,

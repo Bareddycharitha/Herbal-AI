@@ -13,13 +13,10 @@ __pycache__/
 *.pyd
 *.so
 
-# Virtual environments
 venv/
 .venv/
 env/
 ENV/
-
-# Conda
 conda-meta/
 
 # ==========================================================
@@ -56,13 +53,17 @@ notebooks/
 *.ipynb
 
 # ==========================================================
-# Logs
+# Logs and development results
 # ==========================================================
 *.log
 logs/
 
+ai/**/logs/
+ai/**/results/
+ai/**/__pycache__/
+
 # ==========================================================
-# Python build artifacts
+# Build artifacts
 # ==========================================================
 build/
 dist/
@@ -98,22 +99,46 @@ projectflow.txt
 api_routes.json
 
 # ==========================================================
-# ML development artifacts
+# ML DATASETS
+# Ignore all datasets by default
 # ==========================================================
-ai/**/logs/
-ai/**/results/
-ai/**/__pycache__/
+ai/datasets/*
+
+# Allow runtime knowledge bases
+!ai/datasets/knowledge_base/
+!ai/datasets/knowledge_base/*.json
 
 # ==========================================================
-# Large datasets - NEVER copy into Docker
+# ML TRAINING ARTIFACTS
 # ==========================================================
-ai/datasets/
 
-# ==========================================================
-# Local training artifacts
-# ==========================================================
+# ONNX and temporary checkpoints
 *.onnx
 *.ckpt
+
+# ==========================================================
+# Universal classifier checkpoints
+# Ignore everything, then include production model
+# ==========================================================
+ai/image_classifier/checkpoints/*
+!ai/image_classifier/checkpoints/best_model.pth
+!ai/image_classifier/checkpoints/temperature_scale.pth
+
+# ==========================================================
+# Skin disease checkpoints
+# Keep production checkpoint only
+# ==========================================================
+ai/checkpoints/*
+!ai/checkpoints/best_model.pth
+
+# ==========================================================
+# Herb checkpoints
+# Keep only runtime artifacts
+# ==========================================================
+ai/herb/checkpoints/*
+!ai/herb/checkpoints/best_model.pth
+!ai/herb/checkpoints/class_mapping.json
+!ai/herb/checkpoints/model_info.json
 
 # ==========================================================
 # Local cache

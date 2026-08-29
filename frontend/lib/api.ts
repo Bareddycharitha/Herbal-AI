@@ -8,11 +8,23 @@ const api = axios.create({
   timeout: 60_000,
 });
 
-// ── Auth Interceptor ──────────────────────────────────────
-// Automatically attaches the Clerk JWT token to every request.
+// Token getter function - will be set by AuthProvider
+let getTokenFn: (() => Promise<string | null>) | null = null;
 
+// Setter for token getter function
+export const setTokenGetter = (fn: () => Promise<string | null>) => {
+  getTokenFn = fn;
+};
+
+// ── Auth Interceptor ──────────────────────────
+// Automatically attaches the Clerk JWT token to every request.
 api.interceptors.request.use(async (config) => {
-  const token = await getAccessToken();
+  // Skip token attachment for requests to auth endpoints (to avoid circular issues)
+  if (config.url?.startsWith("/api/v1/auth/")) {
+    return config;
+  }
+
+  const token = getTokenFn ? await getTokenFn() : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -24,13 +36,7 @@ api.interceptors.request.use(async (config) => {
 
 export async function getAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
-  try {
-    const { getToken } = await import("@clerk/nextjs");
-    const token = await getToken();
-    return token ?? null;
-  } catch {
-    return null;
-  }
+  return getTokenFn ? await getTokenFn() : null;
 }
 
 export function getRefreshToken(): string | null {
@@ -79,10 +85,10 @@ export async function register(
 }
 
 export async function logout() {
-  const { signOut } = await import("@clerk/nextjs");
-  await signOut();
+  // Clerk logout is handled by AuthProvider using useAuth().signOut().
+  // This function is retained only for API compatibility.
+  throw new Error("Use the logout function from AuthProvider instead.");
 }
-
 export function getApiBaseUrl() {
   return API_BASE;
 }

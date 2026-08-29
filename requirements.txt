@@ -76,7 +76,7 @@ SQLAlchemy
 # --------------------------
 # File Validation
 # --------------------------
-python-magic-bin
+python-magic
 
 # --------------------------
 # PDF Reports

@@ -157,13 +157,15 @@ class Settings(BaseSettings):
         return self.device
 
     # ==========================================================
-    # Ollama LLM
+    # OpenRouter LLM
     # ==========================================================
-    ollama_host: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2:3b"
-    ollama_timeout_seconds: int = 120
-    ollama_max_retries: int = 3
-    ollama_retry_backoff: float = 1.0
+    openrouter_api_key: str = Field(default="")
+    openrouter_model: str = "google/gemini-flash-1.5"
+    openrouter_timeout_seconds: int = 120
+    openrouter_max_retries: int = 3
+    openrouter_retry_backoff: float = 1.0
+    openrouter_http_referer: str = Field(default="")
+    openrouter_app_name: str = Field(default="Herbal-AI")
 
     # ==========================================================
     # Rate Limiting
@@ -235,8 +237,7 @@ class Settings(BaseSettings):
             localhost_origins = {
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
+                
             }
             origins = set(self.cors_origins)
             non_localhost = origins - localhost_origins

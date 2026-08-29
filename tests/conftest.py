@@ -30,8 +30,8 @@ def setup_test_env():
     """Set up test environment variables."""
     os.environ["ENVIRONMENT"] = "test"
     # Don't set DEBUG/LOG_LEVEL here - let tests control their own settings
-    os.environ["OLLAMA_HOST"] = "http://localhost:11434"
-    os.environ["OLLAMA_MODEL"] = "llama3.2:3b"
+    os.environ["OPENROUTER_API_KEY"] = "test-openrouter-key"
+    os.environ["OPENROUTER_MODEL"] = "google/gemini-flash-1.5"
     # Disable rate limiting in tests
     os.environ["RATE_LIMIT_REQUESTS_PER_MINUTE"] = "1000"
     os.environ["RATE_LIMIT_BURST"] = "100"
@@ -164,9 +164,9 @@ def mock_herb_pipeline():
 
 
 @pytest.fixture
-def mock_ollama_client():
-    """Mock Ollama client and lazy-initialized engines."""
-    with patch("ai.llm.ollama_client.get_ollama_client") as mock_ollama, \
+def mock_openrouter_client():
+    """Mock OpenRouter client and lazy-initialized engines."""
+    with patch("ai.llm.openrouter_client.get_openrouter_client") as mock_openrouter, \
          patch("backend.app.api.summary.get_summary_engine") as mock_summary_engine, \
          patch("backend.app.api.chat.get_chatbot") as mock_chatbot, \
          patch("ai.llm.summary_engine.SummaryEngine.generate_summary") as mock_generate_summary, \
@@ -180,7 +180,7 @@ def mock_ollama_client():
             "cached": False,
         }
         client.health_check.return_value = True
-        mock_ollama.return_value = client
+        mock_openrouter.return_value = client
 
         # Mock summary engine instance methods
         mock_generate_summary.return_value = "This is a generated summary."
