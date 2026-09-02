@@ -129,12 +129,14 @@ def load_calibrated_model(model_path: Union[str, Path], cal_path: Union[str, Pat
             cal_checkpoint = torch.load(cal_path, map_location=DEVICE, weights_only=False)
             temperature = cal_checkpoint.get("temperature", 1.0)
             model = ModelWithTemperature(model, temperature).to(DEVICE)
-            print(f"Loaded calibrated model with T={temperature:.4f}")
+            logger.info("Loaded calibrated model", temperature=f"{temperature:.4f}")
         except Exception as e:
-            print(f"Warning: Could not load calibration checkpoint: {e}")
-            print("Proceeding with uncalibrated model")
+            logger.warning(
+                "Could not load calibration checkpoint; proceeding with uncalibrated model",
+                error=str(e),
+            )
     else:
-        print("No calibration found, using uncalibrated model")
+        logger.info("No calibration found; using uncalibrated model")
 
     return model
 
@@ -195,11 +197,14 @@ class SkinDiseaseInference:
         # Grad-CAM
         self._init_gradcam()
 
-        print("Skin Disease Inference initialized")
-        print(f"  Two-stage: {self.use_two_stage}")
-        print(f"  Calibration: {self.use_calibration}")
-        print(f"  Ensemble: {self.use_ensemble} ({len(self.ensemble_paths)} models)")
-        print(f"  Classes: {len(self.class_names)}")
+        logger.info(
+            "Skin Disease Inference initialized",
+            two_stage=self.use_two_stage,
+            calibration=self.use_calibration,
+            ensemble=self.use_ensemble,
+            ensemble_models=len(self.ensemble_paths),
+            classes=len(self.class_names),
+        )
 
     def _load_models(self, binary_path, multiclass_path):
         """Load binary and multiclass models."""
@@ -211,9 +216,12 @@ class SkinDiseaseInference:
 
             if Path(binary_path).exists():
                 self.binary_model = load_calibrated_model(binary_path) if self.use_calibration else load_model(binary_path, num_classes=2)
-                print(f"Loaded binary model from {binary_path}")
+                logger.info("Loaded binary model", path=str(binary_path))
             else:
-                print(f"Binary model not found at {binary_path}, will use multiclass only")
+                logger.info(
+                    "Binary model not found; falling back to multiclass only",
+                    path=str(binary_path),
+                )
                 self.use_two_stage = False
                 self.binary_model = None
         else:
@@ -225,13 +233,13 @@ class SkinDiseaseInference:
             for path in self.ensemble_paths:
                 model = load_calibrated_model(path) if self.use_calibration else load_model(path)
                 self.multiclass_models.append(model)
-            print(f"Loaded {len(self.multiclass_models)} ensemble models")
+            logger.info("Loaded ensemble models", count=len(self.multiclass_models))
         else:
             if multiclass_path is None:
                 multiclass_path = BEST_MODEL_PATH
 
             self.multiclass_model = load_calibrated_model(multiclass_path) if self.use_calibration else load_model(multiclass_path)
-            print(f"Loaded multiclass model from {multiclass_path}")
+            logger.info("Loaded multiclass model", path=str(multiclass_path))
 
     def _init_ood_detectors(self):
         """Initialize OOD detectors on the main multiclass model."""
@@ -265,10 +273,10 @@ class SkinDiseaseInference:
 
         if target_layer:
             self.gradcam = GradCAM(base_model, target_layer)
-            print(f"Grad-CAM initialized on layer: {target_layer}")
+            logger.info("Grad-CAM initialized", layer=str(target_layer))
         else:
             self.gradcam = None
-            print("Warning: Could not find target layer for Grad-CAM")
+            logger.warning("Could not find target layer for Grad-CAM", target_layer=GRADCAM_TARGET_LAYER)
 
     def _preprocess(self, image: Union[str, Path, Image.Image, np.ndarray]) -> Tuple[torch.Tensor, np.ndarray]:
         """Preprocess image for inference. Returns (tensor, original_numpy)."""
@@ -317,21 +325,56 @@ class SkinDiseaseInference:
     def predict(
         self,
         image: Union[str, Path, Image.Image, np.ndarray],
-        return_gradcam: bool = True,
+        return_gradcam: bool = False,
         top_k: int = 3,
+        prediction_id: Optional[str] = None,
+        image_override: Optional[Image.Image] = None,
     ) -> Dict:
         """
         Predict skin disease from image.
 
+        Grad-CAM is intentionally NOT generated inside this method by default.
+        It is now an opt-in, separately scheduled step (see
+        :meth:`compute_gradcam_for`) so it does not block the request critical
+        path. Callers that want the Grad-CAM image inline can pass
+        ``return_gradcam=True``, but the recommended pattern is:
+
+        1. Call ``predict(...)`` with ``return_gradcam=False`` and a
+           ``prediction_id`` — the response is returned immediately and
+           ``gradcam_image`` is ``None``.
+        2. Schedule ``compute_gradcam_for(...)`` as a background task using
+           the same ``prediction_id`` and the predicted class/confidence
+           from the response.
+
         Args:
-            image: Input image
-            return_gradcam: Whether to generate Grad-CAM
+            image: Input image (path, PIL Image, or numpy array). Used
+                unless ``image_override`` is provided.
+            return_gradcam: Whether to generate Grad-CAM inline (off the
+                critical path is the default).
             top_k: Number of top predictions to return
+            prediction_id: Optional identifier used to derive the
+                Grad-CAM filename when ``return_gradcam=True``.
+            image_override: Optional pre-decoded ``PIL.Image.Image`` that
+                bypasses the disk decode. When ``None`` (default), the
+                decoder uses ``image`` as before. The FastAPI request
+                handler uses this to share a single PIL decode between
+                the universal classifier and the skin classifier. The
+                override must be a PIL Image; passing a numpy array or
+                a path here is not supported.
 
         Returns:
             Dict with prediction results
         """
-        image_tensor, original_np = self._preprocess(image)
+        # When the caller provides a pre-decoded PIL image, skip the
+        # disk decode inside ``_preprocess`` by passing the override
+        # through. ``_preprocess`` already accepts PIL images directly
+        # and applies the same ``.convert("RGB")`` normalisation, so
+        # this is a transparent no-op for callers that don't set the
+        # override.
+        decode_target: Union[str, Path, Image.Image, np.ndarray] = (
+            image_override if image_override is not None else image
+        )
+        image_tensor, original_np = self._preprocess(decode_target)
 
         # Stage 1: Binary classification (if enabled)
         is_healthy = False
@@ -384,12 +427,30 @@ class SkinDiseaseInference:
             confidence_level = "low"
             message = "Prediction confidence is low. Herbal recommendations will not be provided. Please consult a dermatologist."
 
-        # OOD Detection
-        energy_score = self.energy_ood.compute_scores(image_tensor)[0]
-        msp_score = self.msp_ood.compute_scores(image_tensor)[0]
-        entropy_score = self.entropy_ood.compute_scores(image_tensor)[0]
-        combined_score = self.combined_ood.compute_combined_score(
-            image_tensor,
+        # OOD Detection — all derived from the pre-computed multiclass
+        # logits/probs. The OOD detectors' original implementation ran
+        # their own forward pass through ``self.multiclass_model`` (the
+        # calibrated wrapper) on the same image. We now reuse the logits
+        # already produced by the multiclass forward pass above, which
+        # preserves the calibration step (the wrapper is invoked exactly
+        # once via ``_get_multiclass_logits``) and avoids 4 redundant
+        # forward passes per request.
+        #
+        # We upcast to fp32 here for the same reason as the universal
+        # classifier: on GPU the multiclass model is wrapped in
+        # ``ModelWithTemperature`` and run under autocast, but the
+        # original OOD detectors ran their own fp32 forward passes. The
+        # upcast keeps the numerical behaviour equivalent.
+        ood_logits = logits.float()
+        ood_probs = probs.float()
+
+        energy_score = self.energy_ood.compute_from_logits(ood_logits)[0]
+        msp_score = self.msp_ood.compute_from_probs(ood_probs)[0]
+        entropy_score = self.entropy_ood.compute_from_probs(ood_probs)[0]
+        combined_score = self.combined_ood.combine_scores(
+            energy=np.array([energy_score]),
+            msp=np.array([msp_score]),
+            entropy=np.array([entropy_score]),
             thresholds={
                 'energy': OOD_ENERGY_THRESHOLD,
                 'msp': OOD_MSP_THRESHOLD,
@@ -405,21 +466,21 @@ class SkinDiseaseInference:
         is_ood = is_energy_ood or is_msp_ood or is_entropy_ood
 
         # Grad-CAM
+        #
+        # Grad-CAM is now generated out-of-band by ``compute_gradcam_for`` and
+        # is therefore not on the request critical path. The block below is
+        # only entered if a caller explicitly opts in with
+        # ``return_gradcam=True``; in that case we delegate to the same
+        # helper so behaviour is identical to the previous implementation.
         gradcam_image = None
         if return_gradcam and self.gradcam is not None and not is_healthy_pred:
-            try:
-                cam = self.gradcam.generate(image_tensor, pred_idx)
-                overlay = overlay_heatmap(original_np, cam)
-
-                # Save Grad-CAM
-                from ai.config import RESULTS_DIR
-                RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-                gradcam_filename = f"gradcam_{pred_idx}_{confidence:.1f}.jpg"
-                gradcam_path = RESULTS_DIR / gradcam_filename
-                cv2.imwrite(str(gradcam_path), cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))
-                gradcam_image = f"/results/{gradcam_filename}"
-            except Exception as e:
-                print(f"Grad-CAM generation failed: {e}")
+            gradcam_image = self.compute_gradcam_for(
+                image=image_tensor,
+                original=original_np,
+                pred_idx=pred_idx,
+                confidence=confidence,
+                prediction_id=prediction_id,
+            )
 
         return {
             "success": True,
@@ -431,6 +492,7 @@ class SkinDiseaseInference:
             "message": message,
             "top_predictions": top_predictions,
             "gradcam_image": gradcam_image,
+            "pred_idx": pred_idx,
             "is_healthy": is_healthy_pred,
             "binary_stage": {
                 "used": self.use_two_stage and self.binary_model is not None,
@@ -445,6 +507,95 @@ class SkinDiseaseInference:
             },
             "is_ood": bool(is_ood),
         }
+
+    def compute_gradcam_for(
+        self,
+        image: Union[str, Path, Image.Image, np.ndarray, torch.Tensor],
+        pred_idx: int,
+        confidence: float,
+        prediction_id: Optional[str] = None,
+        original: Optional[np.ndarray] = None,
+    ) -> Optional[str]:
+        """
+        Generate the Grad-CAM heatmap for an already-classified image.
+
+        This is the same work the Grad-CAM block used to do inline in
+        :meth:`predict`. It is now a separately callable method so the
+        FastAPI request handler can schedule it as a ``BackgroundTasks``
+        task and return the prediction to the client immediately.
+
+        The model performs one extra forward + backward pass on
+        ``image_tensor`` and writes a JPEG to ``RESULTS_DIR``. The returned
+        string is the public URL (e.g. ``/results/gradcam_<id>.jpg``) or
+        ``None`` on failure.
+
+        Args:
+            image: A preprocessed image tensor (preferred, to avoid a
+                second decode) OR a path/PIL image/numpy array.
+            pred_idx: Predicted class index from the original ``predict`` call.
+            confidence: Predicted confidence (used in the legacy filename).
+            prediction_id: Optional stable identifier — when provided, the
+                file is named ``gradcam_<id>.jpg`` so the frontend can poll
+                for it deterministically. When absent, the legacy
+                ``gradcam_<pred_idx>_<conf>.jpg`` name is used.
+            original: Optional pre-decoded numpy array (RGB) of the
+                original image. When provided, it is used directly instead
+                of re-decoding the image. If ``image`` is a tensor, you
+                should also pass ``original``; otherwise the file will be
+                loaded from disk.
+
+        Returns:
+            The public URL of the saved Grad-CAM image, or ``None`` on
+            failure.
+        """
+        if self.gradcam is None:
+            return None
+
+        try:
+            # Lazily import to keep the module-level import surface small
+            # and to ensure the directory check is fresh on each call.
+            from ai.config import RESULTS_DIR
+            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+            if isinstance(image, torch.Tensor):
+                image_tensor = image
+            else:
+                image_tensor, _ = self._preprocess(image)
+
+            if original is None:
+                # Re-decode the image from disk/path for the overlay. This
+                # path is only used when the caller did not pass a tensor
+                # plus the matching numpy original.
+                if isinstance(image, (str, Path)):
+                    original = np.array(Image.open(image).convert("RGB"))
+                elif isinstance(image, Image.Image):
+                    original = np.array(image.convert("RGB"))
+                else:
+                    # Last resort: do not generate without an original.
+                    return None
+
+            cam = self.gradcam.generate(image_tensor, pred_idx)
+            overlay = overlay_heatmap(original, cam)
+
+            if prediction_id:
+                gradcam_filename = f"gradcam_{prediction_id}.jpg"
+            else:
+                gradcam_filename = f"gradcam_{pred_idx}_{confidence:.1f}.jpg"
+            gradcam_path = RESULTS_DIR / gradcam_filename
+
+            cv2.imwrite(
+                str(gradcam_path),
+                cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR),
+            )
+            return f"/results/{gradcam_filename}"
+        except Exception as e:
+            logger.warning(
+                "Grad-CAM generation failed",
+                prediction_id=prediction_id,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            return None
 
     def _format_healthy_result(self, confidence, original_np):
         """Format result for healthy skin prediction."""
@@ -488,10 +639,22 @@ def get_inference() -> SkinDiseaseInference:
     return _inference_instance
 
 
-def predict_image(image_path, top_k=3):
+def predict_image(
+    image_path,
+    top_k=3,
+    return_gradcam=False,
+    prediction_id=None,
+    image_override=None,
+):
     """Convenience function for backward compatibility."""
     inference = get_inference()
-    return inference.predict(image_path, top_k=top_k)
+    return inference.predict(
+        image_path,
+        top_k=top_k,
+        return_gradcam=return_gradcam,
+        prediction_id=prediction_id,
+        image_override=image_override,
+    )
 
 
 # ==========================================================

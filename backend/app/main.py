@@ -26,6 +26,7 @@ from backend.app.api.summary import router as summary_router
 from backend.app.api.chat import router as chat_router
 from backend.app.api.report import router as report_router
 from backend.app.api.auth import router as auth_router
+from backend.app.api.gradcam import router as gradcam_router
 
 from ai.config import RESULTS_DIR
 
@@ -150,6 +151,7 @@ app.include_router(chat_router, prefix=API_PREFIX, tags=["AI Chat"])
 app.include_router(report_router, prefix=API_PREFIX, tags=["PDF Report"])
 app.include_router(herb_router, prefix=API_PREFIX, tags=["Herb Identification"])
 app.include_router(auth_router, prefix=API_PREFIX, tags=["Authentication"])
+app.include_router(gradcam_router, prefix=API_PREFIX, tags=["Grad-CAM"])
 
 # ==========================================================
 # Health & Readiness Endpoints

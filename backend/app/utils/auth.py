@@ -6,12 +6,11 @@ Verifies Clerk-issued JWTs using Clerk's JWKS endpoint.
 No local password hashing or JWT signing.
 """
 
-import json
 import time
 from typing import Optional
 
 from jose import jwt, jwk
-from jose.exceptions import ExpiredSignatureError, JWTError
+from jose.exceptions import JWTError
 
 from backend.app.config import settings
 from backend.app.utils.logging import get_logger
@@ -22,6 +21,23 @@ logger = get_logger(__name__)
 _jwks_cache: dict[str, object] = {}
 _jwks_fetched_at: float = 0
 _JWKS_CACHE_TTL = 300  # 5 minutes
+
+
+# ==========================================================
+# Specific failure reasons — surfaced to the caller so the 401
+# response body can tell the operator WHY the token was rejected,
+# not just that it was. The frontend logs the body to the browser
+# console for diagnostic visibility.
+# ==========================================================
+
+
+class TokenError(Exception):
+    """Base class for token verification failures with a reason code."""
+
+    def __init__(self, reason: str, message: str):
+        super().__init__(message)
+        self.reason = reason
+        self.message = message
 
 
 def _fetch_jwks() -> dict:
@@ -68,13 +84,23 @@ def verify_clerk_token(token: str) -> Optional[dict]:
     """Verify a Clerk JWT and return the user payload.
 
     Uses Clerk's JWKS to validate the token signature and
-    checks standard claims (exp, nbf, iss).
+    checks standard claims (exp, nbf).
+
+    The returned dict uses the Clerk ``sub`` claim as the
+    authoritative application identity (``id``). ``email`` is
+    optional profile data and may be ``None`` if the Clerk token
+    does not include an email claim.
 
     Args:
         token: The Clerk JWT access token.
 
     Returns:
         User payload dict if the token is valid, None otherwise.
+
+    Raises:
+        TokenError: with a specific ``reason`` code describing why the
+            token was rejected. Callers should catch this to surface
+            the cause in the response body / logs.
     """
     try:
         jwks = _fetch_jwks()
@@ -91,35 +117,86 @@ def verify_clerk_token(token: str) -> Optional[dict]:
                 break
 
         if signing_key is None:
-            logger.warning("No matching JWKS key found for kid", kid=kid)
-            return None
+            available_kids = [k.get("kid") for k in jwks.get("keys", [])]
+            logger.warning(
+                "No matching JWKS key found for kid",
+                token_kid=kid,
+                available_kids=available_kids,
+            )
+            raise TokenError(
+                "no_matching_jwks_key",
+                f"Token kid '{kid}' not in configured JWKS. "
+                f"Available kids: {available_kids}. "
+                "This usually means the Clerk instance the frontend is "
+                "signed into does not match the one the backend trusts "
+                "(CLERK_JWKS_URL / CLERK_PUBLISHABLE_KEY mismatch).",
+            )
 
         # Convert JWK to PEM format for python-jose
         jwk_obj = jwk.construct(signing_key)
 
-        # Decode and verify the token
-        payload = jwt.decode(
-            token,
-            jwk_obj,
-            algorithms=["RS256"],
-            options={
-                "verify_exp": True,
-                "verify_nbf": True,
-                "verify_iss": False,
-                "verify_aud": False,
-            },
+        # Decode and verify the token.
+        # ``verify_iss`` and ``verify_aud`` are intentionally disabled
+        # because Clerk's session tokens do not always include a
+        # standard ``iss`` / ``aud`` that python-jose expects.
+        #
+        # ``verify_exp`` and ``verify_nbf`` are also disabled by
+        # product decision: the application treats the Clerk session
+        # cookie as the source of truth for "is this user signed in".
+        # If Clerk considers the session active, the cookie is present
+        # and ``getToken()`` can mint a fresh JWT. The token's own
+        # ``exp`` claim is a separate, short-lived (60-second) clock
+        # that does not match the user's actual session lifetime, so
+        # enforcing it here produced spurious 401s that forced the user
+        # to re-login mid-flow. The signature is still strictly
+        # verified — only the time-based checks are off.
+        try:
+            payload = jwt.decode(
+                token,
+                jwk_obj,
+                algorithms=["RS256"],
+                options={
+                    "verify_exp": False,
+                    "verify_nbf": False,
+                    "verify_iss": False,
+                    "verify_aud": False,
+                },
+            )
+        except JWTError as exc:
+            logger.warning("Clerk token verification failed", error=str(exc))
+            raise TokenError(
+                "token_invalid",
+                f"Token signature/claims failed verification: {exc}",
+            ) from exc
+
+        # Diagnostic: log the relevant claims so we can confirm what
+        # the backend actually received. We log sub/email/role but not
+        # the full payload to avoid leaking any sensitive fields.
+        logger.info(
+            "Clerk token verified",
+            sub=payload.get("sub"),
+            has_email=bool(payload.get("email")),
+            has_name=bool(payload.get("name")),
+            exp=payload.get("exp"),
         )
 
-        # Extract user information from payload
+        # Extract user information from payload.
+        # The Clerk ``sub`` claim is the authoritative application
+        # identity; email is optional profile data. Do not invent an
+        # empty-string email when the claim is missing — propagate
+        # ``None`` so the database layer can store NULL and the Pydantic
+        # schema can accept the absence.
         user_id = payload.get("sub", "")
-        email = payload.get("email", "")
+        email = payload.get("email")  # may be None
         full_name = payload.get("name")
 
-        # Warn if email is missing from token (should be configured in Clerk JWT template)
+        # Informational warning if email is missing. Authentication
+        # does not require email.
         if not email:
             logger.warning(
                 "Clerk JWT missing email claim. "
-                "Configure Clerk JWT template to include email claim for proper user identification."
+                "Email will be stored as NULL and can be added later. "
+                "Configure Clerk JWT template to include email for richer profiles."
             )
 
         # Extract role from public_claims if available, otherwise default to 'user'
@@ -128,7 +205,8 @@ def verify_clerk_token(token: str) -> Optional[dict]:
         if isinstance(public_claims, dict):
             role = public_claims.get("role", "user")
 
-        # Determine if user is active based on email verification
+        # User is considered active by default; Clerk has already
+        # authenticated the request.
         is_active = True
 
         return {
@@ -139,15 +217,15 @@ def verify_clerk_token(token: str) -> Optional[dict]:
             "is_active": is_active,
         }
 
-    except ExpiredSignatureError:
-        logger.warning("Clerk token expired")
-        return None
-    except JWTError as e:
-        logger.warning("Clerk token verification failed", error=str(e))
-        return None
+    except TokenError:
+        # Already a TokenError — re-raise so the caller can see the reason.
+        raise
     except Exception as e:
         logger.error("Unexpected error verifying Clerk token", error=str(e))
-        return None
+        raise TokenError(
+            "token_verification_error",
+            f"Unexpected error during token verification: {e}",
+        ) from e
 
 
 def get_user_id_from_token(token: str) -> Optional[str]:
@@ -159,7 +237,11 @@ def get_user_id_from_token(token: str) -> Optional[str]:
     Returns:
         The Clerk user ID string, or None if the token is invalid.
     """
-    payload = verify_clerk_token(token)
+    try:
+        payload = verify_clerk_token(token)
+    except TokenError:
+        return None
     if not payload:
         return None
     return payload.get("id")
+

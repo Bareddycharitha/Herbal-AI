@@ -161,6 +161,10 @@ class UniversalClassifierInference:
         """
         Predict image class.
 
+        The neural network is executed exactly ONCE per call. All OOD scores
+        (energy, MSP, entropy, combined) are derived from the already-computed
+        logits and probabilities via the logit-based detector methods.
+
         Args:
             image: Input image (path, PIL Image, or numpy array)
             return_details: Whether to return detailed outputs
@@ -170,25 +174,40 @@ class UniversalClassifierInference:
         """
         image_tensor = self._preprocess(image)
 
-        # Get logits from single model
+        # Get logits from single model — the ONLY forward pass.
         logits = self._get_logits_single(self.model, image_tensor)
 
-        # Probabilities
+        # Probabilities (derived from the same logits).
         probs = F.softmax(logits, dim=1)
 
-        # Predictions
+        # Predictions (use the autocast-precision probs — same as the
+        # user-facing class/confidence always used).
         confidence, pred_idx = torch.max(probs, dim=1)
         pred_idx = pred_idx.item()
         confidence = confidence.item() * 100
 
-        # OOD Detection
-        energy_score = self.energy_ood.compute_scores(image_tensor)[0]
-        msp_score = self.msp_ood.compute_scores(image_tensor)[0]
-        entropy_score = self.entropy_ood.compute_scores(image_tensor)[0]
+        # OOD Detection — all derived from the pre-computed logits/probs.
+        # No additional model() calls happen in this block.
+        #
+        # The OOD detectors' original implementation ran their own fp32
+        # forward pass (without autocast) to compute scores. To preserve
+        # the same numerical behaviour while reusing the autocast-produced
+        # logits from the main forward pass, we upcast logits/probs to fp32
+        # before the OOD math. This matches the original fp32 behaviour for
+        # non-degenerate inputs and avoids fp16 underflow (1e-10 -> 0) in
+        # the entropy term.
+        ood_logits = logits.float()
+        ood_probs = probs.float()
 
-        # Combined score (for diagnostic purposes only)
-        combined_score = self.combined_ood.compute_combined_score(
-            image_tensor,
+        energy_score = self.energy_ood.compute_from_logits(ood_logits)[0]
+        msp_score = self.msp_ood.compute_from_probs(ood_probs)[0]
+        entropy_score = self.entropy_ood.compute_from_probs(ood_probs)[0]
+
+        # Combined score (for diagnostic purposes only).
+        combined_score = self.combined_ood.combine_scores(
+            energy=np.array([energy_score]),
+            msp=np.array([msp_score]),
+            entropy=np.array([entropy_score]),
             thresholds={
                 'energy': OOD_ENERGY_THRESHOLD,
                 'msp': OOD_MSP_THRESHOLD,

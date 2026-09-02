@@ -15,6 +15,7 @@ import numpy as np
 from sklearn.covariance import EmpiricalCovariance
 from scipy.spatial.distance import mahalanobis
 from tqdm import tqdm
+from typing import Optional
 
 
 class OODDetector:
@@ -60,11 +61,35 @@ class EnergyBasedOOD(OODDetector):
         return -self.temperature * torch.logsumexp(logits / self.temperature, dim=1)
 
     def compute_scores(self, images):
-        """Compute energy scores (higher = more OOD)."""
+        """
+        Compute energy scores by running the model on raw images.
+
+        NOTE: This performs a full forward pass through ``self.model``.
+        Use :meth:`compute_from_logits` instead when logits are already
+        available, to avoid redundant inference.
+        """
         with torch.no_grad():
             logits = self.model(images)
             energy = self.compute_energy(logits)
         return energy.cpu().numpy()
+
+    def compute_from_logits(self, logits):
+        """
+        Compute energy scores from already-computed logits.
+
+        Numerically equivalent to ``compute_scores(images)`` when the
+        logits were produced by ``self.model(images)`` under ``torch.no_grad()``,
+        subject only to floating-point ordering.
+
+        Args:
+            logits: Pre-computed model logits, shape ``[N, C]``.
+
+        Returns:
+            numpy.ndarray of shape ``[N]`` with energy scores.
+        """
+        with torch.no_grad():
+            energy = self.compute_energy(logits)
+        return energy.detach().cpu().numpy()
 
 
 class MahalanobisOOD(OODDetector):
@@ -198,12 +223,30 @@ class MSPBasedOOD(OODDetector):
     """
 
     def compute_scores(self, images):
-        """Compute 1 - max_softmax (higher = more OOD)."""
+        """
+        Compute 1 - max_softmax by running the model on raw images.
+
+        NOTE: This performs a full forward pass through ``self.model``.
+        Use :meth:`compute_from_probs` instead when probabilities are
+        already available, to avoid redundant inference.
+        """
         with torch.no_grad():
             logits = self.model(images)
             probs = F.softmax(logits, dim=1)
             max_probs, _ = probs.max(dim=1)
         return (1 - max_probs).cpu().numpy()
+
+    def compute_from_probs(self, probs):
+        """
+        Compute 1 - max_softmax from already-computed probabilities.
+
+        Numerically equivalent to ``compute_scores(images)`` when the
+        probabilities were produced by ``softmax(self.model(images))``
+        under ``torch.no_grad()``.
+        """
+        with torch.no_grad():
+            max_probs, _ = probs.max(dim=1)
+        return (1 - max_probs).detach().cpu().numpy()
 
 
 class EntropyBasedOOD(OODDetector):
@@ -214,13 +257,31 @@ class EntropyBasedOOD(OODDetector):
     """
 
     def compute_scores(self, images):
-        """Compute predictive entropy (higher = more OOD)."""
+        """
+        Compute predictive entropy by running the model on raw images.
+
+        NOTE: This performs a full forward pass through ``self.model``.
+        Use :meth:`compute_from_probs` instead when probabilities are
+        already available, to avoid redundant inference.
+        """
         with torch.no_grad():
             logits = self.model(images)
             probs = F.softmax(logits, dim=1)
             # Entropy = -sum(p * log(p))
             entropy = -(probs * torch.log(probs + 1e-10)).sum(dim=1)
         return entropy.cpu().numpy()
+
+    def compute_from_probs(self, probs):
+        """
+        Compute predictive entropy from already-computed probabilities.
+
+        Numerically equivalent to ``compute_scores(images)`` when the
+        probabilities were produced by ``softmax(self.model(images))``
+        under ``torch.no_grad()``.
+        """
+        with torch.no_grad():
+            entropy = -(probs * torch.log(probs + 1e-10)).sum(dim=1)
+        return entropy.detach().cpu().numpy()
 
 
 class CombinedOODDetector:
@@ -246,7 +307,13 @@ class CombinedOODDetector:
             self.mahalanobis_detector.fit(train_loader)
 
     def compute_all_scores(self, images):
-        """Compute scores from all detectors."""
+        """
+        Compute scores from all detectors by running the model on raw images.
+
+        NOTE: This performs three full forward passes through ``self.model``
+        (one per detector). Use :meth:`compute_all_from_logits` instead when
+        logits are already available, to avoid redundant inference.
+        """
         scores = {
             'energy': self.energy_detector.compute_scores(images),
             'msp': self.msp_detector.compute_scores(images),
@@ -254,39 +321,48 @@ class CombinedOODDetector:
         }
         return scores
 
-    def compute_combined_score(self, images, weights=None, thresholds=None):
+    def compute_all_from_logits(self, logits, probs):
         """
-        Compute weighted combination of scores.
-
-        Unlike the previous min-max per-batch normalization (which produces
-        a constant 0 for single-image inference), this method normalizes each
-        score by its absolute threshold so the result is meaningful regardless
-        of batch size.
+        Compute scores for energy, msp, and entropy from already-computed
+        logits and probabilities. Performs NO model forward pass.
 
         Args:
-            images: Input images
-            weights: Dict of weights for each detector
-            thresholds: Dict of thresholds for each detector.
-                Each score is normalized to [0, 1] by dividing by its threshold
-                (1.0 = at threshold boundary, >1.0 = above threshold).
-                Defaults to {energy: 10.0, msp: 0.5, entropy: 1.5}.
+            logits: Pre-computed model logits, shape ``[N, C]``.
+            probs: Pre-computed softmax probabilities, shape ``[N, C]``.
+                Should be ``F.softmax(logits, dim=1)``.
 
         Returns:
-            Combined OOD score (higher = more OOD). For a single image,
-            a value of 1.0 means the average normalized score equals the threshold.
+            dict mapping detector name to numpy.ndarray of shape ``[N]``.
         """
-        scores = self.compute_all_scores(images)
+        return {
+            'energy': self.energy_detector.compute_from_logits(logits),
+            'msp': self.msp_detector.compute_from_probs(probs),
+            'entropy': self.entropy_detector.compute_from_probs(probs),
+        }
 
+    def _combine(
+        self,
+        scores: dict,
+        weights: Optional[dict] = None,
+        thresholds: Optional[dict] = None,
+    ) -> np.ndarray:
+        """
+        Weighted combination of pre-computed OOD scores.
+
+        Each score is normalized by its absolute threshold so the result is
+        meaningful regardless of batch size. For a single image, a value of
+        1.0 means the average normalized score equals the threshold.
+        """
         if weights is None:
             weights = {'energy': 1.0, 'msp': 1.0, 'entropy': 1.0}
 
         if thresholds is None:
             thresholds = {'energy': 10.0, 'msp': 0.5, 'entropy': 1.5}
 
-        # Normalize each score by its absolute threshold (not batch-relative)
-        # This makes the combined score meaningful for single-image inference
+        # Determine a reference array for shape/zeros from the first score.
+        first_score = next(iter(scores.values()))
         weight_sum = 0.0
-        combined = np.zeros_like(scores['energy'])
+        combined = np.zeros_like(first_score)
 
         for name, score in scores.items():
             if name in weights and name in thresholds:
@@ -295,13 +371,57 @@ class CombinedOODDetector:
                     score_norm = score / threshold
                 else:
                     score_norm = score
-                combined += weights[name] * score_norm
+                combined = combined + weights[name] * score_norm
                 weight_sum += weights[name]
 
         if weight_sum > 0:
-            combined /= weight_sum
+            combined = combined / weight_sum
 
         return combined
+
+    def combine_scores(
+        self,
+        energy: np.ndarray,
+        msp: np.ndarray,
+        entropy: np.ndarray,
+        weights: Optional[dict] = None,
+        thresholds: Optional[dict] = None,
+    ) -> np.ndarray:
+        """
+        Compute the weighted combined OOD score from already-computed
+        per-detector scores. Performs NO model forward pass.
+
+        Numerically equivalent to ``compute_combined_score(images, ...)``
+        when the inputs were produced from the same ``images`` via
+        :meth:`compute_all_from_logits` (or :meth:`compute_all_scores`).
+
+        Args:
+            energy: Energy scores (numpy array of shape ``[N]``).
+            msp: MSP scores (numpy array of shape ``[N]``).
+            entropy: Entropy scores (numpy array of shape ``[N]``).
+            weights: Optional dict of per-detector weights.
+            thresholds: Optional dict of per-detector thresholds.
+
+        Returns:
+            numpy.ndarray of shape ``[N]`` with combined OOD scores.
+        """
+        return self._combine(
+            {'energy': energy, 'msp': msp, 'entropy': entropy},
+            weights=weights,
+            thresholds=thresholds,
+        )
+
+    def compute_combined_score(self, images, weights=None, thresholds=None):
+        """
+        Compute weighted combination of scores by running each detector on
+        raw images.
+
+        NOTE: This performs three full forward passes through ``self.model``
+        (one per detector). Use :meth:`combine_scores` with pre-computed
+        scores when logits are already available, to avoid redundant inference.
+        """
+        scores = self.compute_all_scores(images)
+        return self._combine(scores, weights=weights, thresholds=thresholds)
 
 
 def compute_ood_metrics(id_scores, ood_scores):

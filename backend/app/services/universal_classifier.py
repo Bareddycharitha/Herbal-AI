@@ -9,7 +9,10 @@ from typing import Optional
 
 from fastapi import Depends
 from backend.app.config import Settings, get_settings
+from backend.app.utils.logging import get_logger
 from ai.utils.model_loader import ModelLoadStatus
+
+logger = get_logger(__name__)
 
 # Global instance for backward compatibility (will be replaced by DI)
 _classifier_instance: Optional["UniversalClassifier"] = None
@@ -33,7 +36,11 @@ class UniversalClassifier:
             calibration_path=settings.universal_model_dir / "temperature_scale.pth",
         )
 
-        print("Universal Image Classifier Loaded (with OOD detection & calibration)")
+        logger.info(
+            "Universal Image Classifier Loaded",
+            calibration=True,
+            model_path=str(settings.universal_model_dir / "best_model.pth"),
+        )
 
     @property
     def model_load_status(self) -> ModelLoadStatus:

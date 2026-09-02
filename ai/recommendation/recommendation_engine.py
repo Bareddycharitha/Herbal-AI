@@ -11,12 +11,13 @@ Pipeline:
 7. AI Summary Generation
 """
 
+import os
+import threading
 from pathlib import Path
 
-from ai.training.inference import predict_image, get_inference
+from ai.training.inference import predict_image
 from ai.recommendation.knowledge_base import KnowledgeBase
 from ai.recommendation.herbal_knowledge_base import HerbalKnowledgeBase
-from ai.llm.summary_engine import SummaryEngine
 
 from ai.validation.image_validator import ImageValidator
 from ai.validation.medical_image_validator import MedicalImageValidator
@@ -46,19 +47,48 @@ HERBAL_KB_PATH = (
 # Load Components
 # ==========================================================
 
-import os
-
-# Enable hot-reload in development
+# Hot-reload is enabled in development so editing the JSON knowledge
+# bases is reflected without restarting the server. In production the
+# files are loaded once on first use.
 HOT_RELOAD = os.getenv("ENVIRONMENT", "development") == "development"
 
-disease_kb = KnowledgeBase(DISEASE_KB_PATH, hot_reload=HOT_RELOAD)
-
-herbal_kb = HerbalKnowledgeBase(HERBAL_KB_PATH, hot_reload=HOT_RELOAD)
-
-summary_engine = SummaryEngine()
-
+# Validators are stateless and cheap to construct; instantiate them
+# eagerly so the request path is one indirection lighter.
 image_validator = ImageValidator()
 medical_image_validator = MedicalImageValidator()
+
+# Knowledge bases are file-backed (each ``__init__`` opens the JSON file
+# and may spawn a background watcher thread). They are accessed only
+# when a prediction reaches the "Disease Information" / "Herbal
+# Recommendations" stage, so we lazy-init them on first access. This
+# avoids paying the JSON parse + watcher-thread cost on module import
+# (which used to happen even when only the universal classifier was
+# needed at startup, e.g. for /health).
+#
+# ``threading.RLock`` keeps the first-access instantiation safe across
+# concurrent worker threads spawned by FastAPI's ``run_in_threadpool``.
+_disease_kb_lock = threading.RLock()
+_herbal_kb_lock = threading.RLock()
+_disease_kb: "KnowledgeBase | None" = None
+_herbal_kb: "HerbalKnowledgeBase | None" = None
+
+
+def _get_disease_kb() -> "KnowledgeBase":
+    global _disease_kb
+    if _disease_kb is None:
+        with _disease_kb_lock:
+            if _disease_kb is None:  # double-checked
+                _disease_kb = KnowledgeBase(DISEASE_KB_PATH, hot_reload=HOT_RELOAD)
+    return _disease_kb
+
+
+def _get_herbal_kb() -> "HerbalKnowledgeBase":
+    global _herbal_kb
+    if _herbal_kb is None:
+        with _herbal_kb_lock:
+            if _herbal_kb is None:  # double-checked
+                _herbal_kb = HerbalKnowledgeBase(HERBAL_KB_PATH, hot_reload=HOT_RELOAD)
+    return _herbal_kb
 
 
 # ==========================================================
@@ -66,9 +96,35 @@ medical_image_validator = MedicalImageValidator()
 # ==========================================================
 
 
-def get_recommendation(image_path):
+def get_recommendation(
+    image_path,
+    prediction_id=None,
+    generate_gradcam=False,
+    image_override=None,
+):
     """
     Main recommendation pipeline for skin disease analysis.
+
+    Grad-CAM is intentionally NOT generated inline here by default — the
+    request handler is expected to schedule it as a ``BackgroundTasks``
+    task using the returned ``prediction_id`` and the ``pred_idx`` /
+    ``confidence`` from the response.
+
+    Args:
+        image_path: Path to the uploaded image. Required by the basic
+            and medical validators (which use ``cv2.imread``) and is
+            also used as the source of truth by the background Grad-CAM
+            task. It is **not** used to decode the image for the skin
+            model when ``image_override`` is provided.
+        prediction_id: Optional stable identifier. When provided, it is
+            returned in the response so the caller can correlate the
+            background Grad-CAM job with this prediction.
+        generate_gradcam: If True, generate the Grad-CAM inline (legacy
+            behaviour). Off by default to keep the critical path fast.
+        image_override: Optional pre-decoded ``PIL.Image.Image`` that is
+            forwarded to the skin model to avoid a duplicate PIL decode
+            of the same uploaded file. When ``None`` (default), the
+            skin model decodes the image from ``image_path`` as before.
 
     Pipeline:
     1. Basic Image Validation
@@ -77,7 +133,7 @@ def get_recommendation(image_path):
     4. Healthy Skin Handling
     5. Disease Information Lookup
     6. Herbal Recommendations
-    7. AI Summary Generation
+    (AI summary is produced separately by /api/v1/summary/, see Priority 1.)
     """
 
     # ======================================================
@@ -109,12 +165,12 @@ def get_recommendation(image_path):
     # Disease Prediction (using new inference)
     # ======================================================
 
-    prediction_result = predict_image(image_path)
-
-    print("=" * 60)
-    print("PREDICTION RESULT:")
-    print(prediction_result)
-    print("=" * 60)
+    prediction_result = predict_image(
+        image_path,
+        return_gradcam=generate_gradcam,
+        prediction_id=prediction_id,
+        image_override=image_override,
+    )
 
     # Extract key information
     prediction = prediction_result["prediction"]
@@ -124,6 +180,7 @@ def get_recommendation(image_path):
     message = prediction_result["message"]
     top_predictions = prediction_result["top_predictions"]
     gradcam_image = prediction_result["gradcam_image"]
+    pred_idx = prediction_result.get("pred_idx")
     is_healthy = prediction_result.get("is_healthy", False)
     is_ood = prediction_result.get("is_ood", False)
     binary_stage = prediction_result.get("binary_stage", None)
@@ -136,6 +193,8 @@ def get_recommendation(image_path):
     if is_healthy:
         return {
             "success": True,
+            "prediction_id": prediction_id,
+            "pred_idx": pred_idx,
             "prediction": {
                 "disease": "Healthy Skin",
                 "confidence": confidence,
@@ -147,12 +206,8 @@ def get_recommendation(image_path):
             "disease_information": None,
             "recommended_herbs": [],
             "herb_details": {},
-            "ai_summary": (
-                "The uploaded image appears to show healthy skin. "
-                "Maintain a healthy skincare routine, moisturize regularly, "
-                "use sunscreen daily, stay hydrated, and consult a dermatologist "
-                "if you notice any unusual skin changes."
-            ),
+            # AI summary is generated separately by POST /api/v1/summary/
+            "ai_summary": None,
             "binary_stage": binary_stage,
             "ood_scores": ood_scores,
             "is_ood": is_ood,
@@ -169,6 +224,8 @@ def get_recommendation(image_path):
     if is_ood:
         return {
             "success": True,
+            "prediction_id": prediction_id,
+            "pred_idx": pred_idx,
             "prediction": prediction,
             "message": (
                 "The image appears to be outside the expected domain (not a typical skin lesion). "
@@ -179,11 +236,8 @@ def get_recommendation(image_path):
             "disease_information": None,
             "recommended_herbs": [],
             "herb_details": {},
-            "ai_summary": (
-                "The model detected this image may not be a typical skin lesion. "
-                "Please ensure you're uploading a well-lit, close-up photo of the skin condition. "
-                "If this is a skin image, the prediction may be unreliable."
-            ),
+            # AI summary is generated separately by POST /api/v1/summary/
+            "ai_summary": None,
             "binary_stage": binary_stage,
             "ood_scores": ood_scores,
             "is_ood": is_ood,
@@ -200,6 +254,8 @@ def get_recommendation(image_path):
     if confidence_level == "low":
         return {
             "success": True,
+            "prediction_id": prediction_id,
+            "pred_idx": pred_idx,
             "prediction": prediction,
             "message": message,
             "top_predictions": top_predictions,
@@ -207,10 +263,8 @@ def get_recommendation(image_path):
             "disease_information": None,
             "recommended_herbs": [],
             "herb_details": {},
-            "ai_summary": (
-                "The model confidence is low for this prediction. "
-                "Please upload a clearer, well-lit close-up image of the affected skin."
-            ),
+            # AI summary is generated separately by POST /api/v1/summary/
+            "ai_summary": None,
             "binary_stage": binary_stage,
             "ood_scores": ood_scores,
             "is_ood": is_ood,
@@ -224,40 +278,36 @@ def get_recommendation(image_path):
     # Disease Information
     # ======================================================
 
-    disease_information = disease_kb.get_disease_information(disease)
+    # The two knowledge bases are lazy-initialised here. The first
+    # successful skin prediction that reaches this branch pays the
+    # JSON parse + watcher-thread cost once; subsequent requests
+    # re-use the same instance.
+    _disease_kb = _get_disease_kb()
+    _herbal_kb = _get_herbal_kb()
 
-    recommendations = disease_kb.get_recommendations(disease)
+    disease_information = _disease_kb.get_disease_information(disease)
+
+    recommendations = _disease_kb.get_recommendations(disease)
 
     herb_details = {}
 
     for herb in recommendations:
-        details = herbal_kb.get_herb(herb["name"])
+        details = _herbal_kb.get_herb(herb["name"])
         if details:
             herb_details[herb["name"]] = details
 
     # ======================================================
-    # AI Summary Generation
-    # ======================================================
-
-    try:
-        ai_summary = summary_engine.generate_summary(
-            prediction=disease,
-            confidence=confidence,
-            disease_information=disease_information,
-            herbs=recommendations,
-        )
-    except Exception as e:
-        ai_summary = (
-            "AI summary could not be generated.\n\n"
-            + str(e)
-        )
-
-    # ======================================================
     # Final Response
     # ======================================================
+    # The AI medical summary is intentionally NOT generated here.
+    # It is produced by the dedicated endpoint POST /api/v1/summary/
+    # so that the prediction request never has to wait for OpenRouter.
+    # See backend/app/api/summary.py for the async summary flow.
 
     return {
         "success": True,
+        "prediction_id": prediction_id,
+        "pred_idx": pred_idx,
         "prediction": prediction,
         "message": message,
         "top_predictions": top_predictions,
@@ -265,7 +315,7 @@ def get_recommendation(image_path):
         "disease_information": disease_information,
         "recommended_herbs": recommendations,
         "herb_details": herb_details,
-        "ai_summary": ai_summary,
+        "ai_summary": None,
         "binary_stage": binary_stage,
         "ood_scores": ood_scores,
         "is_ood": is_ood,

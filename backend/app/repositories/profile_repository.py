@@ -29,15 +29,19 @@ class ProfileRepository:
     def create_profile(
         self,
         clerk_user_id: str,
-        email: str,
-        full_name: str | None,
-        role: UserRole,
+        email: str | None = None,
+        full_name: str | None = None,
+        role: UserRole = UserRole.USER,
     ) -> dict:
         """Create a new profile for a user.
 
         Args:
-            clerk_user_id: Clerk user ID from the `sub` claim.
-            email: User email address.
+            clerk_user_id: Clerk user ID from the ``sub`` claim. This
+                is the authoritative application identity.
+            email: Optional email address. ``None`` is stored as NULL
+                in the database. Email is profile data, not an
+                authentication requirement, and may be filled in
+                later by the user.
             full_name: Optional full name.
             role: User role.
 
@@ -45,16 +49,23 @@ class ProfileRepository:
             The created profile dict.
         """
         supabase = get_supabase_client()
+        # Build the row without the optional fields so the database
+        # column defaults / NULLs are used when those values are not
+        # provided. This avoids sending a sentinel empty string for
+        # email which would conflict with UNIQUE constraints across
+        # multiple users without an email claim.
+        row: dict = {
+            "clerk_user_id": clerk_user_id,
+            "role": role.value,
+            "is_active": True,
+        }
+        if email is not None:
+            row["email"] = email
+        if full_name is not None:
+            row["full_name"] = full_name
+
         try:
-            result = supabase.table("profiles").insert(
-                {
-                    "clerk_user_id": clerk_user_id,
-                    "email": email,
-                    "full_name": full_name,
-                    "role": role.value,
-                    "is_active": True,
-                }
-            ).execute()
+            result = supabase.table("profiles").insert(row).execute()
 
             if result.data:
                 return result.data[0]

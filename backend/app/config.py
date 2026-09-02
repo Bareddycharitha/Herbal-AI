@@ -161,8 +161,13 @@ class Settings(BaseSettings):
     # ==========================================================
     openrouter_api_key: str = Field(default="")
     openrouter_model: str = "google/gemini-flash-1.5"
-    openrouter_timeout_seconds: int = 120
-    openrouter_max_retries: int = 3
+    # Per-request HTTP timeout. The summary endpoint layers its own
+    # hard cap (SUMMARY_TIMEOUT_SECONDS) on top, so this should be
+    # large enough not to fire on a slow but eventually-successful
+    # response, but small enough that a hung connection is detected
+    # within a reasonable time. 15s is a sensible default.
+    openrouter_timeout_seconds: int = 15
+    openrouter_max_retries: int = 1
     openrouter_retry_backoff: float = 1.0
     openrouter_http_referer: str = Field(default="")
     openrouter_app_name: str = Field(default="Herbal-AI")

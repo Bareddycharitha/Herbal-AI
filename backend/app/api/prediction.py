@@ -2,15 +2,25 @@
 Universal Prediction API Endpoint
 
 Handles image upload, classification, and routing to appropriate pipeline.
+
+Grad-CAM is generated as a FastAPI ``BackgroundTasks`` task after the
+response has been built. The response is returned to the client immediately
+with ``gradcam_image: null`` and a ``prediction_id``; the client can poll
+``GET /api/v1/gradcam/{prediction_id}`` to retrieve the public URL once
+the heatmap has been written to disk.
 """
 
 import shutil
 import tempfile
+import uuid
+from io import BytesIO
 from pathlib import Path
 
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
+from PIL import Image, UnidentifiedImageError
 
+from backend.app.api.gradcam import get_job_store
 from backend.app.config import get_settings, Settings
 from backend.app.services.universal_classifier import get_classifier
 from backend.app.utils.file_validator import file_validator, generate_secure_temp_path
@@ -26,8 +36,59 @@ router = APIRouter(
 )
 
 
+def _run_gradcam_background(
+    prediction_id: str,
+    image_path: str,
+    pred_idx: int,
+    confidence: float,
+):
+    """
+    Background-task body: generate the Grad-CAM heatmap for an already-
+    classified image and update the in-memory job store with the result.
+
+    This function is intentionally synchronous and CPU-bound; it is run
+    inside the FastAPI ``BackgroundTasks`` threadpool which serialises
+    them, so it does not block the event loop.
+    """
+    store = get_job_store()
+    try:
+        from ai.training.inference import get_inference
+        skin = get_inference()
+        url = skin.compute_gradcam_for(
+            image=image_path,
+            pred_idx=pred_idx,
+            confidence=confidence,
+            prediction_id=prediction_id,
+        )
+        if url:
+            store.mark_ready(prediction_id, url)
+        else:
+            store.mark_failed(prediction_id, "compute_gradcam_for returned None")
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(
+            "Background Grad-CAM failed",
+            prediction_id=prediction_id,
+            err=str(e),
+            error_type=type(e).__name__,
+        )
+        try:
+            store.mark_failed(prediction_id, type(e).__name__)
+        except Exception:
+            pass
+    finally:
+        # Clean up the temp file only after the Grad-CAM job is done
+        # (success or failure). This is the latest point at which the
+        # file is still needed.
+        try:
+            Path(image_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
 @router.post("/")
 async def predict(
+    background_tasks: BackgroundTasks,
     image: UploadFile = File(...),
     settings: Settings = Depends(get_settings),
 ):
@@ -93,6 +154,38 @@ async def predict(
             details={"filename": image.filename},
         )
 
+    # ======================================================
+    # Decode Image Once (shared with both model pipelines)
+    # ======================================================
+    # Both the universal classifier and the skin disease model need a
+    # decoded RGB image. We decode the uploaded bytes ONCE here and
+    # forward the resulting PIL image to both, so the JPEG is not
+    # re-parsed on disk by each pipeline.
+    #
+    # The temp file is still required because:
+    #   1. The basic and medical validators inside
+    #      ``get_recommendation`` use ``cv2.imread(image_path)`` (out of
+    #      scope for Priority 3B).
+    #   2. The background Grad-CAM task reads the path to compute its
+    #      own tensor + overlay.
+    try:
+        shared_pil_image = Image.open(BytesIO(content)).convert("RGB")
+    except (UnidentifiedImageError, OSError) as e:
+        # Best-effort cleanup before bubbling up the error.
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise ModelError(
+            message=f"Failed to decode uploaded image: {e}",
+            details={"filename": image.filename},
+        )
+
+    # Track locals for the except branch.
+    image_type: str = "unknown"
+    prediction_id: str = str(uuid.uuid4())
+    get_job_store().create(prediction_id)
+
     try:
         # ==================================================
         # Universal Image Classification
@@ -100,8 +193,12 @@ async def predict(
 
         classifier = get_classifier()
 
-        # Run inference in thread pool to avoid blocking event loop
-        image_result = await run_in_threadpool(classifier.predict, str(temp_path))
+        # Run inference in thread pool to avoid blocking event loop.
+        # We pass the pre-decoded PIL image (Priority 3B) to avoid a
+        # second JPEG decode inside ``UniversalClassifierInference._preprocess``.
+        image_result = await run_in_threadpool(
+            classifier.predict, shared_pil_image
+        )
 
         image_type = image_result["class"]
         confidence = image_result["confidence"]
@@ -116,14 +213,56 @@ async def predict(
 
         # ==================================================
         # Skin Pipeline (Disease Module)
-        # ==================================================
+        # ======================================================
 
         if image_type == "Skin":
-            result = await run_in_threadpool(get_recommendation, str(temp_path))
+            # ``str(temp_path)`` is still passed because the basic and
+            # medical validators (inside ``get_recommendation``) use
+            # ``cv2.imread(image_path)``. The skin model itself receives
+            # the shared PIL image via ``image_override`` to skip a
+            # duplicate disk decode (Priority 3B).
+            result = await run_in_threadpool(
+                get_recommendation,
+                str(temp_path),
+                prediction_id,
+                False,  # generate_gradcam=False: keep Grad-CAM off the critical path
+                shared_pil_image,  # image_override
+            )
             result["image_type"] = image_type
             result["classifier_confidence"] = confidence
             result["classifier_ood_scores"] = image_result.get("ood_scores", {})
             result["classifier_is_ood"] = image_result.get("is_ood", False)
+
+            # Schedule the Grad-CAM generation as a background task so the
+            # response is returned to the client immediately. The job
+            # store will be updated when the heatmap is written.
+            #
+            # Grad-CAM is only produced for successful skin predictions —
+            # not for validation failures, healthy skin, OOD, or low-
+            # confidence results (those branches in
+            # ``get_recommendation`` already set ``gradcam_image: null``).
+            pred_idx = result.get("pred_idx")
+            wants_gradcam = (
+                result.get("success", False) is True
+                and pred_idx is not None
+                and result.get("gradcam_image") is None
+            )
+            if wants_gradcam:
+                background_tasks.add_task(
+                    _run_gradcam_background,
+                    prediction_id,
+                    str(temp_path),
+                    int(pred_idx),
+                    float(confidence),
+                )
+            else:
+                # No Grad-CAM to generate; release the temp file now.
+                try:
+                    temp_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+                get_job_store().mark_no_gradcam(prediction_id)
+
             return result
 
         # ==================================================
@@ -131,8 +270,14 @@ async def predict(
         # ==================================================
 
         elif image_type == "Medicinal":
+            try:
+                temp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            get_job_store().mark_no_gradcam(prediction_id)
             return {
                 "success": False,
+                "prediction_id": prediction_id,
                 "image_type": image_type,
                 "classifier_confidence": confidence,
                 "classifier_ood_scores": image_result.get("ood_scores", {}),
@@ -147,8 +292,14 @@ async def predict(
         # ==================================================
 
         else:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            get_job_store().mark_no_gradcam(prediction_id)
             return {
                 "success": False,
+                "prediction_id": prediction_id,
                 "image_type": "Other",
                 "classifier_confidence": confidence,
                 "classifier_ood_scores": image_result.get("ood_scores", {}),
@@ -162,14 +313,19 @@ async def predict(
     except Exception as e:
         logger = get_logger(__name__)
         logger.error("Prediction failed", err=str(e), error_type=type(e).__name__)
-        raise ModelError(
-            message=f"Prediction failed: {e}",
-            details={"image_type": image_type if 'image_type' in locals() else "unknown"},
-        )
-
-    finally:
-        # Cleanup temp file
+        # Best-effort cleanup and job-store notification.
         try:
             temp_path.unlink(missing_ok=True)
         except Exception:
             pass
+        get_job_store().mark_failed(prediction_id, type(e).__name__)
+        raise ModelError(
+            message=f"Prediction failed: {e}",
+            details={"image_type": image_type},
+        )
+
+    # Note: when the skin branch schedules a background task, control
+    # returns from this function BEFORE the temp file is unlinked. The
+    # background task itself owns the cleanup (see
+    # ``_run_gradcam_background``). All other branches unlink eagerly
+    # before returning.

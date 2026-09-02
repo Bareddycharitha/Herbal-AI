@@ -44,7 +44,7 @@ class AuthService:
     async def ensure_profile(
         self,
         clerk_user_id: str,
-        email: str,
+        email: str | None = None,
         full_name: str | None = None,
     ) -> dict:
         """Ensure a profile exists for the Clerk user.
@@ -54,8 +54,11 @@ class AuthService:
         successful authentication.
 
         Args:
-            clerk_user_id: Clerk user ID from the `sub` claim.
-            email: User email address.
+            clerk_user_id: Clerk user ID from the `sub` claim. This is
+                the authoritative application identity.
+            email: Optional email address. ``None`` is stored as NULL
+                in the database. Email is profile data, not an
+                authentication requirement.
             full_name: Optional full name.
 
         Returns:
@@ -75,7 +78,7 @@ class AuthService:
         logger.info(
             "Auto-created profile for new Clerk user",
             clerk_user_id=clerk_user_id,
-            email=email,
+            has_email=bool(email),
         )
         return profile
 
@@ -124,16 +127,30 @@ class AuthService:
         if profile is not None:
             return profile
 
-        # Auto-create profile on first authentication
+        # Auto-create profile on first authentication.
+        # The Clerk ``sub`` claim is the authoritative identity; email
+        # and full_name are optional profile data and may be ``None``
+        # if the Clerk token does not include them.
         try:
             profile = await self.ensure_profile(
                 clerk_user_id=payload["id"],
-                email=payload.get("email", ""),
+                email=payload.get("email"),
                 full_name=payload.get("full_name"),
             )
             return profile
-        except Exception:
-            # If profile creation fails, return None to indicate authentication failure
+        except Exception as exc:
+            # Profile creation failed. Log the underlying cause so we can
+            # tell apart "Clerk token had no sub" (programming bug) from
+            # "Supabase is down" (transient outage) when a 401/503 comes
+            # back from a protected endpoint. Returning None makes
+            # get_current_user raise AuthenticationError, which the
+            # frontend surfaces as "Authentication required".
+            logger.error(
+                "Profile auto-create failed for verified Clerk token",
+                user_id=payload.get("id"),
+                error=str(exc),
+                error_type=type(exc).__name__,
+            )
             return None
 
     async def get_user_by_clerk_id(

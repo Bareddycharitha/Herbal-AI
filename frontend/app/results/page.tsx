@@ -25,6 +25,7 @@ import {
 import {
   chatWithAI,
   downloadReport,
+  fetchGradcamStatus,
   generateSummary,
   getApiBaseUrl,
   getApiError,
@@ -34,6 +35,7 @@ import type { Herb, PredictionResponse } from "@/types";
 import { toast } from "sonner";
 import UploadCard from "@/components/UploadCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/providers/AuthProvider";
 
 type Message = {
   id: string;
@@ -58,6 +60,7 @@ const healthyTips = [
 ];
 
 export default function ResultsPage() {
+  const { isAuthenticated, tokenReady } = useAuth();
   const [data, setData] = useState<PredictionResponse | null>(null);
   const [image, setImage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -72,6 +75,7 @@ export default function ResultsPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [gradcamUrl, setGradcamUrl] = useState<string | null>(null);
 
   const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
 
@@ -96,6 +100,72 @@ export default function ResultsPage() {
     }
   }, []);
 
+  // Sync the Grad-CAM URL state from the prediction response, then poll
+  // the status endpoint when the response came back with gradcam_image=null
+  // (which happens on the new fast path where the heatmap is generated in
+  // the background after the response is sent).
+  useEffect(() => {
+    if (!data) {
+      setGradcamUrl(null);
+      return;
+    }
+
+    const initial = data.gradcam_image;
+    if (initial) {
+      const absolute = initial.startsWith("http")
+        ? initial
+        : `${apiBaseUrl}${initial}`;
+      setGradcamUrl(absolute);
+      return;
+    }
+
+    // No URL yet — if we have a prediction_id, poll for it.
+    const pid = data.prediction_id;
+    if (!pid) {
+      setGradcamUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20;
+    const intervalMs = 1500;
+
+    const tick = async () => {
+      if (cancelled || attempts >= maxAttempts) return;
+      attempts += 1;
+      try {
+        const status = await fetchGradcamStatus(pid);
+        if (cancelled) return;
+        if (status.ready && status.url) {
+          const absolute = status.url.startsWith("http")
+            ? status.url
+            : `${apiBaseUrl}${status.url}`;
+          setGradcamUrl(absolute);
+          return;
+        }
+        if (status.status === "no_gradcam" || status.status === "failed") {
+          // Terminal state without a URL — leave gradcamUrl null so the
+          // UI shows the single-image "Uploaded image" view.
+          setGradcamUrl(null);
+          return;
+        }
+      } catch {
+        // Network blip — try again until maxAttempts.
+      }
+      if (!cancelled && attempts < maxAttempts) {
+        setTimeout(tick, intervalMs);
+      }
+    };
+
+    setGradcamUrl(null);
+    setTimeout(tick, 0);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data, apiBaseUrl]);
+
   const loadSummary = async () => {
     if (!data) return;
 
@@ -109,7 +179,19 @@ export default function ResultsPage() {
         disease_information: data.disease_information ?? {},
         herbs: data.recommended_herbs ?? [],
       });
-      setSummary(response.summary || "The AI summary is unavailable right now.");
+      if (response.success) {
+        setSummary(response.summary || "");
+        setSummaryError("");
+      } else {
+        // Server returned 200 but reported failure (timeout, OpenRouter down,
+        // missing key, etc.). Show the friendly fallback in the error slot
+        // so the user can retry, without losing the prediction.
+        setSummary("");
+        setSummaryError(
+          response.summary ||
+            "AI medical summary is temporarily unavailable. The prediction above is still accurate."
+        );
+      }
     } catch (error) {
       const errorObj = getApiError(error);
       setSummaryError(errorObj.message);
@@ -120,8 +202,12 @@ export default function ResultsPage() {
 
   useEffect(() => {
     if (!data || summaryLoading || summary || summaryError) return;
+    // Wait for Clerk to hydrate and the axios token getter to be
+    // installed before firing the protected /summary/ call. Without
+    // this gate the request races AuthProvider and produces a 401.
+    if (!isAuthenticated || !tokenReady) return;
     void loadSummary();
-  }, [data]);
+  }, [data, isAuthenticated, tokenReady]);
 
   const handleChat = async (question: string) => {
     if (!data || !question.trim()) return;
@@ -169,6 +255,16 @@ export default function ResultsPage() {
     if (!data || !file) {
       setReportError("A valid image is required to generate the report.");
       toast.error("Missing image for report");
+      return;
+    }
+
+    // The /report/ endpoint is auth-protected. Don't fire it without
+    // a ready token — the resulting 401 shows the misleading
+    // 'Authentication required' toast. Instead, tell the user to sign
+    // in and bail out before any network call.
+    if (!isAuthenticated || !tokenReady) {
+      setReportError("Please sign in to download the AI report.");
+      toast.error("Sign in required to download report");
       return;
     }
 
@@ -261,11 +357,6 @@ export default function ResultsPage() {
   const confidence = Number(data.prediction?.confidence) || 0;
   const confidenceLevel = data.prediction?.confidence_level?.toLowerCase() || "medium";
   const condition = data.prediction?.disease || "Unknown";
-  const gradcamUrl = data.gradcam_image?.startsWith("http")
-    ? data.gradcam_image
-    : data.gradcam_image
-    ? `${apiBaseUrl}${data.gradcam_image}`
-    : null;
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
@@ -316,11 +407,15 @@ export default function ResultsPage() {
           <Button
             size="lg"
             onClick={handleDownloadReport}
-            disabled={reportLoading || !file}
+            disabled={reportLoading || !file || !isAuthenticated || !tokenReady}
             className="h-11 px-5 text-base shadow-sm"
           >
             {reportLoading ? <LoaderCircle className="animate-spin size-5" /> : <Download className="size-5" />}
-            {reportLoading ? "Generating report" : "Download AI report"}
+            {reportLoading
+              ? "Generating report"
+              : !isAuthenticated
+                ? "Sign in to download report"
+                : "Download AI report"}
           </Button>
         </div>
       </div>
@@ -507,10 +602,27 @@ export default function ResultsPage() {
               </div>
 
               {summaryLoading ? (
-                <div className="mt-5 space-y-3">
-                  <div className="h-3 w-full rounded-full bg-muted" />
-                  <div className="h-3 w-3/4 rounded-full bg-muted" />
-                  <div className="h-3 w-1/2 rounded-full bg-muted" />
+                <div className="mt-5 space-y-3" role="status" aria-live="polite">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" />
+                    Generating AI summary…
+                  </div>
+                  <div className="h-3 w-full animate-pulse rounded-full bg-muted" />
+                  <div className="h-3 w-3/4 animate-pulse rounded-full bg-muted" />
+                  <div className="h-3 w-1/2 animate-pulse rounded-full bg-muted" />
+                </div>
+              ) : isAuthenticated && !tokenReady ? (
+                <div className="mt-5 space-y-3" role="status" aria-live="polite">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <LoaderCircle className="size-4 animate-spin" />
+                    Preparing your session…
+                  </div>
+                  <div className="h-3 w-full animate-pulse rounded-full bg-muted" />
+                  <div className="h-3 w-3/4 animate-pulse rounded-full bg-muted" />
+                </div>
+              ) : !isAuthenticated ? (
+                <div className="mt-5 rounded-[1.2rem] border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground">
+                  Sign in to view the AI medical summary and download the report.
                 </div>
               ) : summaryError ? (
                 <div className="mt-5">

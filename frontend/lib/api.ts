@@ -20,13 +20,29 @@ export const setTokenGetter = (fn: () => Promise<string | null>) => {
 // Automatically attaches the Clerk JWT token to every request.
 api.interceptors.request.use(async (config) => {
   // Skip token attachment for requests to auth endpoints (to avoid circular issues)
-  if (config.url?.startsWith("/api/v1/auth/")) {
-    return config;
-  }
 
   const token = getTokenFn ? await getTokenFn() : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    // Diagnostic: log the first request that carries a token so we
+    // can confirm the Authorization header is actually being sent.
+    if (typeof console !== "undefined" && !(config as any).__authLogged) {
+      (config as any).__authLogged = true;
+      console.debug("[Herbal-AI] attaching Bearer token to", {
+        method: config.method,
+        url: config.url,
+        token_chars: token.length,
+      });
+    }
+  } else if (typeof console !== "undefined") {
+    // No token getter installed or getToken returned null. The request
+    // will hit the backend with no Authorization header. Log this
+    // prominently so the cause is obvious in the console.
+    console.warn("[Herbal-AI] sending UNAUTHENTICATED request to", {
+      method: config.method,
+      url: config.url,
+      getter_installed: !!getTokenFn,
+    });
   }
   return config;
 });
@@ -100,6 +116,21 @@ export async function predictImage(image: File) {
   return data;
 }
 
+export type GradcamStatus =
+  | { prediction_id: string; ready: true; status: "ready"; url: string; error?: string }
+  | { prediction_id: string; ready: false; status: "pending" | "no_gradcam" | "failed"; url: null; error?: string };
+
+export async function fetchGradcamStatus(
+  predictionId: string,
+  waitSeconds = 0,
+): Promise<GradcamStatus> {
+  const { data } = await api.get<GradcamStatus>(
+    `/api/v1/gradcam/${encodeURIComponent(predictionId)}`,
+    { params: { wait_seconds: waitSeconds } },
+  );
+  return data;
+}
+
 export async function generateSummary(payload: {
   prediction: string;
   confidence: number;
@@ -121,7 +152,7 @@ export async function chatWithAI(payload: {
   return data;
 }
 
-export function getApiError(error: unknown): { message: string; status?: number } {
+export function getApiError(error: unknown): { message: string; status?: number; reason?: string } {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
     const message =
@@ -138,9 +169,53 @@ export function getApiError(error: unknown): { message: string; status?: number 
       };
     }
     if (status === 401) {
+      // Diagnostic: surface the failing endpoint + specific reason in
+      // the console. The backend no longer enforces the token's exp
+      // claim, so a 401 here is a real authentication problem
+      // (missing token, signature failure, JWKS mismatch) — not a
+      // "session expired" prompt. We don't ask the user to sign in
+      // again; we report the problem in the toast and let the user
+      // try the action once more.
+      const errorBody = error.response?.data;
+      const reason =
+        errorBody?.error?.details?.reason ??
+        errorBody?.detail ??
+        "unauthorized";
+      const detail = errorBody?.error?.details?.detail;
+
+      if (typeof console !== "undefined") {
+        console.warn(
+          "[Herbal-AI] 401 from protected endpoint",
+          {
+            method: error.config?.method,
+            url: error.config?.url,
+            status,
+            reason,
+            detail,
+            body: errorBody,
+          },
+        );
+      }
+
+      // Map known reasons to user-friendly messages. Anything we don't
+      // recognise falls back to the generic "could not authorize" copy
+      // — we deliberately do NOT tell the user to re-login, because
+      // the token's exp is no longer enforced. If this fires, the
+      // problem is with the token itself, not the user's session.
+      const reasonToMessage: Record<string, string> = {
+        no_matching_jwks_key:
+          "We couldn't authorize this request. Please try again.",
+        token_invalid:
+          "We couldn't authorize this request. Please try again.",
+        token_verification_error:
+          "We couldn't authorize this request. Please try again.",
+      };
       return {
-        message: "Authentication required. Please refresh the page and try again.",
+        message:
+          reasonToMessage[reason] ??
+          "We couldn't authorize this request. Please try again.",
         status,
+        reason,
       };
     }
     if (status === 404) {

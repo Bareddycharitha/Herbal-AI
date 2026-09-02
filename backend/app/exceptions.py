@@ -109,10 +109,15 @@ class FileTypeError(FileValidationError):
 class AuthenticationError(HerbalAIError):
     """Raised when authentication fails."""
 
-    def __init__(self, message: str = "Authentication required"):
+    def __init__(
+        self,
+        message: str = "Authentication required",
+        details: Optional[dict[str, Any]] = None,
+    ):
         super().__init__(
             message=message,
             error_code="AUTHENTICATION_ERROR",
+            details=details,
             status_code=401,
         )
 
@@ -274,6 +279,28 @@ class LLMUnavailableError(LLMError):
             retryable=True,
         )
         self.error_code = "LLM_UNAVAILABLE"
+
+
+class ServiceUnavailableError(HerbalAIError):
+    """Raised when a required backend service cannot complete the request.
+
+    Use this to distinguish 503 (service problem) from 401 (auth problem).
+    The frontend maps 503 to a 'try again later' toast, which is a more
+    honest message than 'authentication required' when the user is
+    actually authenticated but the database/profile store is briefly down.
+    """
+
+    def __init__(
+        self,
+        message: str = "Service temporarily unavailable",
+        details: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code="SERVICE_UNAVAILABLE",
+            details=details,
+            status_code=503,
+        )
 
 
 # ==========================================================

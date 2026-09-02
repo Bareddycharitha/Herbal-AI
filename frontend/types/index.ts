@@ -59,6 +59,7 @@ export type DiseaseInformation = {
 export type PredictionResponse = {
   success: boolean;
   message: string;
+  prediction_id?: string;
   prediction?: {
     disease: string;
     confidence: number;
@@ -105,6 +106,7 @@ export type HerbPredictionResponse = {
 export type SummaryResponse = {
   success: boolean;
   summary: string;
+  error?: string;
 };
 
 export type ChatResponse = {
