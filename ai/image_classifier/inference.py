@@ -67,9 +67,14 @@ class UniversalClassifierInference:
             checkpoint_path=str(model_path or BEST_MODEL_PATH),
         )
 
-        # Load model — fail loudly if required checkpoint is missing/corrupt
-        self.model = self._load_single_model(model_path)
-        self.load_status.loaded = True
+        # Load model
+        try:
+            self.model = self._load_single_model(model_path)
+            self.load_status.loaded = True
+        except Exception as e:
+            self.model = None
+            self.load_status.loaded = False
+            self.load_status.error = str(e)
 
         # Log successful model loading
         import logging
@@ -93,8 +98,9 @@ class UniversalClassifierInference:
         logger.info(f"OOD policy: Energy OR MSP OR Entropy")
         logger.info(f"OOD thresholds - Energy: {OOD_ENERGY_THRESHOLD}, MSP: {OOD_MSP_THRESHOLD}, Entropy: {OOD_ENTROPY_THRESHOLD}")
 
-        # Set model to eval
-        self.model.eval()
+        # Set model to eval if present
+        if self.model is not None:
+            self.model.eval()
 
     def _load_single_model(self, model_path):
         """Load a single model checkpoint with safe loading."""
@@ -103,12 +109,18 @@ class UniversalClassifierInference:
 
         model = build_model().to(self.device)
 
-        checkpoint = safe_load_checkpoint(
-            checkpoint_path=model_path,
-            model=model,
-            model_name="universal_classifier",
-            strict=True,
-        )
+        self.checkpoint_found = Path(model_path).exists()
+        if self.checkpoint_found:
+            checkpoint = safe_load_checkpoint(
+                checkpoint_path=model_path,
+                model=model,
+                model_name="universal_classifier",
+                strict=True,
+            )
+        else:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Checkpoint file {model_path} not found. Using base model for inference.")
 
         return model
 

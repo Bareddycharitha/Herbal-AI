@@ -25,7 +25,7 @@ from backend.app.config import get_settings, Settings
 from backend.app.services.universal_classifier import get_classifier
 from backend.app.utils.file_validator import file_validator, generate_secure_temp_path
 from backend.app.utils.logging import get_logger
-from backend.app.exceptions import FileValidationError, ModelError
+from backend.app.exceptions import FileValidationError, ModelError, ModelLoadError
 
 from ai.recommendation.recommendation_engine import get_recommendation
 from ai.recommendation.herb_recommendation_engine import get_herb_recommendation
@@ -213,9 +213,14 @@ async def predict(
 
         # ==================================================
         # Skin Pipeline (Disease Module)
-        # ======================================================
+        # ==================================================
 
-        if image_type == "Skin":
+        if image_type == "Skin" or not getattr(classifier, "checkpoint_found", True):
+            if not getattr(classifier, "checkpoint_found", True) and image_type != "Skin":
+                logger.warning(
+                    "Universal classifier checkpoint not found (untrained base model). "
+                    f"Bypassing domain rejection for predicted class '{image_type}' and running skin pipeline."
+                )
             # ``str(temp_path)`` is still passed because the basic and
             # medical validators (inside ``get_recommendation``) use
             # ``cv2.imread(image_path)``. The skin model itself receives
@@ -310,6 +315,53 @@ async def predict(
                 ),
             }
 
+    except AttributeError as e:
+        # The universal classifier's constructor swallows checkpoint-load
+        # failures and sets self.inference.model = None. The AttributeError
+        # surfaces later when predict() tries to call .eval() on it. Catch
+        # that here and return a structured 503 instead of a confusing 500.
+        msg = str(e)
+        if "NoneType" in msg and "eval" in msg:
+            logger = get_logger(__name__)
+            logger.error(
+                "Universal classifier model not loaded",
+                err=msg,
+                hint=(
+                    "Place a trained checkpoint at "
+                    "ai/image_classifier/checkpoints/best_model.pth."
+                ),
+            )
+            try:
+                temp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            get_job_store().mark_failed(prediction_id, "MODEL_LOAD_ERROR")
+            raise ModelLoadError(
+                model_path="ai/image_classifier/checkpoints/best_model.pth",
+                reason="Universal classifier checkpoint not loaded",
+            )
+        # Re-raise any other AttributeError unchanged.
+        raise
+    except FileNotFoundError as e:
+        # Most commonly: a model checkpoint file is missing from disk.
+        # Surface this as a structured 503 so the browser can show a
+        # real message instead of a generic "Network Error" (which is
+        # what axios reports when a 500 response lacks CORS headers).
+        logger = get_logger(__name__)
+        logger.error(
+            "Model checkpoint missing",
+            err=str(e),
+            missing_path=str(e.filename) if getattr(e, "filename", None) else None,
+        )
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        get_job_store().mark_failed(prediction_id, "MODEL_LOAD_ERROR")
+        raise ModelLoadError(
+            model_path=str(getattr(e, "filename", "ai/checkpoints/")),
+            reason=str(e),
+        )
     except Exception as e:
         logger = get_logger(__name__)
         logger.error("Prediction failed", err=str(e), error_type=type(e).__name__)

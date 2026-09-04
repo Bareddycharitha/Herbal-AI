@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from backend.app.config import get_settings, Settings
-from backend.app.dependencies import get_current_active_user
+from backend.app.dependencies import get_optional_user
 from backend.app.utils.logging import get_logger
 from backend.app.exceptions import LLMError, ModelError
 
@@ -43,7 +43,7 @@ async def chat(
     request: ChatRequest,
     settings: Settings = Depends(get_settings),
     engine: ChatbotEngine = Depends(get_chatbot),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_optional_user),
 ):
     """Chat with AI assistant about skin disease or herb identification."""
 

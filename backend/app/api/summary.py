@@ -16,7 +16,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 from backend.app.config import get_settings, Settings
-from backend.app.dependencies import get_current_active_user
+from backend.app.dependencies import get_optional_user
 from backend.app.utils.logging import get_logger
 from backend.app.exceptions import LLMError, ModelError
 
@@ -46,7 +46,7 @@ def get_summary_engine() -> SummaryEngine:
 # model to return a useful response in the happy path; anything that
 # takes longer than that should fall back to the deterministic
 # FALLBACK_SUMMARY below rather than block the user.
-SUMMARY_TIMEOUT_SECONDS = 5.0
+SUMMARY_TIMEOUT_SECONDS = 30.0
 
 FALLBACK_SUMMARY = (
     "AI medical summary is temporarily unavailable. "
@@ -68,7 +68,7 @@ async def generate_summary(
     request: SummaryRequest,
     settings: Settings = Depends(get_settings),
     engine: SummaryEngine = Depends(get_summary_engine),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_optional_user),
 ):
     """
     Generate AI summary for a skin disease prediction.

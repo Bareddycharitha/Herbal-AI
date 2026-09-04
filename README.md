@@ -144,35 +144,76 @@ cd Herbal-AI
 
 ---
 
-## Backend
+## 1. Backend setup (one-time)
 
 ```bash
-conda create -n HerbalAI python=3.13
+# Create the virtual environment (already present in this repo as .venv/)
+python -m venv .venv
 
-conda activate HerbalAI
+# Activate it
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# Windows (cmd):
+.venv\Scripts\activate.bat
+# macOS / Linux:
+source .venv/bin/activate
 
+# Install dependencies
 pip install -r requirements.txt
+
+# (Optional) Copy the env template and edit it
+cp backend/.env.example .env
 ```
 
 ---
 
-## Frontend
+## 2. Frontend setup (one-time)
 
 ```bash
 cd frontend
-
 npm install
-
-uvicorn backend.app.main:app --reload
+cp .env.example .env.local   # optional — defaults already point at localhost:8000
 ```
 
-----
+---
 
-## Backend
+## ▶ Run the app
+
+You need **two terminals** running side by side.
+
+### Terminal 1 — Backend (FastAPI on :8000)
 
 ```bash
-uvicorn backend.app.main:app --reload
+# from the repo root, with .venv activated
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### Terminal 2 — Frontend (Next.js on :3000)
+
+```bash
+cd frontend
+npm run dev
+```
+
+Then open <http://localhost:3000> in your browser. The Next.js dev server
+will proxy API calls to the FastAPI backend on `localhost:8000`.
+
+### Verify it works
+
+- `curl http://localhost:8000/health` → `{"status":"healthy",...}`
+- `curl -I http://localhost:8000/ready` → `200 OK` when all checkpoints are
+  present, `503` with a per-check `file_exists: false` field when not.
+  The response must include `Access-Control-Allow-Origin: http://localhost:3000`
+  so the browser doesn't show a misleading "Network Error" toast.
+- Open <http://localhost:3000/diagnose> and pick a workflow to test the
+  full upload → prediction → result flow.
+
+> **Heads up — model checkpoints**: the repository does not include
+> trained model weights. Until a `best_model.pth` is placed at
+> `ai/checkpoints/best_model.pth` (skin disease) and
+> `ai/herb/checkpoints/best_model.pth` (herbs), the corresponding
+> endpoints return `503 MODEL_LOAD_ERROR` with a clear message — **not**
+> a generic 500 / "Network Error".
 
 ---
 

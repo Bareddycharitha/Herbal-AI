@@ -107,30 +107,34 @@ def add_prediction(story, prediction, confidence, level):
 # ==========================================================
 
 def add_images(story, original_image, gradcam_image):
-
+    import os
     story.append(Paragraph("Analysis Images", heading_style))
 
-    try:
+    cells = []
+    headers = []
 
-        original = Image(
-            original_image,
-            width=2.6 * inch,
-            height=2.6 * inch
-        )
+    if original_image and os.path.exists(original_image):
+        try:
+            cells.append(Image(original_image, width=2.6 * inch, height=2.6 * inch))
+            headers.append("Original Image")
+        except Exception:
+            pass
 
-        gradcam = Image(
-            gradcam_image,
-            width=2.6 * inch,
-            height=2.6 * inch
-        )
+    # Resolve relative Grad-CAM URL like /results/gradcam_123.jpg to disk path
+    actual_gradcam = gradcam_image
+    if gradcam_image and isinstance(gradcam_image, str) and gradcam_image.startswith("/results/"):
+        from backend.app.config import settings
+        actual_gradcam = str(settings.results_dir / gradcam_image.replace("/results/", ""))
 
-        table = Table(
-            [
-                ["Original Image", "Grad-CAM"],
-                [original, gradcam]
-            ]
-        )
+    if actual_gradcam and os.path.exists(actual_gradcam):
+        try:
+            cells.append(Image(actual_gradcam, width=2.6 * inch, height=2.6 * inch))
+            headers.append("Grad-CAM")
+        except Exception:
+            pass
 
+    if cells:
+        table = Table([headers, cells])
         table.setStyle(
             TableStyle([
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
@@ -138,17 +142,9 @@ def add_images(story, original_image, gradcam_image):
                 ("GRID", (0, 1), (-1, 1), 0.5, colors.grey),
             ])
         )
-
         story.append(table)
-
-    except Exception:
-
-        story.append(
-            Paragraph(
-                "Images unavailable.",
-                body_style
-            )
-        )
+    else:
+        story.append(Paragraph("Images unavailable.", body_style))
 
     story.append(Spacer(1, 20))
 

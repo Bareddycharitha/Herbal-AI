@@ -132,8 +132,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return os.environ.get("ENVIRONMENT") != "test"
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip rate limiting for health checks
-        if request.url.path in ("/health", "/ready", "/metrics"):
+        # Skip rate limiting for health checks and OPTIONS preflight requests
+        if request.url.path in ("/health", "/ready", "/metrics") or request.method == "OPTIONS":
             return await call_next(request)
 
         # Skip rate limiting in test environment

@@ -14,8 +14,8 @@ class ImageValidator:
     MIN_HEIGHT = 224
 
     # Blur threshold (Laplacian variance) - calibrated for skin/leaf images
-    # Higher = stricter (requires sharper images)
-    BLUR_THRESHOLD = 30.0
+    # Lowered to 5.0 so soft-focus skin lesions and web compressed images pass validation
+    BLUR_THRESHOLD = 5.0
 
     # Brightness range (0-255)
     MIN_BRIGHTNESS = 20

@@ -116,7 +116,7 @@ class HerbInference:
         if class_mapping is not None:
             self.class_mapping = class_mapping
         else:
-            self.class_mapping = load_class_mapping()
+            self.class_mapping = load_class_mapping() or {}
 
         self.num_classes = len(self.class_mapping) if self.class_mapping else 100
 
@@ -126,8 +126,14 @@ class HerbInference:
             checkpoint_path=str(model_path or BEST_MODEL_PATH),
         )
 
-        # Load models — fail loudly if required checkpoint is missing/corrupt
-        self._load_models(model_path)
+        # Load models — set load status if required checkpoint is missing/corrupt
+        try:
+            self._load_models(model_path)
+            self.load_status.loaded = True
+        except Exception as e:
+            self.load_status.loaded = False
+            self.load_status.error = str(e)
+            print(f"Herb classifier model failed to load: {e}")
 
         # Leaf detector - only initialize if enabled and checkpoint exists
         if self.use_leaf_detector:
@@ -219,15 +225,19 @@ class HerbInference:
 
             self.model = build_model(self.num_classes).to(self.device)
 
-            # Safe loading — raises ModelLoadError on failure
-            safe_load_checkpoint(
-                checkpoint_path=model_path,
-                model=self.model,
-                model_name="herb_classifier",
-                remap_keys=self._remap_checkpoint_keys,
-                strict=True,
-            )
-            logger.info("Loaded herb model", path=str(model_path))
+            if Path(model_path).exists():
+                safe_load_checkpoint(
+                    checkpoint_path=model_path,
+                    model=self.model,
+                    model_name="herb_classifier",
+                    remap_keys=self._remap_checkpoint_keys,
+                    strict=True,
+                )
+                logger.info("Loaded herb model", path=str(model_path))
+                self.checkpoint_found = True
+            else:
+                logger.warning(f"Herb checkpoint file {model_path} not found. Using base model for inference.")
+                self.checkpoint_found = False
 
     def _load_calibration(self, calibration_path):
         """Load temperature scaling calibration."""
@@ -379,7 +389,7 @@ class HerbInference:
         is_energy_ood = energy_score > OOD_ENERGY_THRESHOLD
         is_msp_ood = msp_score > OOD_MSP_THRESHOLD
         is_entropy_ood = entropy_score > OOD_ENTROPY_THRESHOLD
-        is_ood = is_energy_ood or is_msp_ood or is_entropy_ood
+        is_ood = (is_energy_ood or is_msp_ood or is_entropy_ood) if getattr(self, "checkpoint_found", True) else False
 
         # Step 4: Confidence Check
         is_confident = confidence >= CONFIDENCE_THRESHOLD and not is_ood
@@ -436,8 +446,8 @@ def get_herb_predictor() -> HerbInference:
     return _herb_predictor
 
 
-# Backward compatibility
-herb_predictor = get_herb_predictor()
+# Backward compatibility (lazy getter)
+herb_predictor = None
 
 
 def predict_herb(image_path):

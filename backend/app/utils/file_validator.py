@@ -5,7 +5,18 @@ Secure file validation utilities for uploaded images including
 MIME type verification, magic bytes checking, and size limits.
 """
 
-import magic
+# IMPORTANT: do NOT import python-magic at module-load time. The ``magic``
+# package is a thin ctypes wrapper around libmagic and on Windows it
+# segfaults (Windows access violation) for many installs — that segfault
+# cannot be caught by a ``try/except`` because it is a *native* crash,
+# not a Python exception, and it kills the entire process during import.
+# Instead, probe the package in a subprocess once at module import time
+# (see ``_magic_available`` below) and import it lazily inside
+# ``FileValidator.__init__`` if the probe says it is safe.
+import importlib
+import importlib.util
+import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -35,13 +46,44 @@ MAGIC_BYTES_FALLBACK = {
 MAX_FILE_SIZE_BYTES = settings.max_upload_size_mb * 1024 * 1024
 
 
+def _probe_magic_available() -> bool:
+    """
+    Probe whether ``python-magic`` can be imported and used without a
+    native crash.
+
+    Returns True only if the import AND the ``Magic(mime=True)``
+    constructor both succeed. Returns False if the package is missing,
+    the import fails, the constructor fails, or the subprocess is
+    killed by a Windows access violation.
+
+    The probe runs in a *subprocess* so a native crash in the child
+    cannot kill the parent process.
+    """
+    if importlib.util.find_spec("magic") is None:
+        return False
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", "import magic; magic.Magic(mime=True); print('OK')"],
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return False
+    return result.returncode == 0 and b"OK" in result.stdout
+
+
+# Run the probe once at module import time. The result is cached.
+_MAGIC_AVAILABLE: bool = _probe_magic_available()
+
+
 class FileValidator:
     """
     Secure file validator for uploaded images.
 
     Validates:
     - File size
-    - MIME type (via python-magic)
+    - MIME type (via python-magic, if available)
     - Magic bytes (file signature)
     - File extension
     """
@@ -55,7 +97,16 @@ class FileValidator:
         self.max_size_bytes = max_size_bytes
         self.allowed_mime_types = allowed_mime_types or settings.allowed_mime_types
         self.allowed_extensions = allowed_extensions or settings.allowed_extensions
-        self._magic = magic.Magic(mime=True)
+        self._magic = None
+        if _MAGIC_AVAILABLE:
+            # We already proved in a subprocess that this is safe. If
+            # somehow the import still fails in the parent (e.g. very
+            # different Python builds), fall back to None silently.
+            try:
+                import magic  # noqa: PLC0415
+                self._magic = magic.Magic(mime=True)
+            except Exception:
+                self._magic = None
 
     def validate_size(self, file_size: int) -> None:
         """Validate file size."""
@@ -104,16 +155,25 @@ class FileValidator:
                 detected_mime = mime
                 break
 
-        # If no signature match, use python-magic as fallback
-        if detected_mime is None:
-            detected_mime = self._magic.from_buffer(content)
+        # If no signature match, use python-magic as fallback if available
+        if detected_mime is None and self._magic is not None:
+            try:
+                detected_mime = self._magic.from_buffer(content)
+            except Exception:
+                detected_mime = None
 
-            # If magic returns generic type, it's likely not a valid image
-            if detected_mime in ("application/octet-stream", "application/x-empty", ""):
-                raise FileValidationError(
-                    message="File signature not recognized as valid image format",
-                    details={"detected_by_magic": detected_mime},
-                )
+        if detected_mime is None:
+            # Check fallback dict
+            for sig, mime in MAGIC_BYTES_FALLBACK.items():
+                if content.startswith(sig):
+                    detected_mime = mime
+                    break
+
+        if detected_mime in ("application/octet-stream", "application/x-empty", "", None):
+            raise FileValidationError(
+                message="File signature not recognized as valid image format",
+                details={"detected_by_magic": detected_mime},
+            )
 
         # Verify against allowed types
         if detected_mime not in self.allowed_mime_types:

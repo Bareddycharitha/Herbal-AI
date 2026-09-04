@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -202,12 +202,8 @@ export default function ResultsPage() {
 
   useEffect(() => {
     if (!data || summaryLoading || summary || summaryError) return;
-    // Wait for Clerk to hydrate and the axios token getter to be
-    // installed before firing the protected /summary/ call. Without
-    // this gate the request races AuthProvider and produces a 401.
-    if (!isAuthenticated || !tokenReady) return;
     void loadSummary();
-  }, [data, isAuthenticated, tokenReady]);
+  }, [data, summaryLoading, summary, summaryError]);
 
   const handleChat = async (question: string) => {
     if (!data || !question.trim()) return;
@@ -255,16 +251,6 @@ export default function ResultsPage() {
     if (!data || !file) {
       setReportError("A valid image is required to generate the report.");
       toast.error("Missing image for report");
-      return;
-    }
-
-    // The /report/ endpoint is auth-protected. Don't fire it without
-    // a ready token — the resulting 401 shows the misleading
-    // 'Authentication required' toast. Instead, tell the user to sign
-    // in and bail out before any network call.
-    if (!isAuthenticated || !tokenReady) {
-      setReportError("Please sign in to download the AI report.");
-      toast.error("Sign in required to download report");
       return;
     }
 
@@ -407,15 +393,11 @@ export default function ResultsPage() {
           <Button
             size="lg"
             onClick={handleDownloadReport}
-            disabled={reportLoading || !file || !isAuthenticated || !tokenReady}
+            disabled={reportLoading || !file}
             className="h-11 px-5 text-base shadow-sm"
           >
             {reportLoading ? <LoaderCircle className="animate-spin size-5" /> : <Download className="size-5" />}
-            {reportLoading
-              ? "Generating report"
-              : !isAuthenticated
-                ? "Sign in to download report"
-                : "Download AI report"}
+            {reportLoading ? "Generating report" : "Download AI report"}
           </Button>
         </div>
       </div>
@@ -610,19 +592,6 @@ export default function ResultsPage() {
                   <div className="h-3 w-full animate-pulse rounded-full bg-muted" />
                   <div className="h-3 w-3/4 animate-pulse rounded-full bg-muted" />
                   <div className="h-3 w-1/2 animate-pulse rounded-full bg-muted" />
-                </div>
-              ) : isAuthenticated && !tokenReady ? (
-                <div className="mt-5 space-y-3" role="status" aria-live="polite">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <LoaderCircle className="size-4 animate-spin" />
-                    Preparing your session…
-                  </div>
-                  <div className="h-3 w-full animate-pulse rounded-full bg-muted" />
-                  <div className="h-3 w-3/4 animate-pulse rounded-full bg-muted" />
-                </div>
-              ) : !isAuthenticated ? (
-                <div className="mt-5 rounded-[1.2rem] border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground">
-                  Sign in to view the AI medical summary and download the report.
                 </div>
               ) : summaryError ? (
                 <div className="mt-5">

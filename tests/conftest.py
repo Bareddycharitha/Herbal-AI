@@ -83,10 +83,11 @@ def large_file_bytes():
 # Mock Fixtures
 # ==========================================================
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_classifier():
-    """Mock universal classifier."""
-    with patch("backend.app.services.universal_classifier.get_classifier") as mock:
+    """Mock universal classifier (autouse so lifespan never instantiates the real one)."""
+    with patch("backend.app.services.universal_classifier.get_classifier") as mock_get, \
+         patch("backend.app.services.universal_classifier.init_classifier") as mock_init:
         classifier = MagicMock()
         classifier.predict.return_value = {
             "class": "Skin",
@@ -99,7 +100,16 @@ def mock_classifier():
                 {"class": "Other", "confidence": 4.3},
             ],
         }
-        mock.return_value = classifier
+        # ``/ready`` reads these attributes; return plain JSON-safe values
+        # so the response can be serialised.
+        from ai.utils.model_loader import ModelLoadStatus
+        classifier.model_load_status = ModelLoadStatus(
+            model_name="universal_classifier",
+            checkpoint_path="ai/image_classifier/checkpoints/best_model.pth",
+            loaded=True,
+            error=None,
+        )
+        mock_get.return_value = classifier
         yield classifier
 
 
@@ -171,6 +181,7 @@ def mock_openrouter_client():
          patch("backend.app.api.chat.get_chatbot") as mock_chatbot, \
          patch("ai.llm.summary_engine.SummaryEngine.generate_summary") as mock_generate_summary, \
          patch("ai.llm.summary_engine.SummaryEngine.generate_herb_summary") as mock_generate_herb_summary, \
+         patch("ai.llm.summary_engine.SummaryEngine._generate_async") as mock_generate_async, \
          patch("ai.llm.chatbot_engine.ChatbotEngine.ask") as mock_chatbot_ask:
 
         client = AsyncMock()
@@ -186,6 +197,16 @@ def mock_openrouter_client():
         mock_generate_summary.return_value = "This is a generated summary."
         mock_generate_herb_summary.return_value = "This is a generated herb summary."
 
+        # Mock the *private* async method that the API actually calls.
+        # Returns a coroutine-friendly value.
+        async def _fake_generate_async(*args, **kwargs):
+            return {
+                "success": True,
+                "response": "This is a generated summary.",
+                "cached": False,
+            }
+        mock_generate_async.side_effect = _fake_generate_async
+
         # Mock chatbot engine instance method
         mock_chatbot_ask.return_value = "This is a chat response."
 
@@ -195,6 +216,15 @@ def mock_openrouter_client():
         summary_engine.generate_summary_async.return_value = "This is a generated summary."
         summary_engine.generate_herb_summary.return_value = "This is a generated herb summary."
         summary_engine.generate_herb_summary_async.return_value = "This is a generated herb summary."
+        # Provide a sync-returning _generate_async on the engine mock too,
+        # so a coroutine that returns it directly is also fine.
+        async def _fake_engine_generate(*args, **kwargs):
+            return {
+                "success": True,
+                "response": "This is a generated summary.",
+                "cached": False,
+            }
+        summary_engine._generate_async.side_effect = _fake_engine_generate
         mock_summary_engine.return_value = summary_engine
 
         # Mock chatbot engine factory

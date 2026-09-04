@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.concurrency import run_in_threadpool
 
 from backend.app.config import get_settings, Settings
-from backend.app.dependencies import get_current_active_user
+from backend.app.dependencies import get_optional_user
 from backend.app.schemas.report import ReportData
 from backend.app.services.pdf.report_generator import generate_report
 from backend.app.utils.file_validator import file_validator, generate_secure_temp_path
@@ -31,7 +31,7 @@ async def create_report(
     image: UploadFile = File(...),
     report_data: str = Form(...),
     settings: Settings = Depends(get_settings),
-    current_user = Depends(get_current_active_user),
+    current_user = Depends(get_optional_user),
 ):
     """
     Generate a PDF report for a skin disease analysis.

@@ -183,7 +183,15 @@ class ModelError(HerbalAIError):
 
 
 class ModelLoadError(ModelError):
-    """Raised when model checkpoint fails to load."""
+    """Raised when model checkpoint fails to load.
+
+    A 503 (Service Unavailable) is more honest than a 500 here: the code
+    is fine, the *artifact* is missing. 503 is also what the readiness
+    probe returns for the same condition, and the frontend's
+    ``getApiError`` already maps 503 to a 'try again later' message —
+    which still beats the opaque "Network Error" the browser shows when
+    a 500 response has no CORS headers.
+    """
 
     def __init__(
         self,
@@ -195,6 +203,7 @@ class ModelLoadError(ModelError):
             details={"model_path": model_path, "reason": reason},
         )
         self.error_code = "MODEL_LOAD_ERROR"
+        self.status_code = 503
 
 
 class ModelInferenceError(ModelError):

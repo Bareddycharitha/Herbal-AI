@@ -1,5 +1,8 @@
 import torch.nn as nn
-import timm
+try:
+    import timm
+except ImportError:
+    timm = None
 
 from .config import (
     MODEL_NAME,
@@ -21,6 +24,9 @@ class UniversalImageClassifier(nn.Module):
     def __init__(self):
 
         super().__init__()
+
+        if timm is None:
+            raise ImportError("timm is not installed.")
 
         # Load pretrained EfficientNetV2
         self.backbone = timm.create_model(

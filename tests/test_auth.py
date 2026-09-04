@@ -57,25 +57,23 @@ class TestVerifyClerkToken:
         assert result["is_active"] is True
 
     def test_verify_invalid_token_no_jwks_key(self):
-        """Test that tokens with no matching JWKS key return None."""
-        from backend.app.utils.auth import verify_clerk_token
+        """Test that tokens with no matching JWKS key raise TokenError."""
+        from backend.app.utils.auth import verify_clerk_token, TokenError
 
         mock_jwks = {"keys": []}
 
         with patch("backend.app.utils.auth._fetch_jwks", return_value=mock_jwks):
             with patch("jose.jwt.get_unverified_header", return_value={"kid": "missing-kid"}):
-                result = verify_clerk_token("invalid.token")
-
-        assert result is None
+                with pytest.raises(TokenError):
+                    verify_clerk_token("invalid.token")
 
     def test_verify_token_fetch_error(self):
-        """Test that JWKS fetch errors return None."""
-        from backend.app.utils.auth import verify_clerk_token
+        """Test that JWKS fetch errors raise TokenError."""
+        from backend.app.utils.auth import verify_clerk_token, TokenError
 
         with patch("backend.app.utils.auth._fetch_jwks", side_effect=Exception("Network error")):
-            result = verify_clerk_token("error.token")
-
-        assert result is None
+            with pytest.raises(TokenError):
+                verify_clerk_token("error.token")
 
     def test_get_user_id_from_token_valid(self):
         """Test extracting user ID from a valid Clerk token."""

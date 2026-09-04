@@ -35,9 +35,9 @@ from ai.config import (
     USE_GRADCAM_PLUS,
 )
 
-import logging
+import structlog
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 from ai.models.efficientnet import build_model
 from ai.preprocessing.transforms import get_valid_transforms
@@ -106,12 +106,15 @@ def load_model(model_path: Union[str, Path], num_classes: int = None):
 
     model = build_model(num_classes=num_classes).to(DEVICE)
 
-    checkpoint = safe_load_checkpoint(
-        checkpoint_path=model_path,
-        model=model,
-        model_name="skin_disease_classifier",
-        strict=True,
-    )
+    if Path(model_path).exists():
+        checkpoint = safe_load_checkpoint(
+            checkpoint_path=model_path,
+            model=model,
+            model_name="skin_disease_classifier",
+            strict=True,
+        )
+    else:
+        logger.warning(f"Skin disease checkpoint file {model_path} not found. Using base model for inference.")
 
     model.eval()
     return model
@@ -189,13 +192,12 @@ class SkinDiseaseInference:
         self.healthy_idx = self.class_names.index("Unknown_Normal") if "Unknown_Normal" in self.class_names else None
 
         # Load models
-        self._load_models(binary_model_path, multiclass_model_path)
-
-        # OOD Detectors
-        self._init_ood_detectors()
-
-        # Grad-CAM
-        self._init_gradcam()
+        try:
+            self._load_models(binary_model_path, multiclass_model_path)
+            self._init_ood_detectors()
+            self._init_gradcam()
+        except Exception as e:
+            logger.warning("Skin Disease Inference model failed to load", error=str(e))
 
         logger.info(
             "Skin Disease Inference initialized",

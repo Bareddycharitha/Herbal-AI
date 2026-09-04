@@ -261,11 +261,30 @@ class OpenRouterClient:
                 # Success
                 self.circuit_breaker.record_success()
 
-                # Extract response text from OpenAI-compatible format
+                # Extract response text from OpenAI-compatible format (supporting reasoning models)
                 response_text = ""
                 if "choices" in result and len(result["choices"]) > 0:
                     message = result["choices"][0].get("message", {})
-                    response_text = message.get("content", "").strip()
+                    raw_text = (
+                        message.get("content")
+                        or message.get("reasoning")
+                        or ""
+                    ).strip()
+
+                    # Filter out reasoning/thinking headers if present
+                    if "thinking process" in raw_text.lower() or "<think>" in raw_text:
+                        import re
+                        raw_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL)
+                        parts = [p.strip() for p in raw_text.split("\n\n") if p.strip()]
+                        # Pick the last paragraph containing summary content
+                        for part in reversed(parts):
+                            if "thinking process" not in part.lower() and "count words" not in part.lower() and len(part) > 30:
+                                response_text = part
+                                break
+                        if not response_text and parts:
+                            response_text = parts[-1]
+                    else:
+                        response_text = raw_text
 
                 # Cache successful response
                 if use_cache and response_text:

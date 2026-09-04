@@ -8,16 +8,21 @@ from pathlib import Path
 from PIL import Image
 import io
 
+pytest.importorskip("timm")
+
 from ai.image_classifier.inference import UniversalClassifierInference
 from ai.image_classifier.evaluate import load_test_data, evaluate_model
+from ai.image_classifier.config import BEST_MODEL_PATH
 
 
+@pytest.mark.skipif(not BEST_MODEL_PATH.exists(), reason="Checkpoint file not found")
 def test_classifier_instantiation():
     """Test that the classifier can be instantiated."""
     classifier = UniversalClassifierInference()
     assert classifier is not None
 
 
+@pytest.mark.skipif(not BEST_MODEL_PATH.exists(), reason="Checkpoint file not found")
 def test_predict_returns_valid_output():
     """Test that predict returns a dictionary with expected keys."""
     classifier = UniversalClassifierInference()
@@ -49,6 +54,7 @@ def test_predict_returns_valid_output():
         assert 0 <= pred['confidence'] <= 100
 
 
+@pytest.mark.skipif(not BEST_MODEL_PATH.exists(), reason="Checkpoint file not found")
 def test_predict_batch():
     """Test batch prediction."""
     classifier = UniversalClassifierInference()
@@ -66,6 +72,7 @@ def test_predict_batch():
         assert 0 <= result['confidence'] <= 100
 
 
+@pytest.mark.skipif(not BEST_MODEL_PATH.exists(), reason="Checkpoint file not found")
 def test_invalid_image_handling():
     """Test that invalid image paths are handled gracefully."""
     classifier = UniversalClassifierInference()

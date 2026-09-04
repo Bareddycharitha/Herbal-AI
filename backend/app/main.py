@@ -44,8 +44,11 @@ async def lifespan(app: FastAPI):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Initialize classifier (universal model)
-    init_classifier(settings)
-    logger.info("Universal classifier initialized")
+    try:
+        init_classifier(settings)
+        logger.info("Universal classifier initialized")
+    except Exception as e:
+        logger.error("Universal classifier failed to load at startup", error=str(e))
 
     # Eagerly initialize skin disease and herb models for readiness checks
     try:
@@ -53,14 +56,34 @@ async def lifespan(app: FastAPI):
         get_inference()
         logger.info("Skin disease model loaded successfully")
     except Exception as e:
-        logger.error("Skin disease model failed to load at startup", error=str(e))
+        skin_checkpoint = settings.model_dir / "best_model.pth"
+        logger.error(
+            "Skin disease model failed to load at startup",
+            error=str(e),
+            error_type=type(e).__name__,
+            expected_checkpoint=str(skin_checkpoint),
+            hint=(
+                "If the file is missing, place a trained checkpoint at the path above. "
+                "Prediction requests will return 503 MODEL_LOAD_ERROR until it is present."
+            ),
+        )
 
     try:
         from ai.herb.inference import get_herb_predictor
         get_herb_predictor()
         logger.info("Herb model loaded successfully")
     except Exception as e:
-        logger.error("Herb model failed to load at startup", error=str(e))
+        herb_checkpoint = settings.herb_model_dir / "best_model.pth"
+        logger.error(
+            "Herb model failed to load at startup",
+            error=str(e),
+            error_type=type(e).__name__,
+            expected_checkpoint=str(herb_checkpoint),
+            hint=(
+                "If the file is missing, place a trained checkpoint at the path above. "
+                "Prediction requests will return 503 MODEL_LOAD_ERROR until it is present."
+            ),
+        )
 
     # Initialize OpenRouter client (optional — does not block startup)
     try:

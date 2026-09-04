@@ -218,6 +218,33 @@ export function getApiError(error: unknown): { message: string; status?: number;
         reason,
       };
     }
+    if (status === 503) {
+      // 503 is the structured "model checkpoint missing" / "service
+      // unavailable" response. Pull a friendly message from the
+      // backend's error body when we recognise the code, otherwise
+      // fall back to the generic copy.
+      const errorBody = error.response?.data;
+      const code = errorBody?.error?.code;
+      const codeToMessage: Record<string, string> = {
+        model_load_error:
+          "The AI model isn't ready yet — its training checkpoint is missing on the server. Please contact the project maintainer or check the README for how to download model weights.",
+        service_unavailable:
+          "The backend is temporarily unavailable. Please try again in a moment.",
+      };
+      const detail = errorBody?.error?.details;
+      const detailSuffix =
+        detail && typeof detail === "object" && typeof detail.model_path === "string"
+          ? ` (missing: ${detail.model_path})`
+          : "";
+      const friendly =
+        (code && codeToMessage[code]) ??
+        "The backend is temporarily unavailable. Please try again in a moment.";
+      return {
+        message: friendly + detailSuffix,
+        status,
+        reason: code,
+      };
+    }
     if (status === 404) {
       return {
         message: "Resource not found.",

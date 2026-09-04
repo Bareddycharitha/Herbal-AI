@@ -56,20 +56,31 @@ class HerbalKnowledgeBase:
         """Load herbal knowledge base from JSON file."""
         with self._lock:
             try:
-                stat = self.json_path.stat()
-                self._last_modified = stat.st_mtime
+                if self.json_path.exists():
+                    stat = self.json_path.stat()
+                    self._last_modified = stat.st_mtime
 
-                with open(self.json_path, "r", encoding="utf-8") as f:
-                    self._data = json.load(f)
+                    with open(self.json_path, "r", encoding="utf-8") as f:
+                        raw_data = json.load(f)
 
-                logger.info(
-                    "Herbal knowledge base loaded",
-                    path=str(self.json_path),
-                    herb_count=len(self._data),
-                )
+                    if isinstance(raw_data, dict) and "herbs" in raw_data and isinstance(raw_data["herbs"], list):
+                        self._data = {h["name"]: h for h in raw_data["herbs"] if isinstance(h, dict) and "name" in h}
+                    elif isinstance(raw_data, dict):
+                        self._data = raw_data
+                    else:
+                        self._data = {}
+
+                    logger.info(
+                        "Herbal knowledge base loaded",
+                        path=str(self.json_path),
+                        herb_count=len(self._data),
+                    )
+                else:
+                    self._data = {}
+                    logger.warning("Herbal knowledge base file not found, initializing empty", path=str(self.json_path))
             except Exception as e:
                 logger.error("Failed to load herbal knowledge base", path=str(self.json_path), error=str(e))
-                raise
+                self._data = {}
 
     def _check_reload(self) -> bool:
         """Check if file has been modified and reload if needed."""
@@ -120,14 +131,14 @@ class HerbalKnowledgeBase:
 
             return {
                 "name": herb.get("name", ""),
-                "botanical_name": herb.get("botanical_name", ""),
+                "botanical_name": herb.get("botanical_name", herb.get("scientific_name", "")),
                 "family": herb.get("family", ""),
                 "active_compounds": herb.get("active_compounds", []),
                 "phytochemicals": herb.get("phytochemicals", []),
-                "benefits": herb.get("benefits", []),
-                "preparation_method": herb.get("preparation_method", ""),
+                "benefits": herb.get("benefits", herb.get("traditional_uses", [])),
+                "preparation_method": herb.get("preparation_method", herb.get("preparation", "")),
                 "side_effects": herb.get("side_effects", []),
-                "contraindications": herb.get("contraindications", []),
+                "contraindications": herb.get("contraindications", [herb["precautions"]] if "precautions" in herb else []),
                 "research_papers": herb.get("research_papers", []),
                 "skin_types": herb.get("skin_types", []),
                 "evidence_level": herb.get("evidence_level", ""),

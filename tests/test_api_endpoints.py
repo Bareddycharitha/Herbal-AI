@@ -3,7 +3,7 @@ Tests for API Endpoints
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from io import BytesIO
 from PIL import Image
@@ -45,7 +45,7 @@ class TestPredictionEndpoint:
 
     def test_predict_success_skin(self, test_client, valid_image_file, mock_classifier, mock_skin_pipeline):
         """Test successful skin prediction."""
-        with patch("backend.app.api.prediction.run_in_threadpool") as mock_run:
+        with patch("backend.app.api.prediction.run_in_threadpool", new_callable=AsyncMock) as mock_run:
             # First call: universal classifier
             # Second call: skin pipeline
             mock_run.side_effect = [
@@ -75,7 +75,7 @@ class TestPredictionEndpoint:
             "top_predictions": [],
         }
 
-        with patch("backend.app.api.prediction.run_in_threadpool") as mock_run:
+        with patch("backend.app.api.prediction.run_in_threadpool", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = mock_classifier.predict.return_value
 
             response = test_client.post(
@@ -99,7 +99,7 @@ class TestPredictionEndpoint:
             "top_predictions": [],
         }
 
-        with patch("backend.app.api.prediction.run_in_threadpool") as mock_run:
+        with patch("backend.app.api.prediction.run_in_threadpool", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = mock_classifier.predict.return_value
 
             response = test_client.post(
@@ -158,15 +158,15 @@ class TestHerbEndpoint:
 
     def test_herb_predict_success(self, test_client, valid_image_file, mock_herb_pipeline, mock_classifier):
         """Test successful herb prediction."""
-        mock_classifier.predict.return_value = {
-            "class": "Medicinal",
-            "confidence": 92.0,
-            "is_ood": False,
-            "ood_scores": {},
-            "top_predictions": [],
-        }
+        with patch("backend.app.api.herb.run_in_threadpool", new_callable=AsyncMock) as mock_run:
+            mock_classifier.predict.return_value = {
+                "class": "Medicinal",
+                "confidence": 92.0,
+                "is_ood": False,
+                "ood_scores": {},
+                "top_predictions": [],
+            }
 
-        with patch("backend.app.api.herb.run_in_threadpool") as mock_run:
             mock_run.side_effect = [
                 mock_classifier.predict.return_value,
                 mock_herb_pipeline.return_value,
@@ -193,7 +193,7 @@ class TestHerbEndpoint:
             "top_predictions": [],
         }
 
-        with patch("backend.app.api.herb.run_in_threadpool") as mock_run:
+        with patch("backend.app.api.herb.run_in_threadpool", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = mock_classifier.predict.return_value
 
             response = test_client.post(
@@ -217,7 +217,7 @@ class TestHerbEndpoint:
             "top_predictions": [],
         }
 
-        with patch("backend.app.api.herb.run_in_threadpool") as mock_run:
+        with patch("backend.app.api.herb.run_in_threadpool", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = mock_classifier.predict.return_value
 
             response = test_client.post(
@@ -244,7 +244,7 @@ class TestHerbEndpoint:
 class TestSummaryEndpoint:
     """Tests for /api/v1/summary/ endpoint."""
 
-    def test_generate_summary(self, test_client, mock_ollama_client):
+    def test_generate_summary(self, test_client, mock_openrouter_client):
         """Test summary generation."""
         payload = {
             "prediction": "Acne",
@@ -263,7 +263,7 @@ class TestSummaryEndpoint:
 class TestChatEndpoint:
     """Tests for /api/v1/chat/ endpoint."""
 
-    def test_chat(self, test_client, mock_ollama_client):
+    def test_chat(self, test_client, mock_openrouter_client):
         """Test chat endpoint."""
         payload = {
             "prediction": "Acne",

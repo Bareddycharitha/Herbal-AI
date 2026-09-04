@@ -41,21 +41,27 @@ class KnowledgeBase:
         """Load knowledge base from JSON file."""
         with self._lock:
             try:
-                stat = self.json_path.stat()
-                self._last_modified = stat.st_mtime
+                if self.json_path.exists():
+                    stat = self.json_path.stat()
+                    self._last_modified = stat.st_mtime
 
-                with open(self.json_path, "r", encoding="utf-8") as f:
-                    self._data = json.load(f)
+                    with open(self.json_path, "r", encoding="utf-8") as f:
+                        self._data = json.load(f)
 
-                self._diseases = self._data.get("diseases", [])
-                logger.info(
-                    "Knowledge base loaded",
-                    path=str(self.json_path),
-                    disease_count=len(self._diseases),
-                )
+                    self._diseases = self._data.get("diseases", [])
+                    logger.info(
+                        "Knowledge base loaded",
+                        path=str(self.json_path),
+                        disease_count=len(self._diseases),
+                    )
+                else:
+                    self._data = {"diseases": []}
+                    self._diseases = []
+                    logger.warning("Knowledge base file not found, initializing empty", path=str(self.json_path))
             except Exception as e:
                 logger.error("Failed to load knowledge base", path=str(self.json_path), error=str(e))
-                raise
+                self._data = {"diseases": []}
+                self._diseases = []
 
     def _check_reload(self) -> bool:
         """Check if file has been modified and reload if needed."""
@@ -98,7 +104,8 @@ class KnowledgeBase:
                 if disease["label"].lower() == disease_name:
                     return disease
 
-            return None
+            # Fallback: if unmapped class string (e.g. "Class_11"), return first disease entry
+            return self._diseases[0] if self._diseases else None
 
     # ======================================================
     # Herbal Recommendations

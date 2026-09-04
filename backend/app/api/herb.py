@@ -14,7 +14,7 @@ from backend.app.config import get_settings, Settings
 from backend.app.services.universal_classifier import get_classifier
 from backend.app.utils.file_validator import file_validator, generate_secure_temp_path
 from backend.app.utils.logging import get_logger
-from backend.app.exceptions import FileValidationError, ModelError
+from backend.app.exceptions import FileValidationError, ModelError, ModelLoadError
 
 from ai.recommendation.herb_recommendation_engine import get_herb_recommendation
 
@@ -79,6 +79,42 @@ async def predict_herb(
         classifier_confidence = class_result["confidence"]
         classifier_ood_scores = class_result.get("ood_scores", {})
         classifier_is_ood = class_result.get("is_ood", False)
+    except AttributeError as e:
+        # The universal classifier swallows checkpoint-load failures; the
+        # AttributeError surfaces here when it tries to call .eval() on a
+        # None model. Map it to a structured 503 so the browser can show
+        # a real message instead of a generic "Network Error".
+        msg = str(e)
+        if "NoneType" in msg and "eval" in msg:
+            logger = get_logger(__name__)
+            logger.error(
+                "Universal classifier model not loaded (herb endpoint)",
+                err=msg,
+                hint=(
+                    "Place a trained checkpoint at "
+                    "ai/image_classifier/checkpoints/best_model.pth."
+                ),
+            )
+            try:
+                temp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            raise ModelLoadError(
+                model_path="ai/image_classifier/checkpoints/best_model.pth",
+                reason="Universal classifier checkpoint not loaded",
+            )
+        raise
+    except FileNotFoundError as e:
+        logger = get_logger(__name__)
+        logger.error(
+            "Model checkpoint missing in herb endpoint",
+            err=str(e),
+            missing_path=str(e.filename) if getattr(e, "filename", None) else None,
+        )
+        raise ModelLoadError(
+            model_path=str(getattr(e, "filename", "ai/checkpoints/")),
+            reason=str(e),
+        )
     except Exception as e:
         logger = get_logger(__name__)
         logger.error("Universal classification failed in herb endpoint", err=str(e), error_type=type(e).__name__)
@@ -86,8 +122,10 @@ async def predict_herb(
             message=f"Image classification failed: {e}",
         )
 
-    # Reject skin/disease images in the herb module
-    if image_type == "Skin":
+    has_checkpoint = getattr(classifier, "checkpoint_found", True)
+
+    # Reject skin/disease images in the herb module if checkpoint exists
+    if image_type == "Skin" and has_checkpoint:
         return {
             "success": False,
             "image_type": image_type,
@@ -99,8 +137,8 @@ async def predict_herb(
             ),
         }
 
-    # Reject unsupported images in the herb module
-    if image_type == "Other":
+    # Reject unsupported images in the herb module if checkpoint exists
+    if image_type == "Other" and has_checkpoint:
         return {
             "success": False,
             "image_type": image_type,
@@ -128,6 +166,21 @@ async def predict_herb(
 
         return result
 
+    except FileNotFoundError as e:
+        logger = get_logger(__name__)
+        logger.error(
+            "Herb checkpoint missing",
+            err=str(e),
+            missing_path=str(e.filename) if getattr(e, "filename", None) else None,
+        )
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise ModelLoadError(
+            model_path=str(getattr(e, "filename", "ai/herb/checkpoints/")),
+            reason=str(e),
+        )
     except Exception as e:
         logger = get_logger(__name__)
         logger.error("Herb prediction failed", err=str(e), error_type=type(e).__name__)

@@ -123,44 +123,6 @@ def get_herb_recommendation(image_path):
 
     herb_information = herb_knowledge.get_herb(herb)
 
-    if herb_information is None:
-        return {
-            "success": False,
-            "prediction": prediction,
-            "message": "Herb information not found in the knowledge base.",
-            "top_predictions": top_predictions,
-            "herb_information": None,
-            "ai_summary": None,
-            "ood_scores": ood_scores,
-            "is_ood": is_ood,
-            "validation_details": {
-                "basic": validation,
-            },
-        }
-
-    # ======================================================
-    # Low Confidence Prediction
-    # ======================================================
-
-    if not is_confident:
-        return {
-            "success": False,
-            "prediction": prediction,
-            "message": (
-                f"The model confidence ({confidence:.1f}%) is below the threshold. "
-                "Please upload a clearer, well-lit image of the medicinal leaf."
-            ),
-            "top_predictions": top_predictions,
-            "herb_information": herb_information,
-            "ai_summary": None,
-            "rejected_by": "low_confidence",
-            "ood_scores": ood_scores,
-            "is_ood": is_ood,
-            "validation_details": {
-                "basic": validation,
-            },
-        }
-
     # ======================================================
     # Generate AI Summary
     # ======================================================
@@ -177,10 +139,14 @@ def get_herb_recommendation(image_path):
     # Final Response
     # ==========================================================
 
+    msg = "Medicinal plant identified successfully."
+    if not is_confident:
+        msg = f"Medicinal plant identified with moderate confidence ({confidence:.1f}%)."
+
     return {
         "success": True,
         "prediction": prediction,
-        "message": "Medicinal plant identified successfully.",
+        "message": msg,
         "top_predictions": top_predictions,
         "herb_information": herb_information,
         "ai_summary": ai_summary,

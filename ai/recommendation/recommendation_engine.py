@@ -218,6 +218,22 @@ def get_recommendation(
         }
 
     # ======================================================
+    # Disease Information & Herb Recommendations
+    # ======================================================
+
+    _disease_kb = _get_disease_kb()
+    _herbal_kb = _get_herbal_kb()
+
+    disease_information = _disease_kb.get_disease_information(disease)
+    recommendations = _disease_kb.get_recommendations(disease)
+    herb_details = {}
+
+    for herb in recommendations:
+        details = _herbal_kb.get_herb(herb["name"])
+        if details:
+            herb_details[herb["name"]] = details
+
+    # ======================================================
     # OOD / Uncertain Handling
     # ======================================================
 
@@ -233,10 +249,9 @@ def get_recommendation(
             ),
             "top_predictions": top_predictions,
             "gradcam_image": gradcam_image,
-            "disease_information": None,
-            "recommended_herbs": [],
-            "herb_details": {},
-            # AI summary is generated separately by POST /api/v1/summary/
+            "disease_information": disease_information,
+            "recommended_herbs": recommendations,
+            "herb_details": herb_details,
             "ai_summary": None,
             "binary_stage": binary_stage,
             "ood_scores": ood_scores,
@@ -260,10 +275,9 @@ def get_recommendation(
             "message": message,
             "top_predictions": top_predictions,
             "gradcam_image": gradcam_image,
-            "disease_information": None,
-            "recommended_herbs": [],
-            "herb_details": {},
-            # AI summary is generated separately by POST /api/v1/summary/
+            "disease_information": disease_information,
+            "recommended_herbs": recommendations,
+            "herb_details": herb_details,
             "ai_summary": None,
             "binary_stage": binary_stage,
             "ood_scores": ood_scores,
@@ -273,28 +287,6 @@ def get_recommendation(
                 "medical": medical_validation,
             },
         }
-
-    # ======================================================
-    # Disease Information
-    # ======================================================
-
-    # The two knowledge bases are lazy-initialised here. The first
-    # successful skin prediction that reaches this branch pays the
-    # JSON parse + watcher-thread cost once; subsequent requests
-    # re-use the same instance.
-    _disease_kb = _get_disease_kb()
-    _herbal_kb = _get_herbal_kb()
-
-    disease_information = _disease_kb.get_disease_information(disease)
-
-    recommendations = _disease_kb.get_recommendations(disease)
-
-    herb_details = {}
-
-    for herb in recommendations:
-        details = _herbal_kb.get_herb(herb["name"])
-        if details:
-            herb_details[herb["name"]] = details
 
     # ======================================================
     # Final Response

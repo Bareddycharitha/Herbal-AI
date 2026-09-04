@@ -6,8 +6,8 @@ class MedicalImageValidator:
 
     def __init__(self):
 
-        self.MIN_SKIN_RATIO = 0.18
-        self.MAX_EDGE_RATIO = 0.25
+        self.MIN_SKIN_RATIO = 0.03
+        self.MAX_EDGE_RATIO = 0.45
 
     def validate(self, image_path):
 

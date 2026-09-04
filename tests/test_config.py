@@ -70,13 +70,12 @@ class TestSettings:
         assert settings.data_dir.name == "datasets"
         assert settings.results_dir.name == "results"
 
-    def test_ollama_defaults(self):
-        """Test Ollama configuration defaults."""
+    def test_openrouter_defaults(self):
+        """Test OpenRouter configuration defaults."""
         settings = Settings(_env_file=None, _env_file_encoding=None)
-        assert settings.ollama_host == "http://localhost:11434"
-        assert settings.ollama_model == "llama3.2:3b"
-        assert settings.ollama_timeout_seconds == 120
-        assert settings.ollama_max_retries == 3
+        assert settings.openrouter_model == "google/gemini-flash-1.5"
+        assert settings.openrouter_timeout_seconds == 15
+        assert settings.openrouter_max_retries == 1
 
     def test_rate_limiting_defaults(self):
         """Test rate limiting defaults."""
@@ -112,13 +111,13 @@ class TestSettings:
         monkeypatch.setenv("APP_NAME", "Test API")
         monkeypatch.setenv("DEBUG", "true")
         monkeypatch.setenv("PORT", "9000")
-        monkeypatch.setenv("OLLAMA_MODEL", "llama3.1:8b")
+        monkeypatch.setenv("OPENROUTER_MODEL", "google/gemini-pro")
 
         settings = Settings()
         assert settings.app_name == "Test API"
         assert settings.debug is True
         assert settings.port == 9000
-        assert settings.ollama_model == "llama3.1:8b"
+        assert settings.openrouter_model == "google/gemini-pro"
 
     def test_cors_origins_from_env(self, monkeypatch):
         """Test CORS origins from environment."""

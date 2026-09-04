@@ -1,8 +1,7 @@
-"""
-Herb Identification Model with ArcFace Support
-"""
-
-import timm
+try:
+    import timm
+except ImportError:
+    timm = None
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -88,6 +87,9 @@ class HerbClassifier(nn.Module):
         # --------------------------------------------------
         # Backbone
         # --------------------------------------------------
+
+        if timm is None:
+            raise ImportError("timm is not installed.")
 
         self.backbone = timm.create_model(
             MODEL_NAME,

@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     # CORS
     # ==========================================================
     cors_origins: Union[list[str], str] = Field(
-        default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
+        default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000", "http://10.146.224.173:3000"]
     )
     cors_allow_credentials: bool = False
     cors_allow_methods: Union[list[str], str] = Field(default_factory=lambda: ["GET", "POST"])
@@ -144,14 +144,14 @@ class Settings(BaseSettings):
     # ==========================================================
     # Device & Performance
     # ==========================================================
-    device: str = Field(default="auto", pattern="^(auto|cpu|cuda)$")
+    device: str = Field(default="cuda", pattern="^(auto|cpu|cuda)$")
     num_workers: int = 2
     pin_memory: bool = True
     use_amp: bool = True
 
     @property
     def torch_device(self) -> str:
-        if self.device == "auto":
+        if self.device in ("cuda", "auto"):
             import torch
             return "cuda" if torch.cuda.is_available() else "cpu"
         return self.device
@@ -160,7 +160,7 @@ class Settings(BaseSettings):
     # OpenRouter LLM
     # ==========================================================
     openrouter_api_key: str = Field(default="")
-    openrouter_model: str = "google/gemini-flash-1.5"
+    openrouter_model: str = "minimax/minimax-m3:free"
     # Per-request HTTP timeout. The summary endpoint layers its own
     # hard cap (SUMMARY_TIMEOUT_SECONDS) on top, so this should be
     # large enough not to fire on a slow but eventually-successful
