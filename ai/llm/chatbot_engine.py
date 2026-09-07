@@ -90,21 +90,9 @@ Herbs sometimes used to support general skin health: {herb_text}"""
 
         # Run async method in event loop, handling case where loop is already running
         try:
-            loop = asyncio.get_running_loop()
-            # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
-            import concurrent.futures
-            future = asyncio.run_coroutine_threadsafe(
-                self._ask_async(
-                    prompt,
-                    temperature=0.2,
-                    max_tokens=500,
-                    system_prompt=CHAT_SYSTEM_PROMPT,
-                ),
-                loop,
-            )
-            result = future.result(timeout=60)
+            asyncio.get_running_loop()
         except RuntimeError:
-            # No running loop, safe to use run_until_complete
+            # No running loop, safe to use run_until_complete on a fresh loop
             try:
                 loop = asyncio.get_event_loop()
             except RuntimeError:
@@ -117,6 +105,20 @@ Herbs sometimes used to support general skin health: {herb_text}"""
                     max_tokens=500,
                     system_prompt=CHAT_SYSTEM_PROMPT,
                 )
+            )
+        else:
+            # A loop is already running in this thread (e.g. the FastAPI
+            # event loop). ``asyncio.run_coroutine_threadsafe`` is for
+            # *cross-thread* dispatch, so it cannot be used on the current
+            # thread's loop. The fix is for the caller to run this sync
+            # method on a worker thread (e.g. via ``run_in_threadpool``).
+            # We surface a clear error rather than silently deadlocking
+            # for 60s, which is what used to happen and produced
+            # ``Chat failed: `` 500s in production.
+            raise RuntimeError(
+                "ChatbotEngine.ask() must be called from a thread without "
+                "a running event loop. Use run_in_threadpool or call "
+                "ask_async() directly inside the loop instead."
             )
 
         if result["success"]:
