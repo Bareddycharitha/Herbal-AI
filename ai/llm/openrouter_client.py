@@ -25,6 +25,102 @@ from backend.app.config import settings
 logger = structlog.get_logger(__name__)
 
 
+# Matches a labeled phrase the model sometimes echoes back when leaking
+# its planning structure into the response. Two flavors:
+#   1. "1. **Analyze the Request:**" / "* **Role:** Medical writer."
+#      — bold label, with or without a numeric/bullet prefix.
+#   2. "* Overview:" / "* What to look for:" — plain bullet label.
+# The frontend renders the summary as plain prose, so these would
+# otherwise show up as raw markdown noise.
+_LABEL_PATTERN = __import__("re").compile(
+    r"\*\*[^*\n]{1,40}?\*\*\s*[:\-]?"
+)
+_PLAIN_LABEL_PATTERN = __import__("re").compile(
+    r"\*\s+[A-Z][A-Za-z &\-]{1,30}?:\s*"
+)
+
+
+def _looks_like_planning_preamble(text: str) -> bool:
+    """
+    Heuristic: a "planning preamble" is text that contains two or more
+    labeled annotations within the first ~1000 characters. A single
+    stray label mid-response is not a preamble.
+    """
+    if not text:
+        return False
+    head = text[:1000]
+    bold_count = len(_LABEL_PATTERN.findall(head))
+    plain_count = len(_PLAIN_LABEL_PATTERN.findall(head))
+    return (bold_count + plain_count) >= 2
+
+
+def _strip_planning_preamble(text: str) -> str:
+    """
+    Detect a leading planning preamble (a chain of labeled annotations
+    like "1. **Analyze the Request:** ... * **Role:** ... * **Task:**
+    ...") and return the text that comes after the last such label.
+    Plain text responses pass through unchanged.
+    """
+    if not text or not _looks_like_planning_preamble(text):
+        return text
+    head = text[:1500]
+    bold_ends = [m.end() for m in _LABEL_PATTERN.finditer(head)]
+    plain_ends = [m.end() for m in _PLAIN_LABEL_PATTERN.finditer(head)]
+    all_ends = sorted(bold_ends + plain_ends)
+    if not all_ends:
+        return text
+    cut = all_ends[-1]
+    return text[cut:].lstrip()
+
+
+def _strip_leading_label_lines(text: str) -> str:
+    """
+    Light pass over leading lines: drop any line that starts with a
+    bolded label (e.g. "**Overview:**") or a numbered/bullet item, plus
+    the literal "AI medical summary" / "Generated automatically" headers
+    the frontend already renders. Stops at the first real content line.
+    """
+    if not text:
+        return text
+    lines = text.split("\n")
+    cleaned: list[str] = []
+    started = False
+    for line in lines:
+        stripped = line.strip()
+        if not started:
+            if not stripped:
+                continue
+            if _LABEL_PATTERN.match(stripped) or _PLAIN_LABEL_PATTERN.match(stripped):
+                continue
+            lower = stripped.lower()
+            if lower.startswith("ai medical summary"):
+                continue
+            if lower.startswith("generated automatically"):
+                continue
+            started = True
+        cleaned.append(line)
+    if cleaned:
+        return "\n".join(cleaned).strip()
+    return text.strip()
+
+
+def _strip_leading_annotations(text: str) -> str:
+    """
+    Two-stage cleanup for the model's response:
+
+    1. Detect and remove a leading planning preamble (a chain of
+       "**Label:** content" annotations) if present.
+    2. Drop any remaining stray labeled lines at the start.
+
+    A clean response passes through unchanged.
+    """
+    if not text:
+        return text
+    text = _strip_planning_preamble(text)
+    text = _strip_leading_label_lines(text)
+    return text
+
+
 class CircuitState(Enum):
     """Circuit breaker states."""
     CLOSED = "closed"      # Normal operation
@@ -285,6 +381,15 @@ class OpenRouterClient:
                             response_text = parts[-1]
                     else:
                         response_text = raw_text
+
+                    # Strip any leading annotation lines the model may have
+                    # echoed back (e.g. "1. **Analyze the Request:** ...",
+                    # "* **Role:** Medical writer.", "**Overview:** ...").
+                    # The frontend renders the summary as plain text, so
+                    # these leaked planning labels would otherwise surface
+                    # in the UI.
+                    if response_text:
+                        response_text = _strip_leading_annotations(response_text)
 
                 # Cache successful response
                 if use_cache and response_text:

@@ -28,44 +28,25 @@ def build_summary_prompt(
         disease_info.get("self_care", [])
     )
 
-    prompt = f"""
-You are an experienced dermatologist.
+    prompt = f"""Write a brief, patient-friendly summary of an AI-assisted skin image analysis in two short paragraphs of plain English. Do not use markdown, bullet points, numbered lists, headings, or asterisks. Do not mention the prompt, your role, or any instructions. Keep the total under 180 words.
 
-Generate a professional medical summary.
+Paragraph 1 should be 2 to 3 sentences that explain what the predicted condition is, what the user might notice on their skin, and that the prediction came from an AI model with the stated confidence and is not a confirmed diagnosis. Encourage consulting a dermatologist for confirmation.
 
-Rules:
+Paragraph 2 should give 2 to 3 practical self-care steps drawn from the provided list, and note that the listed herbs may support general skin health but are not a substitute for medical treatment.
 
-- Maximum 180 words
-- Simple language
-- No markdown
-- Do not exaggerate certainty
-- Mention this is an AI prediction, not a confirmed diagnosis.
-- Recommend consulting a dermatologist when appropriate.
-- If herbal recommendations are provided, explain that they may support skin health but are not a substitute for medical treatment.
+Context for the summary:
 
-Prediction:
-{prediction}
+The detected skin condition is {prediction}. The AI model's confidence in this prediction is {confidence:.2f} percent.
 
-Confidence:
-{confidence:.2f}%
+The user may notice the following on their skin: {symptoms}.
 
-Description:
-{disease_info.get("description", "")}
+Suggested self-care steps: {self_care}.
 
-Symptoms:
-{symptoms}
+Herbs sometimes used to support general skin health: {herb_names}.
 
-Self Care:
-{self_care}
+When the user should see a doctor: {disease_info.get("when_to_consult_doctor", "")}
 
-Recommended Herbs:
-{herb_names}
-
-When to Consult a Doctor:
-{disease_info.get("when_to_consult_doctor", "")}
-
-Medical Disclaimer:
-{disease_info.get("medical_disclaimer", "")}
+Additional context about the condition: {disease_info.get("description", "")}
 """
 
     return prompt
@@ -114,39 +95,21 @@ def build_herb_summary_prompt(
         )
     )
 
-    prompt = f"""
-You are an expert botanist and Ayurvedic medicinal plant specialist.
+    prompt = f"""Write a brief, patient-friendly summary of an AI-assisted medicinal-plant identification in two short paragraphs of plain English. Do not use markdown, bullet points, numbered lists, headings, or asterisks. Do not mention the prompt, your role, or any instructions. Keep the total under 180 words.
 
-Generate a professional medicinal plant summary.
+Paragraph 1 should be 2 to 3 sentences that introduce the plant, including its common and scientific name and its botanical family, and explain its main medicinal properties and traditional uses. Make clear that this is an AI identification and not a confirmed botanical identification.
 
-Rules:
+Paragraph 2 should mention important precautions and safety notes, and recommend consulting a qualified healthcare professional before any medicinal use. Never claim that the plant cures diseases.
 
-- Maximum 180 words
-- Simple language
-- No markdown
-- Mention this is an AI identification and not a confirmed botanical identification.
-- Explain the medicinal uses.
-- Mention important precautions.
-- Never claim the plant cures diseases.
-- Recommend consulting a healthcare professional before medicinal use.
+Context for the summary:
 
-Plant:
-{herb}
+The plant identified by the user is {herb}. Its scientific name is {scientific_name} and it belongs to the {family} family.
 
-Scientific Name:
-{scientific_name}
+Its key medicinal properties: {medicinal_properties}.
 
-Family:
-{family}
+Common traditional uses: {uses}.
 
-Medicinal Properties:
-{medicinal_properties}
-
-Uses:
-{uses}
-
-Precautions:
-{precautions}
+Important precautions and safety notes: {precautions}.
 """
 
     return prompt
