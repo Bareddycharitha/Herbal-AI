@@ -2,7 +2,6 @@
 Summary Engine
 
 Generates AI summaries for skin disease and herb predictions
-using the resilient async Ollama client.
 """
 
 import asyncio
@@ -66,7 +65,7 @@ class SummaryEngine:
             # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
             import concurrent.futures
             future = asyncio.run_coroutine_threadsafe(
-                self._generate_async(prompt, temperature=0.3, max_tokens=600), loop
+                self._generate_async(prompt, temperature=0.3, max_tokens=900), loop
             )
             result = future.result(timeout=60)
         except RuntimeError:
@@ -77,7 +76,7 @@ class SummaryEngine:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             result = loop.run_until_complete(
-                self._generate_async(prompt, temperature=0.3, max_tokens=600)
+                self._generate_async(prompt, temperature=0.3, max_tokens=900)
             )
 
         if result["success"]:
@@ -113,7 +112,7 @@ class SummaryEngine:
             herbs,
         )
 
-        result = await self._generate_async(prompt, temperature=0.3, max_tokens=600)
+        result = await self._generate_async(prompt, temperature=0.3, max_tokens=900)
 
         if result["success"]:
             return result["response"]
@@ -141,7 +140,7 @@ class SummaryEngine:
             # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
             import concurrent.futures
             future = asyncio.run_coroutine_threadsafe(
-                self._generate_async(prompt, temperature=0.3, max_tokens=250), loop
+                self._generate_async(prompt, temperature=0.3, max_tokens=450), loop
             )
             result = future.result(timeout=60)
         except RuntimeError:
@@ -152,7 +151,7 @@ class SummaryEngine:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             result = loop.run_until_complete(
-                self._generate_async(prompt, temperature=0.3, max_tokens=250)
+                self._generate_async(prompt, temperature=0.3, max_tokens=450)
             )
 
         if result["success"]:
@@ -171,7 +170,7 @@ class SummaryEngine:
         """Async version of generate_herb_summary."""
         prompt = build_herb_summary_prompt(herb, herb_information)
 
-        result = await self._generate_async(prompt, temperature=0.3, max_tokens=250)
+        result = await self._generate_async(prompt, temperature=0.3, max_tokens=450)
 
         if result["success"]:
             return result["response"]

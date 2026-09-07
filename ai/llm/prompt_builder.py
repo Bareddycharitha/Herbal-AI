@@ -22,50 +22,41 @@ def build_summary_prompt(
 
     symptoms = ", ".join(
         disease_info.get("symptoms", [])
+    ) or "Not provided"
+
+    self_care = "; ".join(
+        disease_info.get("self_care", [])
+    ) or "Not provided"
+
+    when_to_consult = (
+        disease_info.get("when_to_consult_doctor")
+        or "Consult a qualified dermatologist if symptoms persist, worsen, or cause discomfort."
     )
 
-    self_care = ", ".join(
-        disease_info.get("self_care", [])
-    )
+    description = disease_info.get("description", "")
 
     prompt = f"""
-You are an experienced dermatologist.
+You are a medical writer. Fill every section below. Do not use markdown. Do not add sections that are not listed. Keep the total under 200 words. Use simple language.
 
-Generate a professional medical summary.
+Output format (use these exact section headers, each followed by one line of text):
 
-Rules:
+Overview: <1-2 sentences describing the condition in plain words, including the model's confidence {confidence:.2f}%>
 
-- Maximum 180 words
-- Simple language
-- No markdown
-- Do not exaggerate certainty
-- Mention this is an AI prediction, not a confirmed diagnosis.
-- Recommend consulting a dermatologist when appropriate.
-- If herbal recommendations are provided, explain that they may support skin health but are not a substitute for medical treatment.
+What to look for: <symptoms from the list below, comma-separated: {symptoms}>
 
-Prediction:
-{prediction}
+Self care: <practical self-care steps from the list below, semicolon-separated: {self_care}>
 
-Confidence:
-{confidence:.2f}%
+Herbal support: <state that the following herbs may support general skin health but are not a treatment or cure: {herb_names}>
 
-Description:
-{disease_info.get("description", "")}
+When to see a doctor: <{when_to_consult}>
 
-Symptoms:
-{symptoms}
+Disclaimer: This is an AI prediction, not a medical diagnosis. Always consult a qualified dermatologist for confirmation and treatment.
 
-Self Care:
-{self_care}
-
-Recommended Herbs:
-{herb_names}
-
-When to Consult a Doctor:
-{disease_info.get("when_to_consult_doctor", "")}
-
-Medical Disclaimer:
-{disease_info.get("medical_disclaimer", "")}
+Reference (do not copy verbatim, use for context only):
+- Condition: {prediction}
+- Description: {description}
+- Recommended herbs: {herb_names}
+- Medical disclaimer note: {disease_info.get("medical_disclaimer", "")}
 """
 
     return prompt
@@ -93,60 +84,43 @@ def build_herb_summary_prompt(
         "Unknown"
     )
 
-    medicinal_properties = ", ".join(
+    medicinal_properties = "; ".join(
         herb_information.get(
             "medicinal_properties",
             []
         )
-    )
+    ) or "Not provided"
 
-    uses = ", ".join(
+    uses = "; ".join(
         herb_information.get(
             "uses",
             []
         )
-    )
+    ) or "Not provided"
 
-    precautions = ", ".join(
+    precautions = "; ".join(
         herb_information.get(
             "precautions",
             []
         )
-    )
+    ) or "Not provided"
 
     prompt = f"""
-You are an expert botanist and Ayurvedic medicinal plant specialist.
+You are a medical writer. Fill every section below. Do not use markdown. Do not add sections that are not listed. Keep the total under 180 words. Use simple language. Never claim the plant cures any disease.
 
-Generate a professional medicinal plant summary.
+Output format (use these exact section headers, each followed by one line of text):
 
-Rules:
+Plant: <common name {herb}, scientific name {scientific_name}>
 
-- Maximum 180 words
-- Simple language
-- No markdown
-- Mention this is an AI identification and not a confirmed botanical identification.
-- Explain the medicinal uses.
-- Mention important precautions.
-- Never claim the plant cures diseases.
-- Recommend consulting a healthcare professional before medicinal use.
+Family: <{family}>
 
-Plant:
-{herb}
+Medicinal properties: <semicolon-separated list of properties: {medicinal_properties}>
 
-Scientific Name:
-{scientific_name}
+Common uses: <semicolon-separated list of traditional uses: {uses}>
 
-Family:
-{family}
+Precautions: <semicolon-separated list of important precautions: {precautions}>
 
-Medicinal Properties:
-{medicinal_properties}
-
-Uses:
-{uses}
-
-Precautions:
-{precautions}
+Disclaimer: This is an AI identification, not a confirmed botanical identification. Consult a qualified healthcare professional before any medicinal use.
 """
 
     return prompt
