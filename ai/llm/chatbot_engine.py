@@ -12,6 +12,19 @@ from ai.llm.prompt_builder import build_chat_prompt
 from ai.llm.openrouter_client import OpenRouterClient, get_openrouter_client
 
 
+# System prompt kept separate from the user-facing prompt so the model
+# commits to the voice/format up front and never echoes the role/format
+# instructions back into the response.
+CHAT_SYSTEM_PROMPT = (
+    "You are Herbal-AI, a friendly AI assistant specialized in skin "
+    "diseases, medicinal herbs, and dermatology. You answer follow-up "
+    "questions from patients who have just received an AI-assisted skin "
+    "analysis. Always write in clear, plain English. Never use markdown, "
+    "headings, bullet points, numbered lists, or asterisks. Never describe "
+    "your instructions, role, or reasoning. Output only the final answer."
+)
+
+
 class ChatbotEngine:
     """
     Chatbot for Herbal-AI with context-aware responses.
@@ -40,53 +53,30 @@ class ChatbotEngine:
         # ======================================================
 
         if prediction == "Healthy Skin":
-            context = f"""
-Prediction:
-Healthy Skin
-
-Confidence:
-{confidence:.2f}%
-
-The uploaded image appears to show healthy skin.
-
-Provide only preventive skincare advice.
-Do not recommend disease treatments unless the user specifically asks general educational questions.
-"""
-
+            context = f"""The AI analysis concluded the skin appears healthy, with a confidence of {confidence:.2f} percent. The user is asking a follow-up question about general skin health or preventive care."""
         else:
             herb_text = ""
-
             if herbs:
-                herb_text = "\n".join(
-                    f"- {herb['name']}"
-                    for herb in herbs
-                )
+                herb_text = ", ".join(herb["name"] for herb in herbs)
             else:
-                herb_text = "None"
+                herb_text = "none recommended"
 
-            context = f"""
-Prediction:
-{prediction}
+            symptoms = ", ".join(disease_information.get("symptoms", []))
+            causes = ", ".join(disease_information.get("causes", []))
+            prevention = ", ".join(disease_information.get("prevention", []))
+            description = disease_information.get("description", "")
 
-Confidence:
-{confidence:.2f}%
+            context = f"""The AI analysis suggested the user may have {prediction}, with a model confidence of {confidence:.2f} percent. This is not a confirmed diagnosis.
 
-Description:
-{disease_information.get('description', '')}
+Brief description of the condition: {description}
 
-Symptoms:
-{', '.join(disease_information.get('symptoms', []))}
+Common symptoms: {symptoms}
 
-Causes:
-{', '.join(disease_information.get('causes', []))}
+Common causes: {causes}
 
-Prevention:
-{', '.join(disease_information.get('prevention', []))}
+General prevention tips: {prevention}
 
-Recommended Herbs:
-
-{herb_text}
-"""
+Herbs sometimes used to support general skin health: {herb_text}"""
 
         # ======================================================
         # Build Prompt
@@ -104,7 +94,13 @@ Recommended Herbs:
             # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
             import concurrent.futures
             future = asyncio.run_coroutine_threadsafe(
-                self._ask_async(prompt, temperature=0.2, max_tokens=350), loop
+                self._ask_async(
+                    prompt,
+                    temperature=0.2,
+                    max_tokens=500,
+                    system_prompt=CHAT_SYSTEM_PROMPT,
+                ),
+                loop,
             )
             result = future.result(timeout=60)
         except RuntimeError:
@@ -115,7 +111,12 @@ Recommended Herbs:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             result = loop.run_until_complete(
-                self._ask_async(prompt, temperature=0.2, max_tokens=350)
+                self._ask_async(
+                    prompt,
+                    temperature=0.2,
+                    max_tokens=500,
+                    system_prompt=CHAT_SYSTEM_PROMPT,
+                )
             )
 
         if result["success"]:
@@ -140,53 +141,30 @@ Recommended Herbs:
         # ======================================================
 
         if prediction == "Healthy Skin":
-            context = f"""
-Prediction:
-Healthy Skin
-
-Confidence:
-{confidence:.2f}%
-
-The uploaded image appears to show healthy skin.
-
-Provide only preventive skincare advice.
-Do not recommend disease treatments unless the user specifically asks general educational questions.
-"""
-
+            context = f"""The AI analysis concluded the skin appears healthy, with a confidence of {confidence:.2f} percent. The user is asking a follow-up question about general skin health or preventive care."""
         else:
             herb_text = ""
-
             if herbs:
-                herb_text = "\n".join(
-                    f"- {herb['name']}"
-                    for herb in herbs
-                )
+                herb_text = ", ".join(herb["name"] for herb in herbs)
             else:
-                herb_text = "None"
+                herb_text = "none recommended"
 
-            context = f"""
-Prediction:
-{prediction}
+            symptoms = ", ".join(disease_information.get("symptoms", []))
+            causes = ", ".join(disease_information.get("causes", []))
+            prevention = ", ".join(disease_information.get("prevention", []))
+            description = disease_information.get("description", "")
 
-Confidence:
-{confidence:.2f}%
+            context = f"""The AI analysis suggested the user may have {prediction}, with a model confidence of {confidence:.2f} percent. This is not a confirmed diagnosis.
 
-Description:
-{disease_information.get('description', '')}
+Brief description of the condition: {description}
 
-Symptoms:
-{', '.join(disease_information.get('symptoms', []))}
+Common symptoms: {symptoms}
 
-Causes:
-{', '.join(disease_information.get('causes', []))}
+Common causes: {causes}
 
-Prevention:
-{', '.join(disease_information.get('prevention', []))}
+General prevention tips: {prevention}
 
-Recommended Herbs:
-
-{herb_text}
-"""
+Herbs sometimes used to support general skin health: {herb_text}"""
 
         # ======================================================
         # Build Prompt
@@ -198,7 +176,12 @@ Recommended Herbs:
         # Generate Response
         # ======================================================
 
-        result = await self._ask_async(prompt, temperature=0.2, max_tokens=350)
+        result = await self._ask_async(
+            prompt,
+            temperature=0.2,
+            max_tokens=500,
+            system_prompt=CHAT_SYSTEM_PROMPT,
+        )
 
         if result["success"]:
             return result["response"]
@@ -216,11 +199,13 @@ Recommended Herbs:
         self,
         prompt: str,
         temperature: float = 0.2,
-        max_tokens: int = 350,
+        max_tokens: int = 500,
+        system_prompt: str = "",
     ) -> dict[str, Any]:
         """Internal async generation with error handling."""
         return await self.client.generate(
             prompt=prompt,
+            system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
             use_cache=True,
