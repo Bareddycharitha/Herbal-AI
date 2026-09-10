@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Herbal-AI",
@@ -18,11 +20,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
-      <body>
+      <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
         <AuthProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </ThemeProvider>
         </AuthProvider>
-        <Toaster />
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

@@ -10,6 +10,7 @@ from typing import Any
 
 from ai.llm.prompt_builder import build_chat_prompt
 from ai.llm.openrouter_client import OpenRouterClient, get_openrouter_client
+from backend.app.config import settings
 
 
 # System prompt kept separate from the user-facing prompt so the model
@@ -33,7 +34,7 @@ class ChatbotEngine:
     """
 
     def __init__(self, client: OpenRouterClient = None):
-        self.client = client or get_openrouter_client()
+        self.client = client or OpenRouterClient(model=settings.openrouter_chat_model)
 
     def ask(
         self,
@@ -102,7 +103,7 @@ Herbs sometimes used to support general skin health: {herb_text}"""
                 self._ask_async(
                     prompt,
                     temperature=0.2,
-                    max_tokens=500,
+                    max_tokens=1500,
                     system_prompt=CHAT_SYSTEM_PROMPT,
                 )
             )
@@ -181,7 +182,7 @@ Herbs sometimes used to support general skin health: {herb_text}"""
         result = await self._ask_async(
             prompt,
             temperature=0.2,
-            max_tokens=500,
+            max_tokens=1500,
             system_prompt=CHAT_SYSTEM_PROMPT,
         )
 

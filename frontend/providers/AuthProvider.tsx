@@ -112,17 +112,18 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       try {
         const token = await getToken({ skipCache: true });
         if (!token || cancelled) return;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
+          `${apiBase}/api/v1/auth/me`,
           { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (cancelled) return;
+        ).catch(() => null);
+        if (cancelled || !response) return;
         if (response.ok) {
-          const userData = await response.json();
-          if (!cancelled) setUser(userData);
+          const userData = await response.json().catch(() => null);
+          if (!cancelled && userData) setUser(userData);
         }
       } catch (error) {
-        console.error("Failed to normalise user profile:", error);
+        // Silently ignore background profile sync failure
       }
     })();
 

@@ -89,7 +89,7 @@ class SummaryEngine:
                 self._generate_async(
                     prompt,
                     temperature=0.2,
-                    max_tokens=350,
+                    max_tokens=1500,
                     system_prompt=SUMMARY_SYSTEM_PROMPT,
                 ),
                 loop,
@@ -106,7 +106,7 @@ class SummaryEngine:
                 self._generate_async(
                     prompt,
                     temperature=0.2,
-                    max_tokens=350,
+                    max_tokens=1500,
                     system_prompt=SUMMARY_SYSTEM_PROMPT,
                 )
             )
@@ -147,7 +147,7 @@ class SummaryEngine:
         result = await self._generate_async(
             prompt,
             temperature=0.2,
-            max_tokens=350,
+            max_tokens=1500,
             system_prompt=SUMMARY_SYSTEM_PROMPT,
         )
 
@@ -180,7 +180,7 @@ class SummaryEngine:
                 self._generate_async(
                     prompt,
                     temperature=0.2,
-                    max_tokens=350,
+                    max_tokens=1500,
                     system_prompt=HERB_SUMMARY_SYSTEM_PROMPT,
                 ),
                 loop,
@@ -197,7 +197,7 @@ class SummaryEngine:
                 self._generate_async(
                     prompt,
                     temperature=0.2,
-                    max_tokens=350,
+                    max_tokens=1500,
                     system_prompt=HERB_SUMMARY_SYSTEM_PROMPT,
                 )
             )
@@ -221,7 +221,7 @@ class SummaryEngine:
         result = await self._generate_async(
             prompt,
             temperature=0.2,
-            max_tokens=350,
+            max_tokens=1500,
             system_prompt=HERB_SUMMARY_SYSTEM_PROMPT,
         )
 
@@ -241,7 +241,7 @@ class SummaryEngine:
         self,
         prompt: str,
         temperature: float = 0.2,
-        max_tokens: int = 350,
+        max_tokens: int = 500,
         system_prompt: str = "",
     ) -> dict[str, Any]:
         """Internal async generation with error handling."""

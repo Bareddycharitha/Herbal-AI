@@ -104,8 +104,10 @@ class KnowledgeBase:
                 if disease["label"].lower() == disease_name:
                     return disease
 
-            # Fallback: if unmapped class string (e.g. "Class_11"), return first disease entry
-            return self._diseases[0] if self._diseases else None
+            # No match found — return None so callers can handle the
+            # "not found" case explicitly (e.g. fallback to a generic
+            # response at the recommendation-engine level).
+            return None
 
     # ======================================================
     # Herbal Recommendations

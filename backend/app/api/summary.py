@@ -11,7 +11,8 @@ separately after rendering the prediction.
 
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
@@ -19,6 +20,7 @@ from backend.app.config import get_settings, Settings
 from backend.app.dependencies import get_optional_user
 from backend.app.utils.logging import get_logger
 from backend.app.exceptions import LLMError, ModelError
+from backend.app.api.history import get_history_service
 
 from ai.llm.summary_engine import SummaryEngine
 from ai.llm.prompt_builder import build_summary_prompt
@@ -61,11 +63,13 @@ class SummaryRequest(BaseModel):
     confidence: float
     disease_information: dict
     herbs: list
+    prediction_id: Optional[str] = None
 
 
 @router.post("/")
 async def generate_summary(
     request: SummaryRequest,
+    background_tasks: BackgroundTasks,
     settings: Settings = Depends(get_settings),
     engine: SummaryEngine = Depends(get_summary_engine),
     current_user = Depends(get_optional_user),
@@ -149,9 +153,16 @@ async def generate_summary(
         }
 
     if result.get("success"):
+        summary_text = result.get("response", "")
+        if request.prediction_id:
+            background_tasks.add_task(
+                get_history_service().update_summary,
+                request.prediction_id,
+                summary_text,
+            )
         return {
             "success": True,
-            "summary": result.get("response", ""),
+            "summary": summary_text,
         }
 
     # LLM call returned without raising but reported failure (e.g. circuit
@@ -178,7 +189,7 @@ def _run_summary_sync(engine: SummaryEngine, prompt: str) -> dict:
     import concurrent.futures
 
     async def _runner() -> dict:
-        return await engine._generate_async(prompt, temperature=0.3, max_tokens=250)
+        return await engine._generate_async(prompt, temperature=0.3, max_tokens=1500)
 
     try:
         loop = asyncio.get_running_loop()

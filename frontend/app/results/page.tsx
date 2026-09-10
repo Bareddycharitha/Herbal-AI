@@ -178,6 +178,7 @@ export default function ResultsPage() {
         confidence: data.prediction!.confidence,
         disease_information: data.disease_information ?? {},
         herbs: data.recommended_herbs ?? [],
+        prediction_id: data.prediction_id,
       });
       if (response.success) {
         setSummary(response.summary || "");

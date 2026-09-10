@@ -93,6 +93,9 @@ checkpoints/
 lightning_logs/
 wandb/
 
+# AI output results (Grad-CAM images, etc. — generated at runtime, not version-controlled)
+ai/results/
+
 # MLflow
 mlruns/
 mlflow.db

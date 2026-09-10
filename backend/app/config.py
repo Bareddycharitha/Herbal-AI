@@ -160,7 +160,8 @@ class Settings(BaseSettings):
     # OpenRouter LLM
     # ==========================================================
     openrouter_api_key: str = Field(default="")
-    openrouter_model: str = "minimax/minimax-m3:free"
+    openrouter_model: str = "inclusionai/ling-3.0-flash-sante:free"
+    openrouter_chat_model: str = "google/gemma-4-31b-it:free"
     # Per-request HTTP timeout. The summary endpoint layers its own
     # hard cap (SUMMARY_TIMEOUT_SECONDS) on top, so this should be
     # large enough not to fire on a slow but eventually-successful

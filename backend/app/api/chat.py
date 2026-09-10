@@ -87,7 +87,7 @@ async def chat(
         )
         raise LLMError(
             message="Chat request timed out. Please try again.",
-            model=settings.openrouter_model,
+            model=settings.openrouter_chat_model,
             retryable=True,
         )
     except Exception as e:
@@ -100,7 +100,7 @@ async def chat(
         if "connection" in str(e).lower() or "timeout" in str(e).lower():
             raise LLMError(
                 message=f"Failed to generate response: {e}",
-                model=settings.openrouter_model,
+                model=settings.openrouter_chat_model,
                 retryable=True,
             )
 

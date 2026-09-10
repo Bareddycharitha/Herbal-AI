@@ -5,6 +5,13 @@ Tests for Configuration
 import pytest
 from backend.app.config import Settings
 
+# Check if CUDA is available (torch may not be importable in all test envs)
+try:
+    import torch
+    _CUDA_AVAILABLE = torch.cuda.is_available()
+except ImportError:
+    _CUDA_AVAILABLE = False
+
 
 class TestSettings:
     """Tests for Settings configuration."""
@@ -55,6 +62,7 @@ class TestSettings:
         settings = Settings(device="cpu", _env_file=None, _env_file_encoding=None)
         assert settings.torch_device == "cpu"
 
+    @pytest.mark.skipif(not _CUDA_AVAILABLE, reason="CUDA not available on this machine")
     def test_device_explicit_cuda(self):
         """Test explicit CUDA device."""
         settings = Settings(device="cuda", _env_file=None, _env_file_encoding=None)
@@ -74,6 +82,7 @@ class TestSettings:
         """Test OpenRouter configuration defaults."""
         settings = Settings(_env_file=None, _env_file_encoding=None)
         assert settings.openrouter_model == "google/gemini-flash-1.5"
+        assert settings.openrouter_chat_model == "google/gemini-flash-1.5"  # conftest env var
         assert settings.openrouter_timeout_seconds == 15
         assert settings.openrouter_max_retries == 1
 
@@ -112,12 +121,14 @@ class TestSettings:
         monkeypatch.setenv("DEBUG", "true")
         monkeypatch.setenv("PORT", "9000")
         monkeypatch.setenv("OPENROUTER_MODEL", "google/gemini-pro")
+        monkeypatch.setenv("OPENROUTER_CHAT_MODEL", "nvidia/nemotron-4:free")
 
         settings = Settings()
         assert settings.app_name == "Test API"
         assert settings.debug is True
         assert settings.port == 9000
         assert settings.openrouter_model == "google/gemini-pro"
+        assert settings.openrouter_chat_model == "nvidia/nemotron-4:free"
 
     def test_cors_origins_from_env(self, monkeypatch):
         """Test CORS origins from environment."""

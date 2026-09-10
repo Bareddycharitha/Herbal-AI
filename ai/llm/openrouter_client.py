@@ -104,18 +104,84 @@ def _strip_leading_label_lines(text: str) -> str:
     return text.strip()
 
 
+def _is_pure_reasoning_scratchpad(text: str) -> bool:
+    """Check if the response consists solely of model internal monologue/prompt reasoning."""
+    if not text:
+        return False
+    lower = text.lower().strip()
+    reasoning_phrases = [
+        "we need answer user request",
+        "need produce two short paragraphs",
+        "need summarize ai-assisted",
+        "need produce",
+        "need summarize",
+        "user asks write",
+        "the user asks",
+        "task asks",
+        "thinking process",
+        "let's analyze",
+        "let me think",
+        "1. analyze the request",
+    ]
+    for phrase in reasoning_phrases:
+        if phrase in lower:
+            # If the text is dominated by reasoning and has no clear patient-facing opening
+            if not ("based on the" in lower or "the ai model" in lower or "for daily care" in lower or "the image suggests" in lower):
+                return True
+    return False
+
+
+def _extract_final_draft(text: str) -> str:
+    """Extract final drafted paragraphs if model leaked its scratchpad."""
+    if not text:
+        return text
+    lower = text.lower()
+    
+    # Check common draft delimiters
+    for marker in [
+        "here is the summary:",
+        "here is the response:",
+        "final response:",
+        "drafted summary:",
+        "i'll write:",
+        "let me write:",
+        "let me refine:",
+        "let me draft:",
+        "draft:",
+        "paragraph 1:",
+    ]:
+        if marker in lower:
+            idx = lower.rfind(marker)
+            candidate = text[idx + len(marker):].strip()
+            # Clean paragraph markers if present
+            candidate = candidate.replace("Paragraph 2:", "\n\n").strip()
+            # Remove word count checks at the end if present
+            for wc_marker in ["total word count", "word count"]:
+                if wc_marker in candidate.lower():
+                    candidate = candidate[:candidate.lower().rfind(wc_marker)].strip()
+            if len(candidate) > 40 and not _is_pure_reasoning_scratchpad(candidate):
+                return candidate
+
+    # Look for quoted text that looks like a drafted response
+    if '"' in text:
+        import re
+        quotes = re.findall(r'"([^"]{60,})"', text)
+        if quotes:
+            return "\n\n".join(quotes)
+
+    return text
+
+
 def _strip_leading_annotations(text: str) -> str:
     """
-    Two-stage cleanup for the model's response:
-
-    1. Detect and remove a leading planning preamble (a chain of
-       "**Label:** content" annotations) if present.
-    2. Drop any remaining stray labeled lines at the start.
-
-    A clean response passes through unchanged.
+    Multi-stage cleanup for the model's response:
+    1. Extract final draft if reasoning scratchpad is present.
+    2. Detect and remove a leading planning preamble if present.
+    3. Drop any remaining stray labeled lines or meta prompt regurgitation at the start.
     """
     if not text:
         return text
+    text = _extract_final_draft(text)
     text = _strip_planning_preamble(text)
     text = _strip_leading_label_lines(text)
     return text
@@ -275,12 +341,19 @@ class OpenRouterClient:
         return hashlib.md5(f"{self.model}:{system_prompt}:{prompt}".encode()).hexdigest()[:16]
 
     def _get_cached_summary(self, prompt: str, system_prompt: str = "") -> Optional[str]:
-        """Get cached summary if available."""
+        """Get cached summary if available and valid."""
         key = self._get_cache_key(prompt, system_prompt)
-        return self._summary_cache.get(key)
+        cached = self._summary_cache.get(key)
+        if cached:
+            if _is_pure_reasoning_scratchpad(cached) or len(cached) < 30:
+                del self._summary_cache[key]
+                return None
+        return cached
 
     def _cache_summary(self, prompt: str, response: str, system_prompt: str = "") -> None:
-        """Cache summary response."""
+        """Cache summary response if valid."""
+        if not response or _is_pure_reasoning_scratchpad(response) or len(response) < 30:
+            return
         if len(self._summary_cache) >= self._cache_max_size:
             # Remove oldest entry (simple FIFO)
             oldest_key = next(iter(self._summary_cache))
@@ -332,112 +405,139 @@ class OpenRouterClient:
             "max_tokens": max_tokens,
         }
 
+        # List of models to try in order of preference
+        fallback_models = [
+            self.model,
+            "inclusionai/ling-3.0-flash-sante:free",
+            "google/gemma-4-31b-it:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+            "nex-agi/nex-n2.5-pro:free",
+        ]
+        # De-duplicate while preserving order
+        models_to_try = []
+        for m in fallback_models:
+            if m and m not in models_to_try:
+                models_to_try.append(m)
+
         last_error = None
 
-        for attempt in range(self.max_retries + 1):
-            try:
-                client = await self._get_client()
+        for current_model in models_to_try:
+            payload["model"] = current_model
+            for attempt in range(self.max_retries + 1):
+                try:
+                    client = await self._get_client()
 
-                logger.debug(
-                    "Calling OpenRouter",
-                    attempt=attempt + 1,
-                    model=self.model,
-                    prompt_length=len(prompt),
-                )
+                    logger.debug(
+                        "Calling OpenRouter",
+                        attempt=attempt + 1,
+                        model=current_model,
+                        prompt_length=len(prompt),
+                    )
 
-                response = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    json=payload,
-                    timeout=self.timeout_seconds,
-                )
+                    response = await client.post(
+                        f"{self.base_url}/chat/completions",
+                        json=payload,
+                        timeout=self.timeout_seconds,
+                    )
 
-                response.raise_for_status()
-                result = response.json()
+                    response.raise_for_status()
+                    result = response.json()
 
-                # Success
-                self.circuit_breaker.record_success()
+                    # Success
+                    self.circuit_breaker.record_success()
 
-                # Extract response text from OpenAI-compatible format (supporting reasoning models)
-                response_text = ""
-                if "choices" in result and len(result["choices"]) > 0:
-                    message = result["choices"][0].get("message", {})
-                    raw_text = (
-                        message.get("content")
-                        or message.get("reasoning")
-                        or ""
-                    ).strip()
+                    # Extract response text from OpenAI-compatible format (supporting reasoning models)
+                    response_text = ""
+                    if "choices" in result and len(result["choices"]) > 0:
+                        message = result["choices"][0].get("message", {})
+                        content_val = message.get("content")
+                        if content_val and isinstance(content_val, str) and content_val.strip():
+                            raw_text = content_val.strip()
+                        else:
+                            # Content was empty (e.g. reasoning model token budget).
+                            # Extract actual answer from reasoning if possible.
+                            reasoning_text = (message.get("reasoning") or "").strip()
+                            if "let me draft" in reasoning_text.lower():
+                                raw_text = reasoning_text.lower().split("let me draft")[-1]
+                            elif "draft:" in reasoning_text.lower():
+                                raw_text = reasoning_text.lower().split("draft:")[-1]
+                            else:
+                                raw_text = reasoning_text
 
-                    # Filter out reasoning/thinking headers if present
-                    if "thinking process" in raw_text.lower() or "<think>" in raw_text:
-                        import re
-                        raw_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL)
-                        parts = [p.strip() for p in raw_text.split("\n\n") if p.strip()]
-                        # Pick the last paragraph containing summary content
-                        for part in reversed(parts):
-                            if "thinking process" not in part.lower() and "count words" not in part.lower() and len(part) > 30:
-                                response_text = part
-                                break
-                        if not response_text and parts:
-                            response_text = parts[-1]
-                    else:
-                        response_text = raw_text
+                        # Filter out reasoning/thinking headers if present
+                        if "thinking process" in raw_text.lower() or "<think>" in raw_text:
+                            import re
+                            raw_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL)
+                            parts = [p.strip() for p in raw_text.split("\n\n") if p.strip()]
+                            # Pick the last paragraph containing summary content
+                            for part in reversed(parts):
+                                if "thinking process" not in part.lower() and "count words" not in part.lower() and len(part) > 30:
+                                    response_text = part
+                                    break
+                            if not response_text and parts:
+                                response_text = parts[-1]
+                        else:
+                            response_text = raw_text
 
-                    # Strip any leading annotation lines the model may have
-                    # echoed back (e.g. "1. **Analyze the Request:** ...",
-                    # "* **Role:** Medical writer.", "**Overview:** ...").
-                    # The frontend renders the summary as plain text, so
-                    # these leaked planning labels would otherwise surface
-                    # in the UI.
-                    if response_text:
-                        response_text = _strip_leading_annotations(response_text)
+                        # Strip any leading annotation lines or reasoning preamble
+                        if response_text:
+                            response_text = _strip_leading_annotations(response_text)
 
-                # Cache successful response
-                if use_cache and response_text:
-                    self._cache_summary(prompt, response_text, system_prompt)
+                        # If the output is still pure reasoning monologue without patient content, try next model
+                        if _is_pure_reasoning_scratchpad(response_text) or len(response_text) < 30:
+                            logger.warning(
+                                "Model generated pure reasoning scratchpad, trying next fallback model",
+                                model=current_model,
+                            )
+                            continue
 
-                logger.info(
-                    "OpenRouter response received",
-                    attempt=attempt + 1,
-                    response_length=len(response_text),
-                )
+                    # Cache successful response
+                    if use_cache and response_text:
+                        self._cache_summary(prompt, response_text, system_prompt)
 
-                return {
-                    "success": True,
-                    "response": response_text,
-                    "cached": False,
-                }
+                    logger.info(
+                        "OpenRouter response received",
+                        attempt=attempt + 1,
+                        model=current_model,
+                        response_length=len(response_text),
+                    )
 
-            except httpx.TimeoutException as e:
-                last_error = f"Request timed out after {self.timeout_seconds}s"
-                logger.warning("OpenRouter timeout", attempt=attempt + 1, error=str(e))
+                    return {
+                        "success": True,
+                        "response": response_text,
+                        "cached": False,
+                    }
 
-            except httpx.HTTPStatusError as e:
-                last_error = f"HTTP {e.response.status_code}: {e.response.text}"
-                logger.warning("OpenRouter HTTP error", attempt=attempt + 1, error=last_error)
+                except httpx.TimeoutException as e:
+                    last_error = f"Request timed out after {self.timeout_seconds}s with {current_model}"
+                    logger.warning("OpenRouter timeout", model=current_model, attempt=attempt + 1, error=str(e))
 
-                # Don't retry on client errors (4xx)
-                if 400 <= e.response.status_code < 500:
+                except httpx.HTTPStatusError as e:
+                    last_error = f"HTTP {e.response.status_code} on {current_model}: {e.response.text[:100]}"
+                    logger.warning("OpenRouter HTTP error", model=current_model, attempt=attempt + 1, error=last_error)
+                    # If 4xx (e.g. 429 rate limit or 400 invalid model), move immediately to next fallback model
                     break
 
-            except httpx.RequestError as e:
-                last_error = f"Request failed: {str(e)}"
-                logger.warning("OpenRouter request error", attempt=attempt + 1, error=str(e))
+                except httpx.RequestError as e:
+                    last_error = f"Request failed on {current_model}: {str(e)}"
+                    logger.warning("OpenRouter request error", model=current_model, attempt=attempt + 1, error=str(e))
 
-            except Exception as e:
-                last_error = f"Unexpected error: {str(e)}"
-                logger.error("OpenRouter unexpected error", attempt=attempt + 1, error=str(e))
+                except Exception as e:
+                    last_error = f"Unexpected error on {current_model}: {str(e)}"
+                    logger.error("OpenRouter unexpected error", model=current_model, attempt=attempt + 1, error=str(e))
 
-            # Record failure for circuit breaker
-            self.circuit_breaker.record_failure()
+                # Exponential backoff before retry on the same model
+                if attempt < self.max_retries:
+                    backoff = self.retry_backoff * (2 ** attempt)
+                    logger.info("Retrying OpenRouter request", model=current_model, backoff_seconds=backoff)
+                    await asyncio.sleep(backoff)
 
-            # Exponential backoff before retry
-            if attempt < self.max_retries:
-                backoff = self.retry_backoff * (2 ** attempt)
-                logger.info("Retrying OpenRouter request", backoff_seconds=backoff)
-                await asyncio.sleep(backoff)
+        # Record failure for circuit breaker if all fallback models failed
+        self.circuit_breaker.record_failure()
 
-        # All retries exhausted
-        logger.error("OpenRouter all retries exhausted", error=last_error)
+        # All retries and models exhausted
+        logger.error("OpenRouter all models exhausted", error=last_error)
         return await self._fallback_response(prompt, system_prompt, last_error)
 
     async def _fallback_response(
