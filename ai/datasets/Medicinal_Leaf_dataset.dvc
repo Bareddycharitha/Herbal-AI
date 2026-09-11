@@ -1,0 +1,6 @@
+outs:
+- md5: af3e5926c6c22c97f23a78c7127e0d91.dir
+  size: 9483683298
+  nfiles: 6900
+  hash: md5
+  path: Medicinal_Leaf_dataset

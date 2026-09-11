@@ -1,0 +1,6 @@
+outs:
+- md5: 9c95d605a2c497d51637e7331dc84ffe.dir
+  size: 264646387
+  nfiles: 5945
+  hash: md5
+  path: Medicinal_plant_dataset

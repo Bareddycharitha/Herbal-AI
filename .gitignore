@@ -77,10 +77,17 @@ frontend/.turbo/
 # ============================================================
 # AI / Machine Learning
 # ============================================================
+# Datasets (managed by DVC)
+ai/datasets/*
+datasets/*
 
-# Datasets (managed by DVC later)
-ai/datasets/
-datasets/
+# Allow DVC tracking files
+!ai/datasets/*.dvc
+!datasets/*.dvc
+
+# Allow DVC tracking files to be committed to Git
+!ai/datasets/*.dvc
+!datasets/*.dvc
 
 # Model checkpoints
 ai/checkpoints/
@@ -94,7 +101,7 @@ checkpoints/
 lightning_logs/
 wandb/
 
-# AI output results (Grad-CAM images, etc. — generated at runtime, not version-controlled)
+# AI output results (Grad-CAM images, etc. - generated at runtime, not version-controlled)
 ai/results/
 
 # MLflow
