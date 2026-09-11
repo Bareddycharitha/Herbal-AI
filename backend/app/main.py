@@ -27,8 +27,9 @@ from backend.app.api.chat import router as chat_router
 from backend.app.api.report import router as report_router
 from backend.app.api.auth import router as auth_router
 from backend.app.api.gradcam import router as gradcam_router
+from backend.app.api.history import router as history_router
 
-from ai.config import RESULTS_DIR
+from ai.config import GRADCAM_DIR
 
 
 logger = get_logger(__name__)
@@ -40,8 +41,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Herbal-AI API", version=settings.app_version, environment=settings.environment)
 
-    # Ensure results directory exists
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    # Ensure Grad-CAM output directory exists (in system temp, not project tree)
+    GRADCAM_DIR.mkdir(parents=True, exist_ok=True)
 
     # Initialize classifier (universal model)
     try:
@@ -99,6 +100,7 @@ async def lifespan(app: FastAPI):
         port=settings.port,
         device=settings.torch_device,
         openrouter_model=settings.openrouter_model,
+        openrouter_chat_model=settings.openrouter_chat_model,
     )
 
     yield
@@ -159,7 +161,7 @@ register_exception_handlers(app)
 # ==========================================================
 app.mount(
     "/results",
-    StaticFiles(directory=str(RESULTS_DIR)),
+    StaticFiles(directory=str(GRADCAM_DIR)),
     name="results",
 )
 
@@ -175,6 +177,7 @@ app.include_router(report_router, prefix=API_PREFIX, tags=["PDF Report"])
 app.include_router(herb_router, prefix=API_PREFIX, tags=["Herb Identification"])
 app.include_router(auth_router, prefix=API_PREFIX, tags=["Authentication"])
 app.include_router(gradcam_router, prefix=API_PREFIX, tags=["Grad-CAM"])
+app.include_router(history_router, prefix=API_PREFIX, tags=["History"])
 
 # ==========================================================
 # Health & Readiness Endpoints
@@ -313,6 +316,7 @@ async def readiness_check():
     checks["openrouter"] = {
         "status": openrouter_status,
         "model": settings.openrouter_model,
+        "chat_model": settings.openrouter_chat_model,
         "required": False,
         "impact": "AI summaries and chatbot responses will use fallback behavior if unavailable.",
     }
@@ -342,7 +346,7 @@ async def readiness_check():
     # ==========================================================
 
     try:
-        test_file = RESULTS_DIR / ".write_test"
+        test_file = GRADCAM_DIR / ".write_test"
         test_file.write_text("test")
         test_file.unlink()
         checks["results_dir"] = {"status": "writable"}

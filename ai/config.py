@@ -1,4 +1,5 @@
 import torch
+import tempfile
 from pathlib import Path
 
 # ===========================
@@ -59,6 +60,12 @@ TEST_DIR = BASE_DIR / "datasets" / "SkinDisease" / "test"
 CHECKPOINT_DIR = BASE_DIR / "checkpoints"
 
 RESULTS_DIR = BASE_DIR / "results"
+
+# Runtime output directory for Grad-CAM images served to the frontend.
+# Uses a system temp directory (outside the project tree) so generated
+# images are never written into the repository working copy. The directory
+# is created on demand at application startup.
+GRADCAM_DIR = Path(tempfile.gettempdir()) / "herbal_ai_gradcam"
 
 HISTORY_FILE = RESULTS_DIR / "training_history.csv"
 

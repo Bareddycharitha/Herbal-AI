@@ -661,6 +661,7 @@ npm run format
 
 ---
 
+
 ## Medical Disclaimer
 
 > **Important**: Herbal-AI provides educational guidance only. It is NOT a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified dermatologist or healthcare professional for medical concerns. Herbal supplements are NOT medical treatments and may have side effects or interactions.

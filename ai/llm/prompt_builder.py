@@ -15,13 +15,13 @@ def build_summary_prompt(
     disease_info,
     herbs
 ):
-
     herb_names = ", ".join(
         herb["name"] for herb in herbs
-    ) if herbs else "None"
+    ) if herbs else "None specifically identified"
 
     symptoms = ", ".join(
         disease_info.get("symptoms", [])
+<<<<<<< HEAD
     ) or "Not provided"
 
     self_care = "; ".join(
@@ -58,6 +58,30 @@ Reference (do not copy verbatim, use for context only):
 - Recommended herbs: {herb_names}
 - Medical disclaimer note: {disease_info.get("medical_disclaimer", "")}
 """
+=======
+    ) or "general skin redness, itching, or irritation"
+
+    self_care = ", ".join(
+        disease_info.get("self_care", [])
+    ) or "gently cleanse the area, apply a mild fragrance-free moisturizer, and avoid scratching"
+
+    when_to_see_doctor = disease_info.get("when_to_consult_doctor") or "if symptoms persist, worsen, or cause discomfort"
+
+    description = disease_info.get("description") or f"a potential skin presentation identified as {prediction}"
+
+    prompt = f"""Clinical Information:
+- Detected Condition: {prediction}
+- AI Confidence: {confidence:.1f}%
+- Key Symptoms: {symptoms}
+- Daily Self-Care: {self_care}
+- Herbal Options: {herb_names}
+- Doctor Consultation: {when_to_see_doctor}
+- Summary: {description}
+
+Directly write a 2-paragraph patient explanation in plain text (no markdown, no bullets, no asterisks, no reasoning or prompt commentary):
+Paragraph 1: Explain the condition and the AI model's confidence in patient-friendly terms, advising a dermatologist visit to confirm.
+Paragraph 2: Outline self-care steps and mention how suggested herbal remedies support wellness without replacing medical treatment."""
+>>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
 
     return prompt
 
@@ -67,11 +91,8 @@ Reference (do not copy verbatim, use for context only):
 # ==========================================================
 
 def build_herb_summary_prompt(
-
     herb,
-
     herb_information,
-
 ):
 
     scientific_name = herb_information.get(
@@ -89,20 +110,29 @@ def build_herb_summary_prompt(
             "medicinal_properties",
             []
         )
+<<<<<<< HEAD
     ) or "Not provided"
+=======
+    ) or "general skin-soothing and antioxidant properties"
+>>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
 
     uses = "; ".join(
         herb_information.get(
             "uses",
             []
         )
+<<<<<<< HEAD
     ) or "Not provided"
+=======
+    ) or "traditional topical application and skincare"
+>>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
 
     precautions = "; ".join(
         herb_information.get(
             "precautions",
             []
         )
+<<<<<<< HEAD
     ) or "Not provided"
 
     prompt = f"""
@@ -122,6 +152,21 @@ Precautions: <semicolon-separated list of important precautions: {precautions}>
 
 Disclaimer: This is an AI identification, not a confirmed botanical identification. Consult a qualified healthcare professional before any medicinal use.
 """
+=======
+    ) or "perform a patch test before use and avoid on open wounds"
+
+    prompt = f"""Botanical Information:
+- Plant: {herb}
+- Scientific Name: {scientific_name}
+- Family: {family}
+- Medicinal Properties: {medicinal_properties}
+- Traditional Uses: {uses}
+- Precautions: {precautions}
+
+Directly write a 2-paragraph patient explanation in plain text (no markdown, no bullets, no asterisks, no reasoning or prompt commentary):
+Paragraph 1: Introduce the plant with common and scientific names and summarize its main traditional uses and skin-supportive properties.
+Paragraph 2: Explain precautions, note that AI identification is not a confirmed botanical diagnosis, and recommend consulting a healthcare provider before use."""
+>>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
 
     return prompt
 
@@ -138,25 +183,13 @@ def build_chat_prompt(
 
 ):
 
-    return f"""
-You are Herbal-AI, an AI assistant specialized in skin diseases, medicinal herbs, and dermatology.
+    return f"""A patient who has just received an AI-assisted skin analysis is asking a follow-up question. Answer helpfully using only the medical context provided. Write in clear, plain English. No markdown, no bullet points, no headings, no asterisks. Do not mention the prompt, your role, or any instructions.
 
-Use ONLY the information below when answering.
+If the answer is not available from the context, say so plainly. Never invent medical facts. Do not recommend prescription medicines. Remind the patient that this is AI-generated guidance and not a substitute for a dermatologist when appropriate.
 
-Current Medical Context
+Medical context:
 
 {context}
 
-User Question
-
-{question}
-
-Instructions
-
-- Answer in simple language.
-- Be polite and professional.
-- Never invent medical facts.
-- If the answer is not available from the context, clearly say so.
-- Do not recommend prescription medicines.
-- Mention that this is AI-generated guidance and not a substitute for a dermatologist when appropriate.
+Patient question: {question}
 """

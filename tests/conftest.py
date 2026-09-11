@@ -32,6 +32,7 @@ def setup_test_env():
     # Don't set DEBUG/LOG_LEVEL here - let tests control their own settings
     os.environ["OPENROUTER_API_KEY"] = "test-openrouter-key"
     os.environ["OPENROUTER_MODEL"] = "google/gemini-flash-1.5"
+    os.environ["OPENROUTER_CHAT_MODEL"] = "google/gemini-flash-1.5"
     # Disable rate limiting in tests
     os.environ["RATE_LIMIT_REQUESTS_PER_MINUTE"] = "1000"
     os.environ["RATE_LIMIT_BURST"] = "100"

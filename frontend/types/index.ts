@@ -113,3 +113,23 @@ export type ChatResponse = {
   success: boolean;
   answer: string;
 };
+
+export type HistoryRecord = {
+  id: string;
+  prediction_id?: string;
+  prediction: string;
+  confidence: number;
+  confidence_level?: string;
+  disease_information?: DiseaseInformation;
+  recommended_herbs?: Herb[];
+  top_predictions?: { disease?: string; herb?: string; confidence: number; class?: string }[];
+  image_path?: string;
+  ai_summary?: string;
+  created_at?: string;
+};
+
+export type HistoryListResponse = {
+  success: boolean;
+  history: HistoryRecord[];
+  total: number;
+};

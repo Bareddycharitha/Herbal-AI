@@ -161,11 +161,20 @@ async def get_gradcam_status(
     while True:
         entry = store.get(prediction_id)
         if entry is None:
-            # Either the prediction_id is unknown (caller never got it
-            # from /predict) or it has expired. Distinguish by checking
-            # the static file: a Grad-CAM may exist on disk even after
-            # the job entry has expired. We only fall back to the file
-            # check for "ready" cases to avoid 404s on stale polling.
+            # Check if file exists on disk (e.g. after server restart or TTL expiration)
+            from ai.config import GRADCAM_DIR
+            file_path = GRADCAM_DIR / f"gradcam_{prediction_id}.jpg"
+            if file_path.exists():
+                url = f"/results/gradcam_{prediction_id}.jpg"
+                store.mark_ready(prediction_id, url)
+                return {
+                    "prediction_id": prediction_id,
+                    "ready": True,
+                    "status": "ready",
+                    "url": url,
+                    "error": None,
+                }
+
             raise HTTPException(
                 status_code=404,
                 detail={

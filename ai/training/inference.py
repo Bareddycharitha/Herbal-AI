@@ -527,7 +527,7 @@ class SkinDiseaseInference:
         task and return the prediction to the client immediately.
 
         The model performs one extra forward + backward pass on
-        ``image_tensor`` and writes a JPEG to ``RESULTS_DIR``. The returned
+        ``image_tensor`` and writes a JPEG to ``GRADCAM_DIR``. The returned
         string is the public URL (e.g. ``/results/gradcam_<id>.jpg``) or
         ``None`` on failure.
 
@@ -556,8 +556,8 @@ class SkinDiseaseInference:
         try:
             # Lazily import to keep the module-level import surface small
             # and to ensure the directory check is fresh on each call.
-            from ai.config import RESULTS_DIR
-            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+            from ai.config import GRADCAM_DIR
+            GRADCAM_DIR.mkdir(parents=True, exist_ok=True)
 
             if isinstance(image, torch.Tensor):
                 image_tensor = image
@@ -583,7 +583,7 @@ class SkinDiseaseInference:
                 gradcam_filename = f"gradcam_{prediction_id}.jpg"
             else:
                 gradcam_filename = f"gradcam_{pred_idx}_{confidence:.1f}.jpg"
-            gradcam_path = RESULTS_DIR / gradcam_filename
+            gradcam_path = GRADCAM_DIR / gradcam_filename
 
             cv2.imwrite(
                 str(gradcam_path),

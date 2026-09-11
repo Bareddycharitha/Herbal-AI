@@ -1,5 +1,12 @@
 import axios from "axios";
-import type { ChatResponse, PredictionResponse, SummaryResponse, HerbPredictionResponse } from "@/types";
+import type {
+  ChatResponse,
+  PredictionResponse,
+  SummaryResponse,
+  HerbPredictionResponse,
+  HistoryRecord,
+  HistoryListResponse,
+} from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -136,6 +143,7 @@ export async function generateSummary(payload: {
   confidence: number;
   disease_information: Record<string, unknown>;
   herbs: Array<Record<string, unknown>>;
+  prediction_id?: string;
 }) {
   const { data } = await api.post<SummaryResponse>("/api/v1/summary/", payload);
   return data;
@@ -329,4 +337,34 @@ export async function predictHerb(image: File) {
       precautions: [...(Array.isArray(knowledge.side_effects) ? knowledge.side_effects : []), ...(Array.isArray(knowledge.contraindications) ? knowledge.contraindications : [])].filter((item): item is string => typeof item === "string"),
     },
   } satisfies HerbPredictionResponse;
+}
+
+// ── Prediction History API ─────────────────────────────────
+
+export async function getPredictionHistory(limit = 50, offset = 0) {
+  const { data } = await api.get<HistoryListResponse>("/api/v1/history/", {
+    params: { limit, offset },
+  });
+  return data;
+}
+
+export async function getHistoryItem(id: string) {
+  const { data } = await api.get<{ success: boolean; history: HistoryRecord }>(
+    `/api/v1/history/${encodeURIComponent(id)}`
+  );
+  return data;
+}
+
+export async function deleteHistoryItem(id: string) {
+  const { data } = await api.delete<{ success: boolean; message: string }>(
+    `/api/v1/history/${encodeURIComponent(id)}`
+  );
+  return data;
+}
+
+export async function clearPredictionHistory() {
+  const { data } = await api.delete<{ success: boolean; message: string; deleted_count: number }>(
+    "/api/v1/history/"
+  );
+  return data;
 }

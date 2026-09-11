@@ -80,6 +80,7 @@ frontend/.turbo/
 
 # Datasets (managed by DVC later)
 ai/datasets/
+datasets/
 
 # Model checkpoints
 ai/checkpoints/
@@ -92,6 +93,9 @@ outputs/
 checkpoints/
 lightning_logs/
 wandb/
+
+# AI output results (Grad-CAM images, etc. — generated at runtime, not version-controlled)
+ai/results/
 
 # MLflow
 mlruns/

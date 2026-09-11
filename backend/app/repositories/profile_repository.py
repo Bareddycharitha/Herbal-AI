@@ -56,8 +56,6 @@ class ProfileRepository:
         # multiple users without an email claim.
         row: dict = {
             "clerk_user_id": clerk_user_id,
-            "role": role.value,
-            "is_active": True,
         }
         if email is not None:
             row["email"] = email

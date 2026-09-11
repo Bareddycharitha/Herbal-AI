@@ -69,7 +69,7 @@ class UserResponse(UserBase):
     """
 
     id: str  # Clerk user ID from the `sub` claim
-    is_active: bool
+    is_active: bool = True
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

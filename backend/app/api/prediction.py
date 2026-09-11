@@ -21,6 +21,8 @@ from fastapi.concurrency import run_in_threadpool
 from PIL import Image, UnidentifiedImageError
 
 from backend.app.api.gradcam import get_job_store
+from backend.app.api.history import get_history_service
+from backend.app.dependencies import get_optional_user
 from backend.app.config import get_settings, Settings
 from backend.app.services.universal_classifier import get_classifier
 from backend.app.utils.file_validator import file_validator, generate_secure_temp_path
@@ -34,6 +36,34 @@ router = APIRouter(
     prefix="/predict",
     tags=["Prediction"]
 )
+
+
+async def _save_history_background(
+    profile_id: str,
+    result: dict,
+    email: str = None,
+    name: str = None,
+):
+    """Save prediction into user's database history."""
+    try:
+        service = get_history_service()
+        await service.record_prediction(
+            profile_id=profile_id,
+            prediction=result.get("prediction"),
+            confidence=result.get("confidence"),
+            confidence_level=result.get("confidence_level"),
+            top_predictions=result.get("top_predictions"),
+            disease_information=result.get("disease_information"),
+            recommended_herbs=result.get("herbs"),
+            image_path=result.get("gradcam_image"),
+            ai_summary=result.get("summary"),
+            prediction_id=result.get("prediction_id"),
+            user_email=email,
+            user_name=name,
+        )
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error("Failed to save history in background", error=str(e), profile_id=profile_id)
 
 
 def _run_gradcam_background(
@@ -91,6 +121,7 @@ async def predict(
     background_tasks: BackgroundTasks,
     image: UploadFile = File(...),
     settings: Settings = Depends(get_settings),
+    current_user = Depends(get_optional_user),
 ):
     """
     Universal Prediction Endpoint
@@ -267,6 +298,16 @@ async def predict(
                 except Exception:
                     pass
                 get_job_store().mark_no_gradcam(prediction_id)
+
+            # Record prediction in history if user is authenticated
+            if current_user:
+                background_tasks.add_task(
+                    _save_history_background,
+                    current_user.id,
+                    result,
+                    getattr(current_user, "email", None),
+                    getattr(current_user, "full_name", None),
+                )
 
             return result
 
