@@ -1,0 +1,340 @@
+schema: '2.0'
+stages:
+  train_universal:
+    cmd: python -m ai.image_classifier.trainer
+    deps:
+    - path: ai/datasets/Medicinal_Leaf_dataset/
+      hash: md5
+      md5: af3e5926c6c22c97f23a78c7127e0d91.dir
+      size: 9483683298
+      nfiles: 6900
+    - path: ai/datasets/Medicinal_plant_dataset/
+      hash: md5
+      md5: 9c95d605a2c497d51637e7331dc84ffe.dir
+      size: 264646387
+      nfiles: 5945
+    - path: ai/datasets/OtherObjects/
+      hash: md5
+      md5: ae0dd88e46b72f350107ba105df0d8b7.dir
+      size: 643399795
+      nfiles: 4282
+    - path: ai/datasets/SkinDisease/
+      hash: md5
+      md5: cfdd9f72ec3531ca338e97102307810d.dir
+      size: 1469585217
+      nfiles: 15444
+    - path: ai/image_classifier/config.py
+      hash: md5
+      md5: 6de8f658315b7bdf3a4c75d0c31865e7
+      size: 5695
+    - path: ai/image_classifier/dataset.py
+      hash: md5
+      md5: b006f6c97520d92e542acc3dceebf5fb
+      size: 3663
+    - path: ai/image_classifier/inference.py
+      hash: md5
+      md5: b5f2c48375f8afa7e1853e221881de85
+      size: 11901
+    - path: ai/image_classifier/model.py
+      hash: md5
+      md5: ed148451080ef29c09f5f8cb539b26b3
+      size: 867
+    - path: ai/image_classifier/trainer.py
+      hash: md5
+      md5: 7dec556b42e757a6e07f26721ff11fca
+      size: 17040
+    - path: ai/image_classifier/transforms.py
+      hash: md5
+      md5: 05d84399fa33f1c8f0762dd9256bc779
+      size: 10567
+    - path: ai/image_classifier/utils.py
+      hash: md5
+      md5: 971139098b845f383a8c70619dff5fd9
+      size: 3246
+    - path: ai/training/calibration.py
+      hash: md5
+      md5: d5f550924b2d821ce8fd20dc7c1f8d7f
+      size: 5841
+    - path: ai/training/ood_detection.py
+      hash: md5
+      md5: 759900fe4006af67657397eac4b26cef
+      size: 17080
+    outs:
+    - path: ai/image_classifier/checkpoints/best_model.pth
+      hash: md5
+      md5: c1c8dfd1016cbfa9f15b52bfc2fc395d
+      size: 243471709
+  train_herb:
+    cmd: python -m ai.herb.scripts.train
+    deps:
+    - path: ai/datasets/Medicinal_Leaf_dataset/
+      hash: md5
+      md5: af3e5926c6c22c97f23a78c7127e0d91.dir
+      size: 9483683298
+      nfiles: 6900
+    - path: ai/datasets/Medicinal_plant_dataset/
+      hash: md5
+      md5: 9c95d605a2c497d51637e7331dc84ffe.dir
+      size: 264646387
+      nfiles: 5945
+    - path: ai/herb/config.py
+      hash: md5
+      md5: e179d895a11263c88cfd80234aac6753
+      size: 5852
+    - path: ai/herb/dataset.py
+      hash: md5
+      md5: bb0a6c39dabb133395fca645207fd1b5
+      size: 5910
+    - path: ai/herb/model.py
+      hash: md5
+      md5: dc7dcb65346183807d657b0e4c0e62d1
+      size: 4891
+    - path: ai/herb/scripts/train.py
+      hash: md5
+      md5: 5b8b25a5b320af306c74917eb29e6554
+      size: 924
+    - path: ai/herb/training/checkpoint.py
+      hash: md5
+      md5: 20da0e62ee336aace2742a1288a333c4
+      size: 4351
+    - path: ai/herb/training/logger.py
+      hash: md5
+      md5: f3e256fa9d06b34ac052dc2e3f3a1b42
+      size: 1077
+    - path: ai/herb/training/losses.py
+      hash: md5
+      md5: cba32e4754848976cb294293b7c316db
+      size: 6593
+    - path: ai/herb/training/metrics.py
+      hash: md5
+      md5: ee8841081ac17c3d389cefc410f767f4
+      size: 3177
+    - path: ai/herb/training/scheduler.py
+      hash: md5
+      md5: 98dca340e6029d852edb7281c2c4e4b4
+      size: 1954
+    - path: ai/herb/training/trainer.py
+      hash: md5
+      md5: 90dde1a157bb9936fbd2d6f3a35b0544
+      size: 18654
+    - path: ai/herb/training/utils.py
+      hash: md5
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: ai/herb/training/visualization.py
+      hash: md5
+      md5: fae13aa7b395a2c2222d808135656853
+      size: 4597
+    - path: ai/herb/transforms.py
+      hash: md5
+      md5: 6e9724a18f9d5ee8cb8a875aaa73b879
+      size: 841
+    outs:
+    - path: ai/herb/checkpoints/best_model.pth
+      hash: md5
+      md5: 35d79ef316b758a94e2c5a219925519c
+      size: 244036701
+  train_skin:
+    cmd: python -m ai.training.train
+    deps:
+    - path: ai/config.py
+      hash: md5
+      md5: bab6b53078abfa14499fe3f07c2666a8
+      size: 3112
+    - path: ai/datasets/SkinDisease/
+      hash: md5
+      md5: cfdd9f72ec3531ca338e97102307810d.dir
+      size: 1469585217
+      nfiles: 15444
+    - path: ai/models/efficientnet.py
+      hash: md5
+      md5: 54c34a98c23d98ec05e3f21de18c819d
+      size: 2255
+    - path: ai/preprocessing/dataset.py
+      hash: md5
+      md5: 35fbb02815e46f3746dce00a6cf8417b
+      size: 5294
+    - path: ai/preprocessing/transforms.py
+      hash: md5
+      md5: e6abcb9cb5bbe03f34013d6c7fa092d1
+      size: 1325
+    - path: ai/training/calibration.py
+      hash: md5
+      md5: d5f550924b2d821ce8fd20dc7c1f8d7f
+      size: 5841
+    - path: ai/training/train.py
+      hash: md5
+      md5: 8b550286d272f99e3fe63d8b8b05963f
+      size: 30228
+    outs:
+    - path: ai/checkpoints/best_model.pth
+      hash: md5
+      md5: c0976ebf9c032f0f672f3ea35613790c
+      size: 243750173
+    - path: ai/checkpoints/temperature_scale.pth
+      hash: md5
+      md5: 617862b535a40e9c3f3181a11a3944f6
+      size: 81722283
+  evaluate_skin:
+    cmd: python -m ai.training.evaluate
+    deps:
+    - path: ai/checkpoints/best_model.pth
+      hash: md5
+      md5: c0976ebf9c032f0f672f3ea35613790c
+      size: 243750173
+    - path: ai/config.py
+      hash: md5
+      md5: bab6b53078abfa14499fe3f07c2666a8
+      size: 3112
+    - path: ai/datasets/SkinDisease/
+      hash: md5
+      md5: cfdd9f72ec3531ca338e97102307810d.dir
+      size: 1469585217
+      nfiles: 15444
+    - path: ai/models/efficientnet.py
+      hash: md5
+      md5: 54c34a98c23d98ec05e3f21de18c819d
+      size: 2255
+    - path: ai/preprocessing/dataset.py
+      hash: md5
+      md5: 35fbb02815e46f3746dce00a6cf8417b
+      size: 5294
+    - path: ai/preprocessing/transforms.py
+      hash: md5
+      md5: e6abcb9cb5bbe03f34013d6c7fa092d1
+      size: 1325
+    - path: ai/training/evaluate.py
+      hash: md5
+      md5: c30230a543bb50a5eb1117e4224f3dac
+      size: 8751
+    outs:
+    - path: ai/results/classification_report.txt
+      hash: md5
+      md5: dac35f75914830627e19491db71b8320
+      size: 1616
+    - path: ai/results/confusion_matrix.png
+      hash: md5
+      md5: fe5d66b005ea36aadd494493e055ef6d
+      size: 428708
+    - path: ai/results/evaluation_metrics.json
+      hash: md5
+      md5: f895c66a78e0b8ab555e3e5c8b62200e
+      size: 367
+  evaluate_herb:
+    cmd: python -m ai.herb.scripts.evaluate
+    deps:
+    - path: ai/datasets/Medicinal_Leaf_dataset/
+      hash: md5
+      md5: af3e5926c6c22c97f23a78c7127e0d91.dir
+      size: 9483683298
+      nfiles: 6900
+    - path: ai/datasets/Medicinal_plant_dataset/
+      hash: md5
+      md5: 9c95d605a2c497d51637e7331dc84ffe.dir
+      size: 264646387
+      nfiles: 5945
+    - path: ai/herb/checkpoints/best_model.pth
+      hash: md5
+      md5: 35d79ef316b758a94e2c5a219925519c
+      size: 244036701
+    - path: ai/herb/config.py
+      hash: md5
+      md5: e179d895a11263c88cfd80234aac6753
+      size: 5852
+    - path: ai/herb/dataset.py
+      hash: md5
+      md5: bb0a6c39dabb133395fca645207fd1b5
+      size: 5910
+    - path: ai/herb/model.py
+      hash: md5
+      md5: dc7dcb65346183807d657b0e4c0e62d1
+      size: 4891
+    - path: ai/herb/scripts/evaluate.py
+      hash: md5
+      md5: 797fe33935ecd36e199842d7696be46d
+      size: 2285
+    - path: ai/herb/training/trainer.py
+      hash: md5
+      md5: 90dde1a157bb9936fbd2d6f3a35b0544
+      size: 18654
+    outs:
+    - path: ai/herb/results/classification_report.txt
+      hash: md5
+      md5: 4712d95e1a03981481427e13807c00e5
+      size: 2468
+    - path: ai/herb/results/confusion_matrix.png
+      hash: md5
+      md5: 1e054d6f1820064d4e25ba45cd9a1f17
+      size: 1380382
+    - path: ai/herb/results/evaluation_metrics.json
+      hash: md5
+      md5: d53b61480e7f30fe45a54b80a93648b3
+      size: 187
+  evaluate_universal:
+    cmd: python -m ai.image_classifier.evaluate
+    deps:
+    - path: ai/datasets/Medicinal_Leaf_dataset/
+      hash: md5
+      md5: af3e5926c6c22c97f23a78c7127e0d91.dir
+      size: 9483683298
+      nfiles: 6900
+    - path: ai/datasets/Medicinal_plant_dataset/
+      hash: md5
+      md5: 9c95d605a2c497d51637e7331dc84ffe.dir
+      size: 264646387
+      nfiles: 5945
+    - path: ai/datasets/OtherObjects/
+      hash: md5
+      md5: ae0dd88e46b72f350107ba105df0d8b7.dir
+      size: 643399795
+      nfiles: 4282
+    - path: ai/datasets/SkinDisease/
+      hash: md5
+      md5: cfdd9f72ec3531ca338e97102307810d.dir
+      size: 1469585217
+      nfiles: 15444
+    - path: ai/image_classifier/checkpoints/best_model.pth
+      hash: md5
+      md5: c1c8dfd1016cbfa9f15b52bfc2fc395d
+      size: 243471709
+    - path: ai/image_classifier/config.py
+      hash: md5
+      md5: 6de8f658315b7bdf3a4c75d0c31865e7
+      size: 5695
+    - path: ai/image_classifier/dataset.py
+      hash: md5
+      md5: b006f6c97520d92e542acc3dceebf5fb
+      size: 3663
+    - path: ai/image_classifier/evaluate.py
+      hash: md5
+      md5: 32bb7f2f029c74c7c8bb227dc514835d
+      size: 12172
+    - path: ai/image_classifier/inference.py
+      hash: md5
+      md5: b5f2c48375f8afa7e1853e221881de85
+      size: 11901
+    - path: ai/image_classifier/model.py
+      hash: md5
+      md5: ed148451080ef29c09f5f8cb539b26b3
+      size: 867
+    - path: ai/image_classifier/transforms.py
+      hash: md5
+      md5: 05d84399fa33f1c8f0762dd9256bc779
+      size: 10567
+    outs:
+    - path: ai/image_classifier/results/classification_report.txt
+      hash: md5
+      md5: 1a9afc9425805e4acc350159cf0fb48f
+      size: 389
+    - path: ai/image_classifier/results/confusion_matrix.png
+      hash: md5
+      md5: ea4bd8cd4eaf7b7452723e9a7cd12e23
+      size: 38278
+    - path: ai/image_classifier/results/evaluation_report.json
+      hash: md5
+      md5: d05f2d65c98fe02c6e6de6dc3849ef49
+      size: 1921
+    - path: ai/image_classifier/results/failed_predictions.csv
+      hash: md5
+      md5: 02a62b87bf23948bc8efde94bbeaf937
+      size: 2644

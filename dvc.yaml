@@ -1,0 +1,123 @@
+stages:
+
+  train_universal:
+    cmd: python -m ai.image_classifier.trainer
+
+    deps:
+      - ai/image_classifier/config.py
+      - ai/image_classifier/dataset.py
+      - ai/image_classifier/model.py
+      - ai/image_classifier/trainer.py
+      - ai/image_classifier/transforms.py
+      - ai/image_classifier/utils.py
+      - ai/image_classifier/inference.py
+      - ai/training/calibration.py
+      - ai/training/ood_detection.py
+      - ai/datasets/SkinDisease/
+      - ai/datasets/Medicinal_Leaf_dataset/
+      - ai/datasets/Medicinal_plant_dataset/
+      - ai/datasets/OtherObjects/
+
+    outs:
+      - ai/image_classifier/checkpoints/best_model.pth
+
+  evaluate_universal:
+    cmd: python -m ai.image_classifier.evaluate
+
+    deps:
+      - ai/image_classifier/config.py
+      - ai/image_classifier/dataset.py
+      - ai/image_classifier/model.py
+      - ai/image_classifier/evaluate.py
+      - ai/image_classifier/inference.py
+      - ai/image_classifier/transforms.py
+      - ai/image_classifier/checkpoints/best_model.pth
+      - ai/datasets/SkinDisease/
+      - ai/datasets/Medicinal_Leaf_dataset/
+      - ai/datasets/Medicinal_plant_dataset/
+      - ai/datasets/OtherObjects/
+
+    outs:
+      - ai/image_classifier/results/classification_report.txt
+      - ai/image_classifier/results/confusion_matrix.png
+      - ai/image_classifier/results/evaluation_report.json
+      - ai/image_classifier/results/failed_predictions.csv
+
+
+  train_herb:
+    cmd: python -m ai.herb.scripts.train
+
+    deps:
+      - ai/herb/config.py
+      - ai/herb/dataset.py
+      - ai/herb/model.py
+      - ai/herb/transforms.py
+      - ai/herb/scripts/train.py
+      - ai/herb/training/trainer.py
+      - ai/herb/training/checkpoint.py
+      - ai/herb/training/logger.py
+      - ai/herb/training/losses.py
+      - ai/herb/training/metrics.py
+      - ai/herb/training/scheduler.py
+      - ai/herb/training/utils.py
+      - ai/herb/training/visualization.py
+      - ai/datasets/Medicinal_Leaf_dataset/
+      - ai/datasets/Medicinal_plant_dataset/
+
+    outs:
+      - ai/herb/checkpoints/best_model.pth
+
+  evaluate_herb:
+    cmd: python -m ai.herb.scripts.evaluate
+
+    deps:
+      - ai/herb/config.py
+      - ai/herb/dataset.py
+      - ai/herb/model.py
+      - ai/herb/scripts/evaluate.py
+      - ai/herb/training/trainer.py
+      - ai/herb/checkpoints/best_model.pth
+      - ai/datasets/Medicinal_Leaf_dataset/
+      - ai/datasets/Medicinal_plant_dataset/
+
+    outs:
+      - ai/herb/results/classification_report.txt
+      - ai/herb/results/confusion_matrix.png
+      - ai/herb/results/evaluation_metrics.json
+
+
+  train_skin:
+    cmd: python -m ai.training.train
+
+    deps:
+      - ai/config.py
+      - ai/models/efficientnet.py
+      - ai/preprocessing/dataset.py
+      - ai/preprocessing/transforms.py
+      - ai/training/train.py
+      - ai/training/calibration.py
+      - ai/datasets/SkinDisease/
+
+    outs:
+      - ai/checkpoints/best_model.pth
+      - ai/checkpoints/temperature_scale.pth
+
+  evaluate_skin:
+    cmd: python -m ai.training.evaluate
+
+    deps:
+      - ai/config.py
+      - ai/models/efficientnet.py
+      - ai/preprocessing/dataset.py
+      - ai/preprocessing/transforms.py
+      - ai/training/evaluate.py
+      - ai/checkpoints/best_model.pth
+      - ai/datasets/SkinDisease/
+
+    outs:
+      - ai/results/classification_report.txt
+      - ai/results/confusion_matrix.png
+
+    metrics:
+      - ai/results/evaluation_metrics.json:
+          cache: false
