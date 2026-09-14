@@ -181,3 +181,8 @@ secrets/
 !README.md
 !requirements.txt
 !pytest.ini
+# MLflow local tracking
+mlflow.db
+mlflow.db-shm
+mlflow.db-wal
+mlruns/

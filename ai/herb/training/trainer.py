@@ -8,6 +8,7 @@ Supports:
 - Cosine annealing scheduler
 - Early stopping
 - Checkpointing
+- MLflow experiment tracking
 """
 
 import json
@@ -43,6 +44,14 @@ from ..config import (
     CALIBRATE_AFTER_TRAINING,
     CALIBRATION_LR,
     CALIBRATION_MAX_ITER,
+    MODEL_NAME,
+    IMAGE_SIZE,
+    RANDOM_SEED,
+    LABEL_SMOOTHING,
+    USE_FOCAL_LOSS,
+    PRETRAINED,
+    BEST_MODEL_PATH,
+    CHECKPOINT_DIR,
 )
 
 from .losses import build_loss
@@ -53,6 +62,14 @@ from .visualization import TrainingVisualizer
 from .logger import get_logger
 
 from ai.training.calibration import calibrate_model
+
+from ai.mlflow_tracking import (
+    start_training_run,
+    log_epoch_metrics,
+    log_artifact_if_exists,
+    set_tags,
+    end_run,
+)
 
 
 class HerbTrainer:
@@ -250,7 +267,10 @@ class HerbTrainer:
                         oe_iter = iter(self.oe_loader)
                         oe_images, _ = next(oe_iter)
 
-                    oe_images = oe_images.to(self.device, non_blocking=True)
+                    oe_images = oe_images.to(
+                        self.device,
+                        non_blocking=True,
+                    )
 
                     if hasattr(self.model, 'use_arcface') and self.model.use_arcface:
                         oe_outputs = self.model(oe_images)  # No labels for OE
@@ -265,25 +285,44 @@ class HerbTrainer:
             self.scaler.update()
 
             running_loss += cls_loss.item()
-            running_cls_loss += self.criteria['cls'](outputs, labels).item()
+            running_cls_loss += self.criteria['cls'](
+                outputs,
+                labels,
+            ).item()
+
             if USE_OE:
-                running_oe_loss += oe_loss_val.item() if isinstance(oe_loss_val, torch.Tensor) else oe_loss_val
+                running_oe_loss += (
+                    oe_loss_val.item()
+                    if isinstance(oe_loss_val, torch.Tensor)
+                    else oe_loss_val
+                )
 
             predictions = outputs.argmax(dim=1)
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-            postfix = {'loss': f"{running_loss / (progress_bar.n + 1):.4f}"}
+            postfix = {
+                'loss': f"{running_loss / (progress_bar.n + 1):.4f}"
+            }
+
             if USE_OE:
-                postfix['oe_loss'] = f"{running_oe_loss / (progress_bar.n + 1):.4f}"
+                postfix['oe_loss'] = (
+                    f"{running_oe_loss / (progress_bar.n + 1):.4f}"
+                )
+
             postfix['acc'] = f"{100 * correct / total:.2f}%"
+
             progress_bar.set_postfix(postfix)
 
         train_loss = running_loss / len(self.train_loader)
         train_accuracy = 100 * correct / total
 
-        self.logger.info(f"Train Loss : {train_loss:.4f}")
-        self.logger.info(f"Train Accuracy : {train_accuracy:.2f}%")
+        self.logger.info(
+            f"Train Loss : {train_loss:.4f}"
+        )
+        self.logger.info(
+            f"Train Accuracy : {train_accuracy:.2f}%"
+        )
 
         return train_loss, train_accuracy
 
@@ -321,7 +360,10 @@ class HerbTrainer:
                 else:
                     outputs = self.model(images)
 
-                loss = self.criteria['cls'](outputs, labels)
+                loss = self.criteria['cls'](
+                    outputs,
+                    labels,
+                )
 
             predictions = outputs.argmax(dim=1)
 
@@ -329,23 +371,46 @@ class HerbTrainer:
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-            all_predictions.extend(predictions.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+            all_predictions.extend(
+                predictions.cpu().numpy()
+            )
+            all_labels.extend(
+                labels.cpu().numpy()
+            )
 
         val_loss = running_loss / len(self.val_loader)
         val_accuracy = 100 * correct / total
 
-        metrics = self.metrics.calculate(all_labels, all_predictions)
+        metrics = self.metrics.calculate(
+            all_labels,
+            all_predictions,
+        )
 
         self.metrics.save_metrics(metrics)
-        self.metrics.save_classification_report(all_labels, all_predictions)
-        self.metrics.save_confusion_matrix(all_labels, all_predictions)
+        self.metrics.save_classification_report(
+            all_labels,
+            all_predictions,
+        )
+        self.metrics.save_confusion_matrix(
+            all_labels,
+            all_predictions,
+        )
 
-        self.logger.info(f"Validation Loss : {val_loss:.4f}")
-        self.logger.info(f"Validation Accuracy : {val_accuracy:.2f}%")
-        self.logger.info(f"Precision : {metrics['precision']:.4f}")
-        self.logger.info(f"Recall : {metrics['recall']:.4f}")
-        self.logger.info(f"F1 Score : {metrics['f1_score']:.4f}")
+        self.logger.info(
+            f"Validation Loss : {val_loss:.4f}"
+        )
+        self.logger.info(
+            f"Validation Accuracy : {val_accuracy:.2f}%"
+        )
+        self.logger.info(
+            f"Precision : {metrics['precision']:.4f}"
+        )
+        self.logger.info(
+            f"Recall : {metrics['recall']:.4f}"
+        )
+        self.logger.info(
+            f"F1 Score : {metrics['f1_score']:.4f}"
+        )
 
         return val_loss, val_accuracy, metrics
 
@@ -381,6 +446,7 @@ class HerbTrainer:
     ):
         if val_acc > self.best_accuracy:
             self.best_accuracy = val_acc
+
             self.checkpoint.save_best(
                 self.model,
                 self.optimizer,
@@ -392,6 +458,7 @@ class HerbTrainer:
                 train_acc,
                 val_acc,
             )
+
             self.logger.info("Best model saved.")
 
         self.checkpoint.save_last(
@@ -418,7 +485,10 @@ class HerbTrainer:
                 train_acc,
                 val_acc,
             )
-            self.logger.info(f"Epoch checkpoint saved ({epoch}).")
+
+            self.logger.info(
+                f"Epoch checkpoint saved ({epoch})."
+            )
 
     # ==========================================================
     # Early Stopping
@@ -439,6 +509,7 @@ class HerbTrainer:
             patience_counter += 1
 
         stop = patience_counter >= patience
+
         return stop, best_loss, patience_counter
 
     # ==========================================================
@@ -446,9 +517,41 @@ class HerbTrainer:
     # ==========================================================
 
     def fit(self):
+
         self.logger.info("=" * 70)
         self.logger.info("Starting Herb Model Training")
         self.logger.info("=" * 70)
+
+        # ======================================================
+        # MLflow Training Run
+        # ======================================================
+
+        start_training_run(
+            model_type="herb",
+            run_name="Herb Classifier Training",
+            params={
+                "model_name": MODEL_NAME,
+                "learning_rate": LEARNING_RATE,
+                "batch_size": self.train_loader.batch_size,
+                "epochs": EPOCHS,
+                "image_size": IMAGE_SIZE,
+                "optimizer": "AdamW",
+                "weight_decay": WEIGHT_DECAY,
+                "seed": RANDOM_SEED,
+                "label_smoothing": LABEL_SMOOTHING,
+                "focal_loss": USE_FOCAL_LOSS,
+                "num_classes": self.num_classes,
+                "pretrained": PRETRAINED,
+                "use_oe": USE_OE,
+                "oe_loss_weight": OE_LOSS_WEIGHT,
+                "calibrate_after_training": CALIBRATE_AFTER_TRAINING,
+            },
+        )
+
+        set_tags({
+            "model_name": MODEL_NAME,
+            "dataset": "Medicinal_plant_dataset",
+        })
 
         self.save_model_information()
         self.training_start_time = time.time()
@@ -458,35 +561,48 @@ class HerbTrainer:
         patience_counter = 0
         best_loss = float("inf")
 
-        for epoch in range(self.start_epoch, EPOCHS + 1):
+        for epoch in range(
+            self.start_epoch,
+            EPOCHS + 1,
+        ):
+
             self.logger.info("")
             self.logger.info("-" * 70)
-            self.logger.info(f"Epoch {epoch}/{EPOCHS}")
+            self.logger.info(
+                f"Epoch {epoch}/{EPOCHS}"
+            )
             self.logger.info("-" * 70)
 
             # --------------------------------------------------
             # Training
             # --------------------------------------------------
-            train_loss, train_acc = self.train_one_epoch(epoch)
+
+            train_loss, train_acc = self.train_one_epoch(
+                epoch
+            )
 
             # --------------------------------------------------
             # Validation
             # --------------------------------------------------
+
             val_loss, val_acc, metrics = self.validate()
 
             # --------------------------------------------------
             # Scheduler
             # --------------------------------------------------
+
             self.update_scheduler(val_loss)
 
             # --------------------------------------------------
             # Current Learning Rate
             # --------------------------------------------------
+
             current_lr = self.optimizer.param_groups[0]["lr"]
 
             # --------------------------------------------------
             # Save History
             # --------------------------------------------------
+
             history_row = {
                 "epoch": epoch,
                 "train_loss": train_loss,
@@ -498,18 +614,43 @@ class HerbTrainer:
                 "f1": metrics["f1_score"],
                 "learning_rate": current_lr,
             }
+
             self.history.append(history_row)
+
+            # --------------------------------------------------
+            # MLflow Epoch Metrics
+            # --------------------------------------------------
+
+            log_epoch_metrics(
+                {
+                    "train_loss": train_loss,
+                    "train_accuracy": train_acc,
+                    "validation_loss": val_loss,
+                    "validation_accuracy": val_acc,
+                    "precision": metrics["precision"],
+                    "recall": metrics["recall"],
+                    "f1_score": metrics["f1_score"],
+                    "learning_rate": current_lr,
+                },
+                epoch=epoch,
+            )
 
             # --------------------------------------------------
             # Save Checkpoints
             # --------------------------------------------------
+
             self.save_checkpoint(
-                epoch, train_loss, val_loss, train_acc, val_acc
+                epoch,
+                train_loss,
+                val_loss,
+                train_acc,
+                val_acc,
             )
 
             # --------------------------------------------------
             # Early Stopping
             # --------------------------------------------------
+
             stop, best_loss, patience_counter = self.early_stop(
                 validation_loss=val_loss,
                 patience_counter=patience_counter,
@@ -520,22 +661,33 @@ class HerbTrainer:
 
             if stop:
                 self.logger.info("")
-                self.logger.info("Early stopping triggered.")
+                self.logger.info(
+                    "Early stopping triggered."
+                )
                 break
 
         # ======================================================
         # Post-training Calibration
         # ======================================================
+
         if CALIBRATE_AFTER_TRAINING:
+
             self.logger.info("")
             self.logger.info("=" * 60)
-            self.logger.info("Calibrating model with Temperature Scaling...")
+            self.logger.info(
+                "Calibrating model with Temperature Scaling..."
+            )
             self.logger.info("=" * 60)
 
             # Load best model for calibration
-            from ..config import BEST_MODEL_PATH
-            checkpoint = torch.load(BEST_MODEL_PATH, map_location=DEVICE)
-            self.model.load_state_dict(checkpoint["model_state_dict"])
+            checkpoint = torch.load(
+                BEST_MODEL_PATH,
+                map_location=DEVICE,
+            )
+
+            self.model.load_state_dict(
+                checkpoint["model_state_dict"]
+            )
 
             temp_scaler = calibrate_model(
                 self.model,
@@ -546,41 +698,92 @@ class HerbTrainer:
             )
 
             # Save calibration temperature
-            from ..config import CHECKPOINT_DIR
             cal_path = CHECKPOINT_DIR / "temperature_scale.pth"
-            torch.save({
-                "temperature": temp_scaler.get_temperature(),
-                "model_state_dict": self.model.state_dict(),
-            }, cal_path)
 
-            self.logger.info(f"Calibration saved: {cal_path}, T={temp_scaler.get_temperature():.4f}")
+            torch.save(
+                {
+                    "temperature": temp_scaler.get_temperature(),
+                    "model_state_dict": self.model.state_dict(),
+                },
+                cal_path,
+            )
+
+            self.logger.info(
+                f"Calibration saved: {cal_path}, "
+                f"T={temp_scaler.get_temperature():.4f}"
+            )
 
         # ======================================================
         # Save Training History
         # ======================================================
+
         history_df = pd.DataFrame(self.history)
-        history_df.to_csv(HISTORY_FILE, index=False)
+
+        history_df.to_csv(
+            HISTORY_FILE,
+            index=False,
+        )
 
         # ======================================================
         # Generate Graphs
         # ======================================================
-        self.visualizer.generate(self.history)
+
+        self.visualizer.generate(
+            self.history
+        )
+
+        # ======================================================
+        # MLflow Artifacts
+        # ======================================================
+
+        log_artifact_if_exists(
+            BEST_MODEL_PATH,
+            artifact_path="model",
+        )
+
+        log_artifact_if_exists(
+            HISTORY_FILE,
+            artifact_path="training",
+        )
+
+        log_artifact_if_exists(
+            CHECKPOINT_DIR / "temperature_scale.pth",
+            artifact_path="model",
+        )
 
         # ======================================================
         # Training Time
         # ======================================================
+
         elapsed = time.time() - self.training_start_time
+
         hours = int(elapsed // 3600)
         minutes = int((elapsed % 3600) // 60)
         seconds = int(elapsed % 60)
 
         self.logger.info("")
         self.logger.info("=" * 70)
-        self.logger.info("Training Finished Successfully")
+        self.logger.info(
+            "Training Finished Successfully"
+        )
         self.logger.info("=" * 70)
-        self.logger.info(f"Best Validation Accuracy : {self.best_accuracy:.2f}%")
-        self.logger.info(f"Training Time : {hours}h {minutes}m {seconds}s")
-        self.logger.info(f"History Saved : {HISTORY_FILE}")
+        self.logger.info(
+            f"Best Validation Accuracy : "
+            f"{self.best_accuracy:.2f}%"
+        )
+        self.logger.info(
+            f"Training Time : "
+            f"{hours}h {minutes}m {seconds}s"
+        )
+        self.logger.info(
+            f"History Saved : {HISTORY_FILE}"
+        )
         self.logger.info("=" * 70)
+
+        # ======================================================
+        # End MLflow Run
+        # ======================================================
+
+        end_run()
 
         return self.history

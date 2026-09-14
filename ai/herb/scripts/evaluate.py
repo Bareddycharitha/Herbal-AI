@@ -27,6 +27,15 @@ from ai.herb.training.trainer import HerbTrainer
 from ai.herb.config import (
     DEVICE,
     BEST_MODEL_PATH,
+    RESULTS_DIR,
+)
+
+from ai.mlflow_tracking import (
+    start_evaluation_run,
+    log_final_metrics,
+    log_artifact_if_exists,
+    set_tags,
+    end_run,
 )
 
 # ==============================================================================
@@ -40,47 +49,107 @@ def main():
     print("HERBAL-AI : HERB MODEL EVALUATION")
     print("=" * 70)
 
-    train_loader, val_loader, test_loader, class_names, num_classes = (
-        create_dataloaders()
+    # ==========================================================================
+    # Start MLflow Evaluation Run
+    # ==========================================================================
+
+    start_evaluation_run(
+        model_type="herb",
+        run_name="Herb Classifier Test Evaluation",
     )
 
-    model = build_model(num_classes)
+    set_tags({
+        "dataset": "Medicinal_plant_dataset",
+        "split": "test",
+        "model_name": "tf_efficientnetv2_s",
+    })
 
-    checkpoint = torch.load(
-        BEST_MODEL_PATH,
-        map_location=DEVICE,
-    )
+    try:
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+        train_loader, val_loader, test_loader, class_names, num_classes = (
+            create_dataloaders()
+        )
 
-    model.to(DEVICE)
+        model = build_model(num_classes)
 
-    trainer = HerbTrainer(
-        model=model,
-        train_loader=train_loader,
-        val_loader=test_loader,
-        class_names=class_names,
-    )
-    loss, acc, metrics = trainer.validate()
+        checkpoint = torch.load(
+            BEST_MODEL_PATH,
+            map_location=DEVICE,
+        )
 
-    precision = metrics["precision"]
-    recall = metrics["recall"]
-    f1 = metrics["f1_score"]
-    
+        model.load_state_dict(
+            checkpoint["model_state_dict"]
+        )
 
-    print("\n" + "=" * 70)
-    print("TEST SET RESULTS")
-    print("=" * 70)
+        model.to(DEVICE)
 
-    print(f"Test Loss      : {loss:.4f}")
-    print(f"Accuracy       : {acc:.2f}%")
-    print(f"Precision      : {precision:.4f}")
-    print(f"Recall         : {recall:.4f}")
-    print(f"F1 Score       : {f1:.4f}")
+        trainer = HerbTrainer(
+            model=model,
+            train_loader=train_loader,
+            val_loader=test_loader,
+            class_names=class_names,
+        )
 
-    print("=" * 70)
+        loss, acc, metrics = trainer.validate()
+
+        precision = metrics["precision"]
+        recall = metrics["recall"]
+        f1 = metrics["f1_score"]
+
+        # ======================================================================
+        # Log Test Metrics to MLflow
+        # ======================================================================
+
+        log_final_metrics({
+            "test_loss": loss,
+            "test_accuracy": acc,
+            "test_precision": precision,
+            "test_recall": recall,
+            "test_f1_score": f1,
+        })
+
+        # ======================================================================
+        # Log Existing Evaluation Artifacts
+        # ======================================================================
+
+        log_artifact_if_exists(
+            RESULTS_DIR / "classification_report.txt",
+            artifact_path="evaluation",
+        )
+
+        log_artifact_if_exists(
+            RESULTS_DIR / "confusion_matrix.png",
+            artifact_path="evaluation",
+        )
+
+        log_artifact_if_exists(
+            RESULTS_DIR / "evaluation_metrics.json",
+            artifact_path="evaluation",
+        )
+
+        # ======================================================================
+        # Print Results
+        # ======================================================================
+
+        print("\n" + "=" * 70)
+        print("TEST SET RESULTS")
+        print("=" * 70)
+
+        print(f"Test Loss      : {loss:.4f}")
+        print(f"Accuracy       : {acc:.2f}%")
+        print(f"Precision      : {precision:.4f}")
+        print(f"Recall         : {recall:.4f}")
+        print(f"F1 Score       : {f1:.4f}")
+
+        print("=" * 70)
+
+    finally:
+
+        # ======================================================================
+        # End MLflow Run
+        # ======================================================================
+
+        end_run()
 
 
 # ==============================================================================

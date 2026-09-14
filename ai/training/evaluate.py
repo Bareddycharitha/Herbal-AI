@@ -20,12 +20,21 @@ from sklearn.metrics import (
 )
 from tqdm import tqdm
 
+from ai.mlflow_tracking import (
+    start_evaluation_run,
+    log_final_metrics,
+    log_artifact_if_exists,
+    set_tags,
+    end_run,
+)
+
 from ai.config import (
     BEST_MODEL_PATH,
     DEVICE,
     NUM_CLASSES,
     TRAIN_DIR,
 )
+
 from ai.preprocessing.dataset import create_dataloaders
 from ai.models.efficientnet import build_model
 
@@ -36,18 +45,23 @@ def load_checkpoint(model):
 
     Supports the checkpoint formats already used by the project.
     """
+
     checkpoint = torch.load(
         BEST_MODEL_PATH,
         map_location=DEVICE,
     )
 
     if isinstance(checkpoint, dict):
+
         if "model_state_dict" in checkpoint:
             state_dict = checkpoint["model_state_dict"]
+
         elif "state_dict" in checkpoint:
             state_dict = checkpoint["state_dict"]
+
         else:
             state_dict = checkpoint
+
     else:
         state_dict = checkpoint
 
@@ -57,281 +71,481 @@ def load_checkpoint(model):
 
 
 def main():
-    print("=" * 60)
-    print("SKIN DISEASE TEST EVALUATION")
-    print("=" * 60)
 
-    # ---------------------------------------------------------
-    # DATA
-    # ---------------------------------------------------------
-    train_loader, val_loader, class_names, test_loader = (
-        create_dataloaders(TRAIN_DIR)
+    # =========================================================
+    # START MLflow EVALUATION RUN
+    # =========================================================
+
+    start_evaluation_run(
+        model_type="skin",
+        run_name="Skin Disease Test Evaluation",
     )
 
-    print("\n" + "=" * 60)
-    print("SKIN DISEASE DATASET")
-    print("=" * 60)
+    set_tags({
+        "dataset": "SkinDisease",
+        "split": "test",
+        "model_name": "tf_efficientnetv2_s",
+    })
 
-    print(f"Training samples   : {len(train_loader.dataset)}")
-    print(f"Validation samples : {len(val_loader.dataset)}")
-    print(f"Testing samples    : {len(test_loader.dataset)}")
-    print(f"Number of classes  : {len(class_names)}")
+    try:
 
-    print("\nClasses:")
-    for i, name in enumerate(class_names):
-        print(f"  {i}: {name}")
+        print("=" * 60)
+        print("SKIN DISEASE TEST EVALUATION")
+        print("=" * 60)
 
-    # ---------------------------------------------------------
-    # MODEL
-    # ---------------------------------------------------------
-    print("\n" + "=" * 60)
-    print("LOADING MODEL")
-    print("=" * 60)
+        # -----------------------------------------------------
+        # DATA
+        # -----------------------------------------------------
 
-    # IMPORTANT:
-    # build_model() only accepts num_classes.
-    # PRETRAINED is handled internally by ai.config.
-    model = build_model(
-        num_classes=NUM_CLASSES
-    ).to(DEVICE)
-
-    checkpoint = load_checkpoint(model)
-
-    model.eval()
-
-    print("Model Loaded Successfully")
-
-    if isinstance(checkpoint, dict):
-        if "epoch" in checkpoint:
-            print(
-                f"Best checkpoint epoch : "
-                f"{checkpoint['epoch']}"
-            )
-
-        if "best_metric" in checkpoint:
-            print(
-                f"Stored best Macro F1 : "
-                f"{checkpoint['best_metric']:.4f}"
-            )
-
-        if "val_f1" in checkpoint:
-            print(
-                f"Stored validation F1 : "
-                f"{checkpoint['val_f1']:.4f}"
-            )
-
-    # ---------------------------------------------------------
-    # TEST EVALUATION
-    # ---------------------------------------------------------
-    print("\n" + "=" * 60)
-    print("RUNNING TEST EVALUATION")
-    print("=" * 60)
-
-    all_targets = []
-    all_predictions = []
-
-    with torch.no_grad():
-        for images, targets in tqdm(
+        (
+            train_loader,
+            val_loader,
+            class_names,
             test_loader,
-            desc="Testing",
-        ):
-            images = images.to(DEVICE)
+        ) = create_dataloaders(
+            TRAIN_DIR
+        )
 
-            outputs = model(images)
+        print("\n" + "=" * 60)
+        print("SKIN DISEASE DATASET")
+        print("=" * 60)
 
-            predictions = torch.argmax(
-                outputs,
-                dim=1,
+        print(
+            f"Training samples   : "
+            f"{len(train_loader.dataset)}"
+        )
+
+        print(
+            f"Validation samples : "
+            f"{len(val_loader.dataset)}"
+        )
+
+        print(
+            f"Testing samples    : "
+            f"{len(test_loader.dataset)}"
+        )
+
+        print(
+            f"Number of classes  : "
+            f"{len(class_names)}"
+        )
+
+        print("\nClasses:")
+
+        for i, name in enumerate(class_names):
+            print(
+                f"  {i}: {name}"
             )
 
-            all_targets.extend(
-                targets.cpu().numpy()
-            )
+        # -----------------------------------------------------
+        # MODEL
+        # -----------------------------------------------------
 
-            all_predictions.extend(
-                predictions.cpu().numpy()
-            )
+        print("\n" + "=" * 60)
+        print("LOADING MODEL")
+        print("=" * 60)
 
-    y_true = np.asarray(all_targets)
-    y_pred = np.asarray(all_predictions)
+        # IMPORTANT:
+        # build_model() only accepts num_classes.
+        # PRETRAINED is handled internally by ai.config.
 
-    # ---------------------------------------------------------
-    # METRICS
-    # ---------------------------------------------------------
-    accuracy = accuracy_score(
-        y_true,
-        y_pred,
-    )
+        model = build_model(
+            num_classes=NUM_CLASSES
+        ).to(DEVICE)
 
-    macro_precision, macro_recall, macro_f1, _ = (
-        precision_recall_fscore_support(
+        checkpoint = load_checkpoint(model)
+
+        model.eval()
+
+        print(
+            "Model Loaded Successfully"
+        )
+
+        if isinstance(checkpoint, dict):
+
+            if "epoch" in checkpoint:
+
+                print(
+                    f"Best checkpoint epoch : "
+                    f"{checkpoint['epoch']}"
+                )
+
+            if "best_metric" in checkpoint:
+
+                print(
+                    f"Stored best Macro F1 : "
+                    f"{checkpoint['best_metric']:.4f}"
+                )
+
+            if "val_f1" in checkpoint:
+
+                print(
+                    f"Stored validation F1 : "
+                    f"{checkpoint['val_f1']:.4f}"
+                )
+
+        # -----------------------------------------------------
+        # TEST EVALUATION
+        # -----------------------------------------------------
+
+        print("\n" + "=" * 60)
+        print("RUNNING TEST EVALUATION")
+        print("=" * 60)
+
+        all_targets = []
+        all_predictions = []
+
+        with torch.no_grad():
+
+            for images, targets in tqdm(
+                test_loader,
+                desc="Testing",
+            ):
+
+                images = images.to(
+                    DEVICE
+                )
+
+                outputs = model(
+                    images
+                )
+
+                predictions = torch.argmax(
+                    outputs,
+                    dim=1,
+                )
+
+                all_targets.extend(
+                    targets.cpu().numpy()
+                )
+
+                all_predictions.extend(
+                    predictions.cpu().numpy()
+                )
+
+        y_true = np.asarray(
+            all_targets
+        )
+
+        y_pred = np.asarray(
+            all_predictions
+        )
+
+        # -----------------------------------------------------
+        # METRICS
+        # -----------------------------------------------------
+
+        accuracy = accuracy_score(
+            y_true,
+            y_pred,
+        )
+
+        (
+            macro_precision,
+            macro_recall,
+            macro_f1,
+            _,
+        ) = precision_recall_fscore_support(
             y_true,
             y_pred,
             average="macro",
             zero_division=0,
         )
-    )
 
-    weighted_precision, weighted_recall, weighted_f1, _ = (
-        precision_recall_fscore_support(
+        (
+            weighted_precision,
+            weighted_recall,
+            weighted_f1,
+            _,
+        ) = precision_recall_fscore_support(
             y_true,
             y_pred,
             average="weighted",
             zero_division=0,
         )
-    )
 
-    report = classification_report(
-        y_true,
-        y_pred,
-        labels=list(range(len(class_names))),
-        target_names=class_names,
-        digits=4,
-        zero_division=0,
-    )
-
-    cm = confusion_matrix(
-        y_true,
-        y_pred,
-        labels=list(range(len(class_names))),
-    )
-
-    # ---------------------------------------------------------
-    # PRINT RESULTS
-    # ---------------------------------------------------------
-    print("\n" + "=" * 60)
-    print("TEST RESULTS")
-    print("=" * 60)
-
-    print(f"Accuracy           : {accuracy:.4f}")
-    print(f"Macro Precision    : {macro_precision:.4f}")
-    print(f"Macro Recall       : {macro_recall:.4f}")
-    print(f"Macro F1           : {macro_f1:.4f}")
-    print(f"Weighted Precision : {weighted_precision:.4f}")
-    print(f"Weighted Recall    : {weighted_recall:.4f}")
-    print(f"Weighted F1        : {weighted_f1:.4f}")
-
-    print("\nClassification Report:")
-    print(report)
-
-    # ---------------------------------------------------------
-    # RESULTS DIRECTORY
-    # ---------------------------------------------------------
-    results_dir = Path("ai") / "results"
-    results_dir.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    # ---------------------------------------------------------
-    # CLASSIFICATION REPORT
-    # ---------------------------------------------------------
-    report_path = (
-        results_dir / "classification_report.txt"
-    )
-
-    with open(
-        report_path,
-        "w",
-        encoding="utf-8",
-    ) as f:
-        f.write(report)
-
-    # ---------------------------------------------------------
-    # CONFUSION MATRIX
-    # ---------------------------------------------------------
-    cm_path = (
-        results_dir / "confusion_matrix.png"
-    )
-
-    try:
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-
-        plt.figure(
-            figsize=(16, 14)
+        report = classification_report(
+            y_true,
+            y_pred,
+            labels=list(
+                range(len(class_names))
+            ),
+            target_names=class_names,
+            digits=4,
+            zero_division=0,
         )
 
-        sns.heatmap(
-            cm,
-            annot=True,
-            fmt="d",
-            cmap="Blues",
-            xticklabels=class_names,
-            yticklabels=class_names,
+        cm = confusion_matrix(
+            y_true,
+            y_pred,
+            labels=list(
+                range(len(class_names))
+            ),
         )
 
-        plt.xlabel("Predicted")
-        plt.ylabel("Actual")
-        plt.title(
-            "Skin Disease Test Confusion Matrix"
-        )
+        # -----------------------------------------------------
+        # PRINT RESULTS
+        # -----------------------------------------------------
 
-        plt.tight_layout()
+        print("\n" + "=" * 60)
+        print("TEST RESULTS")
+        print("=" * 60)
 
-        plt.savefig(
-            cm_path,
-            dpi=200,
-            bbox_inches="tight",
-        )
-
-        plt.close()
-
-    except Exception as e:
         print(
-            f"\nWarning: Could not save "
-            f"confusion matrix: {e}"
+            f"Accuracy           : "
+            f"{accuracy:.4f}"
         )
 
-    # ---------------------------------------------------------
-    # METRICS JSON
-    # ---------------------------------------------------------
-    metrics = {
-        "dataset": "test",
-        "num_samples": int(len(y_true)),
-        "num_classes": int(len(class_names)),
-        "accuracy": float(accuracy),
-        "macro_precision": float(macro_precision),
-        "macro_recall": float(macro_recall),
-        "macro_f1": float(macro_f1),
-        "weighted_precision": float(
-            weighted_precision
-        ),
-        "weighted_recall": float(
-            weighted_recall
-        ),
-        "weighted_f1": float(
-            weighted_f1
-        ),
-    }
-
-    metrics_path = (
-        results_dir / "evaluation_metrics.json"
-    )
-
-    with open(
-        metrics_path,
-        "w",
-        encoding="utf-8",
-    ) as f:
-        json.dump(
-            metrics,
-            f,
-            indent=4,
+        print(
+            f"Macro Precision    : "
+            f"{macro_precision:.4f}"
         )
 
-    # ---------------------------------------------------------
-    # FINAL OUTPUT
-    # ---------------------------------------------------------
-    print("\n" + "=" * 60)
-    print("TEST ARTIFACTS SAVED")
-    print("=" * 60)
+        print(
+            f"Macro Recall       : "
+            f"{macro_recall:.4f}"
+        )
 
-    print(report_path.resolve())
-    print(cm_path.resolve())
-    print(metrics_path.resolve())
+        print(
+            f"Macro F1           : "
+            f"{macro_f1:.4f}"
+        )
 
-    print("=" * 60)
+        print(
+            f"Weighted Precision : "
+            f"{weighted_precision:.4f}"
+        )
+
+        print(
+            f"Weighted Recall    : "
+            f"{weighted_recall:.4f}"
+        )
+
+        print(
+            f"Weighted F1        : "
+            f"{weighted_f1:.4f}"
+        )
+
+        print(
+            "\nClassification Report:"
+        )
+
+        print(report)
+
+        # -----------------------------------------------------
+        # RESULTS DIRECTORY
+        # -----------------------------------------------------
+
+        results_dir = (
+            Path("ai") / "results"
+        )
+
+        results_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # -----------------------------------------------------
+        # CLASSIFICATION REPORT
+        # -----------------------------------------------------
+
+        report_path = (
+            results_dir
+            / "classification_report.txt"
+        )
+
+        with open(
+            report_path,
+            "w",
+            encoding="utf-8",
+        ) as f:
+
+            f.write(report)
+
+        # -----------------------------------------------------
+        # CONFUSION MATRIX
+        # -----------------------------------------------------
+
+        cm_path = (
+            results_dir
+            / "confusion_matrix.png"
+        )
+
+        try:
+
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+
+            plt.figure(
+                figsize=(16, 14)
+            )
+
+            sns.heatmap(
+                cm,
+                annot=True,
+                fmt="d",
+                cmap="Blues",
+                xticklabels=class_names,
+                yticklabels=class_names,
+            )
+
+            plt.xlabel(
+                "Predicted"
+            )
+
+            plt.ylabel(
+                "Actual"
+            )
+
+            plt.title(
+                "Skin Disease Test Confusion Matrix"
+            )
+
+            plt.tight_layout()
+
+            plt.savefig(
+                cm_path,
+                dpi=200,
+                bbox_inches="tight",
+            )
+
+            plt.close()
+
+        except Exception as e:
+
+            print(
+                f"\nWarning: Could not save "
+                f"confusion matrix: {e}"
+            )
+
+        # -----------------------------------------------------
+        # METRICS JSON
+        # -----------------------------------------------------
+
+        metrics = {
+            "dataset": "test",
+            "num_samples": int(
+                len(y_true)
+            ),
+            "num_classes": int(
+                len(class_names)
+            ),
+            "accuracy": float(
+                accuracy
+            ),
+            "macro_precision": float(
+                macro_precision
+            ),
+            "macro_recall": float(
+                macro_recall
+            ),
+            "macro_f1": float(
+                macro_f1
+            ),
+            "weighted_precision": float(
+                weighted_precision
+            ),
+            "weighted_recall": float(
+                weighted_recall
+            ),
+            "weighted_f1": float(
+                weighted_f1
+            ),
+        }
+
+        metrics_path = (
+            results_dir
+            / "evaluation_metrics.json"
+        )
+
+        with open(
+            metrics_path,
+            "w",
+            encoding="utf-8",
+        ) as f:
+
+            json.dump(
+                metrics,
+                f,
+                indent=4,
+            )
+
+        # =====================================================
+        # LOG TEST METRICS TO MLflow
+        # =====================================================
+
+        log_final_metrics({
+
+            "test_accuracy":
+                accuracy,
+
+            "test_macro_precision":
+                macro_precision,
+
+            "test_macro_recall":
+                macro_recall,
+
+            "test_macro_f1":
+                macro_f1,
+
+            "test_weighted_precision":
+                weighted_precision,
+
+            "test_weighted_recall":
+                weighted_recall,
+
+            "test_weighted_f1":
+                weighted_f1,
+        })
+
+        # =====================================================
+        # LOG EXISTING EVALUATION ARTIFACTS TO MLflow
+        # =====================================================
+
+        log_artifact_if_exists(
+            report_path,
+            artifact_path="evaluation",
+        )
+
+        log_artifact_if_exists(
+            cm_path,
+            artifact_path="evaluation",
+        )
+
+        log_artifact_if_exists(
+            metrics_path,
+            artifact_path="evaluation",
+        )
+
+        # -----------------------------------------------------
+        # FINAL OUTPUT
+        # -----------------------------------------------------
+
+        print("\n" + "=" * 60)
+        print("TEST ARTIFACTS SAVED")
+        print("=" * 60)
+
+        print(
+            report_path.resolve()
+        )
+
+        print(
+            cm_path.resolve()
+        )
+
+        print(
+            metrics_path.resolve()
+        )
+
+        print("=" * 60)
+
+    finally:
+
+        # =====================================================
+        # END MLflow RUN
+        # =====================================================
+
+        end_run()
 
 
 if __name__ == "__main__":

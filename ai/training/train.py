@@ -14,6 +14,14 @@ from torchvision.datasets import ImageFolder
 from sklearn.model_selection import train_test_split
 from PIL import Image
 
+from ai.mlflow_tracking import (
+    start_training_run,
+    log_epoch_metrics,
+    log_artifact_if_exists,
+    set_tags,
+    end_run,
+)
+
 from ai.config import (
     DEVICE,
     TRAIN_DIR,
@@ -48,6 +56,9 @@ from ai.config import (
     STAGE1_EPOCHS,
     STAGE2_EPOCHS,
     NUM_CLASSES,
+    IMAGE_SIZE,
+    MODEL_NAME,
+    PRETRAINED,
 )
 
 from ai.models.efficientnet import build_model
@@ -896,6 +907,23 @@ def train_stage(
         )
 
         # ----------------------------------------------------
+        # MLflow Epoch Metrics
+        # ----------------------------------------------------
+
+        log_epoch_metrics(
+            {
+                "train_loss": train_loss,
+                "train_accuracy": train_acc,
+                "train_macro_f1": train_f1,
+                "validation_loss": val_loss,
+                "validation_accuracy": val_acc,
+                "validation_macro_f1": val_f1,
+                "learning_rate": current_lr,
+            },
+            epoch=epoch + 1,
+        )
+
+        # ----------------------------------------------------
         # Save latest checkpoint
         # ----------------------------------------------------
 
@@ -1049,6 +1077,47 @@ def train_multiclass(
         torch.cuda.manual_seed_all(
             seed
         )
+
+    # ========================================================
+    # MLflow Training Run
+    # ========================================================
+
+    start_training_run(
+        model_type="skin",
+        run_name="Skin Disease V4-A Recovery",
+        params={
+            "model_name": MODEL_NAME,
+            "learning_rate": LEARNING_RATE,
+            "batch_size": BATCH_SIZE,
+            "epochs": (
+                STAGE2_EPOCHS
+                if USE_TWO_STAGE
+                else EPOCHS
+            ),
+            "image_size": IMAGE_SIZE,
+            "optimizer": "AdamW",
+            "weight_decay": WEIGHT_DECAY,
+            "seed": seed,
+            "label_smoothing": LABEL_SMOOTHING,
+            "focal_loss": USE_FOCAL_LOSS,
+            "focal_gamma": FOCAL_GAMMA,
+            "num_classes": NUM_CLASSES,
+            "pretrained": PRETRAINED,
+            "use_oe": USE_OE,
+            "oe_ratio": OE_RATIO,
+            "oe_loss_weight": OE_LOSS_WEIGHT,
+            "use_two_stage": USE_TWO_STAGE,
+            "calibrate_after_training":
+                CALIBRATE_AFTER_TRAINING,
+        },
+    )
+
+    set_tags({
+        "model_name": MODEL_NAME,
+        "dataset": "SkinDisease",
+        "training_version": "V4-A",
+        "experiment": "V4-A Recovery",
+    })
 
     (
         train_loader,
@@ -1231,6 +1300,38 @@ def train_multiclass(
             f"{temp_scaler.get_temperature():.4f}"
         )
 
+    # --------------------------------------------------------
+    # MLflow Artifacts
+    # --------------------------------------------------------
+
+    log_artifact_if_exists(
+        BEST_MODEL_PATH,
+        artifact_path="model",
+    )
+
+    log_artifact_if_exists(
+        LAST_MODEL_PATH,
+        artifact_path="model",
+    )
+
+    log_artifact_if_exists(
+        CHECKPOINT_DIR
+        / "temperature_scale.pth",
+        artifact_path="model",
+    )
+
+    log_artifact_if_exists(
+        CHECKPOINT_DIR
+        / "training_history.csv",
+        artifact_path="training",
+    )
+
+    # --------------------------------------------------------
+    # End MLflow Run
+    # --------------------------------------------------------
+
+    end_run()
+
     return (
         model,
         class_names,
@@ -1265,6 +1366,41 @@ def train_binary(
         torch.cuda.manual_seed_all(
             seed
         )
+
+    # ========================================================
+    # MLflow Binary Training Run
+    # ========================================================
+
+    start_training_run(
+        model_type="skin",
+        run_name="Skin Disease Binary Stage",
+        params={
+            "model_name": MODEL_NAME,
+            "learning_rate": LEARNING_RATE,
+            "batch_size": BATCH_SIZE,
+            "epochs": STAGE1_EPOCHS,
+            "image_size": IMAGE_SIZE,
+            "optimizer": "AdamW",
+            "weight_decay": WEIGHT_DECAY,
+            "seed": seed,
+            "label_smoothing": LABEL_SMOOTHING,
+            "focal_loss": True,
+            "focal_gamma": FOCAL_GAMMA,
+            "num_classes": 2,
+            "pretrained": PRETRAINED,
+            "use_oe": False,
+            "use_two_stage": True,
+            "calibrate_after_training":
+                CALIBRATE_AFTER_TRAINING,
+        },
+    )
+
+    set_tags({
+        "model_name": MODEL_NAME,
+        "dataset": "SkinDisease",
+        "training_version": "V4-A",
+        "stage": "binary",
+    })
 
     (
         train_loader,
@@ -1335,10 +1471,26 @@ def train_binary(
         binary_path,
     )
 
+    # --------------------------------------------------------
+    # MLflow Binary Artifact
+    # --------------------------------------------------------
+
+    log_artifact_if_exists(
+        binary_path,
+        artifact_path="model",
+    )
+
+    log_artifact_if_exists(
+        LAST_MODEL_PATH,
+        artifact_path="model",
+    )
+
     print(
         f"\nBest binary model saved to: "
         f"{binary_path}"
     )
+
+    end_run()
 
     return model
 
@@ -1475,7 +1627,7 @@ if __name__ == "__main__":
     )
 
     print(
-        f"  Image size       : {320}"
+        f"  Image size       : {IMAGE_SIZE}"
     )
 
     print(

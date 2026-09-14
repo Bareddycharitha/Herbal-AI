@@ -15,8 +15,17 @@ from tqdm import tqdm
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.utils.class_weight import compute_class_weight
 
+from ai.mlflow_tracking import (
+    start_training_run,
+    log_epoch_metrics,
+    log_artifact_if_exists,
+    set_tags,
+    end_run,
+)
+
 from .config import (
     DEVICE,
+    MODEL_NAME,
     TRAIN_DIRS,
     VAL_DIRS,
     BATCH_SIZE,
@@ -119,7 +128,12 @@ def oe_loss(logits, temperature=1.0):
 
     # KL divergence between model predictions and uniform
     log_probs = F.log_softmax(logits / temperature, dim=1)
-    loss = F.kl_div(log_probs, uniform_target, reduction='batchmean', log_target=False)
+    loss = F.kl_div(
+        log_probs,
+        uniform_target,
+        reduction='batchmean',
+        log_target=False,
+    )
 
     return loss
 
@@ -131,28 +145,40 @@ def oe_loss(logits, temperature=1.0):
 def create_oe_dataset():
     """Create Outlier Exposure dataset from diverse images."""
     if not OE_DATASET_DIR.exists():
-        print(f"OE dataset not found at {OE_DATASET_DIR}, skipping OE")
+        print(
+            f"OE dataset not found at {OE_DATASET_DIR}, skipping OE"
+        )
         return None
 
     oe_dataset = UniversalImageDataset(
         dataset_dirs=[OE_DATASET_DIR],
         transform=train_transform,
     )
+
     print(f"Loaded OE dataset: {len(oe_dataset)} images")
+
     return oe_dataset
 
 
 def create_hard_negative_dataset():
     """Create hard negative dataset for 'Other' class."""
     if not HARD_NEGATIVE_DIR.exists():
-        print(f"Hard negative dataset not found at {HARD_NEGATIVE_DIR}, skipping")
+        print(
+            f"Hard negative dataset not found at "
+            f"{HARD_NEGATIVE_DIR}, skipping"
+        )
         return None
 
     hard_neg_dataset = UniversalImageDataset(
         dataset_dirs=[HARD_NEGATIVE_DIR],
         transform=train_transform,
     )
-    print(f"Loaded hard negative dataset: {len(hard_neg_dataset)} images")
+
+    print(
+        f"Loaded hard negative dataset: "
+        f"{len(hard_neg_dataset)} images"
+    )
+
     return hard_neg_dataset
 
 
@@ -171,7 +197,9 @@ def create_dataloaders():
     )
 
     # Dataset Statistics
-    train_counts = Counter(label for _, label in train_dataset.samples)
+    train_counts = Counter(
+        label for _, label in train_dataset.samples
+    )
 
     print("\n" + "=" * 60)
     print("TRAIN DATASET DISTRIBUTION")
@@ -180,7 +208,9 @@ def create_dataloaders():
     print(f"Medicinal  : {train_counts[1]}")
     print(f"Other      : {train_counts[2]}")
 
-    val_counts = Counter(label for _, label in val_dataset.samples)
+    val_counts = Counter(
+        label for _, label in val_dataset.samples
+    )
 
     print("\n" + "=" * 60)
     print("VALIDATION DATASET DISTRIBUTION")
@@ -192,30 +222,58 @@ def create_dataloaders():
 
     # Compute class weights
     if CLASS_WEIGHTS is None:
-        labels = [label for _, label in train_dataset.samples]
+        labels = [
+            label for _, label in train_dataset.samples
+        ]
+
         class_weights = compute_class_weight(
             class_weight='balanced',
             classes=np.unique(labels),
             y=labels
         )
-        class_weights = torch.tensor(class_weights, dtype=torch.float32).to(DEVICE)
-        print(f"\nComputed class weights: {class_weights.cpu().numpy()}")
+
+        class_weights = torch.tensor(
+            class_weights,
+            dtype=torch.float32,
+        ).to(DEVICE)
+
+        print(
+            f"\nComputed class weights: "
+            f"{class_weights.cpu().numpy()}"
+        )
+
     else:
-        class_weights = torch.tensor(CLASS_WEIGHTS, dtype=torch.float32).to(DEVICE)
-        print(f"\nUsing provided class weights: {class_weights.cpu().numpy()}")
+        class_weights = torch.tensor(
+            CLASS_WEIGHTS,
+            dtype=torch.float32,
+        ).to(DEVICE)
+
+        print(
+            f"\nUsing provided class weights: "
+            f"{class_weights.cpu().numpy()}"
+        )
 
     # Optional: Hard Negative Mining
     if USE_HARD_NEGATIVES:
         hard_neg_dataset = create_hard_negative_dataset()
+
         if hard_neg_dataset is not None:
             # Combine with main dataset
-            train_dataset = ConcatDataset([train_dataset, hard_neg_dataset])
-            print(f"Combined train dataset size: {len(train_dataset)}")
+            train_dataset = ConcatDataset(
+                [train_dataset, hard_neg_dataset]
+            )
+
+            print(
+                f"Combined train dataset size: "
+                f"{len(train_dataset)}"
+            )
 
     # Optional: Outlier Exposure
     oe_loader = None
+
     if USE_OE:
         oe_dataset = create_oe_dataset()
+
         if oe_dataset is not None:
             oe_loader = DataLoader(
                 oe_dataset,
@@ -225,22 +283,43 @@ def create_dataloaders():
                 pin_memory=PIN_MEMORY,
                 drop_last=True,
             )
-            print(f"OE loader created with batch size: {int(BATCH_SIZE * OE_RATIO)}")
+
+            print(
+                f"OE loader created with batch size: "
+                f"{int(BATCH_SIZE * OE_RATIO)}"
+            )
 
     # Create weighted sampler for balanced batches
     if hasattr(train_dataset, 'samples'):
+
         # Single dataset
-        labels = [label for _, label in train_dataset.samples]
+        labels = [
+            label for _, label in train_dataset.samples
+        ]
+
     else:
+
         # ConcatDataset
         labels = []
+
         for dataset in train_dataset.datasets:
-            labels.extend([label for _, label in dataset.samples])
+            labels.extend(
+                [label for _, label in dataset.samples]
+            )
 
     # WeightedRandomSampler for balanced sampling
     class_counts = Counter(labels)
-    weights = [1.0 / class_counts[label] for label in labels]
-    sampler = WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
+
+    weights = [
+        1.0 / class_counts[label]
+        for label in labels
+    ]
+
+    sampler = WeightedRandomSampler(
+        weights,
+        num_samples=len(weights),
+        replacement=True,
+    )
 
     train_loader = DataLoader(
         train_dataset,
@@ -258,10 +337,19 @@ def create_dataloaders():
         pin_memory=PIN_MEMORY,
     )
 
-    print(f"\nTraining Images   : {len(train_dataset)}")
-    print(f"Validation Images : {len(val_dataset)}\n")
+    print(
+        f"\nTraining Images   : {len(train_dataset)}"
+    )
+    print(
+        f"Validation Images : {len(val_dataset)}\n"
+    )
 
-    return train_loader, val_loader, oe_loader, class_weights
+    return (
+        train_loader,
+        val_loader,
+        oe_loader,
+        class_weights,
+    )
 
 
 # ==========================================================
@@ -285,14 +373,30 @@ def train_one_epoch(
     predictions = []
     targets = []
 
-    progress = tqdm(loader, desc="Training", leave=False)
+    progress = tqdm(
+        loader,
+        desc="Training",
+        leave=False,
+    )
 
     # Create OE iterator
-    oe_iter = iter(oe_loader) if oe_loader is not None else None
+    oe_iter = (
+        iter(oe_loader)
+        if oe_loader is not None
+        else None
+    )
 
     for images, labels in progress:
-        images = images.to(DEVICE, non_blocking=True)
-        labels = labels.to(DEVICE, non_blocking=True)
+
+        images = images.to(
+            DEVICE,
+            non_blocking=True,
+        )
+
+        labels = labels.to(
+            DEVICE,
+            non_blocking=True,
+        )
 
         optimizer.zero_grad()
 
@@ -300,42 +404,97 @@ def train_one_epoch(
             device_type="cuda",
             enabled=USE_AMP,
         ):
+
             outputs = model(images)
-            loss = criterion(outputs, labels)
+
+            loss = criterion(
+                outputs,
+                labels,
+            )
 
             # Outlier Exposure loss
             if oe_iter is not None:
+
                 try:
                     oe_images, _ = next(oe_iter)
+
                 except StopIteration:
                     oe_iter = iter(oe_loader)
                     oe_images, _ = next(oe_iter)
 
-                oe_images = oe_images.to(DEVICE, non_blocking=True)
-                oe_outputs = model(oe_images)
-                oe_l = oe_loss(oe_outputs)
-                loss = loss + OE_LOSS_WEIGHT * oe_l
-                oe_loss_meter.update(oe_l.item(), oe_images.size(0))
+                oe_images = oe_images.to(
+                    DEVICE,
+                    non_blocking=True,
+                )
+
+                oe_outputs = model(
+                    oe_images
+                )
+
+                oe_l = oe_loss(
+                    oe_outputs
+                )
+
+                loss = (
+                    loss
+                    + OE_LOSS_WEIGHT * oe_l
+                )
+
+                oe_loss_meter.update(
+                    oe_l.item(),
+                    oe_images.size(0),
+                )
 
         scaler.scale(loss).backward()
+
         scaler.step(optimizer)
+
         scaler.update()
 
-        loss_meter.update(loss.item(), images.size(0))
+        loss_meter.update(
+            loss.item(),
+            images.size(0),
+        )
 
         preds = outputs.argmax(dim=1)
-        predictions.extend(preds.cpu().numpy())
-        targets.extend(labels.cpu().numpy())
 
-        postfix = {'loss': f"{loss_meter.average:.4f}"}
+        predictions.extend(
+            preds.cpu().numpy()
+        )
+
+        targets.extend(
+            labels.cpu().numpy()
+        )
+
+        postfix = {
+            'loss': f"{loss_meter.average:.4f}"
+        }
+
         if oe_loader is not None:
-            postfix['oe_loss'] = f"{oe_loss_meter.average:.4f}"
-        progress.set_postfix(postfix)
+            postfix['oe_loss'] = (
+                f"{oe_loss_meter.average:.4f}"
+            )
 
-    accuracy = accuracy_score(targets, predictions)
-    macro_f1 = f1_score(targets, predictions, average='macro')
+        progress.set_postfix(
+            postfix
+        )
 
-    return loss_meter.average, accuracy, macro_f1
+    accuracy = accuracy_score(
+        targets,
+        predictions,
+    )
+
+    macro_f1 = f1_score(
+        targets,
+        predictions,
+        average='macro',
+    )
+
+    return (
+        loss_meter.average,
+        accuracy,
+        macro_f1,
+    )
 
 
 # ==========================================================
@@ -355,32 +514,78 @@ def validate(
     targets = []
 
     with torch.no_grad():
-        progress = tqdm(loader, desc="Validation", leave=False)
+
+        progress = tqdm(
+            loader,
+            desc="Validation",
+            leave=False,
+        )
 
         for images, labels in progress:
-            images = images.to(DEVICE, non_blocking=True)
-            labels = labels.to(DEVICE, non_blocking=True)
+
+            images = images.to(
+                DEVICE,
+                non_blocking=True,
+            )
+
+            labels = labels.to(
+                DEVICE,
+                non_blocking=True,
+            )
 
             with autocast(
                 device_type="cuda",
                 enabled=USE_AMP,
             ):
-                outputs = model(images)
-                loss = criterion(outputs, labels)
 
-            loss_meter.update(loss.item(), images.size(0))
+                outputs = model(images)
+
+                loss = criterion(
+                    outputs,
+                    labels,
+                )
+
+            loss_meter.update(
+                loss.item(),
+                images.size(0),
+            )
 
             preds = outputs.argmax(dim=1)
-            predictions.extend(preds.cpu().numpy())
-            targets.extend(labels.cpu().numpy())
 
-            progress.set_postfix(loss=f"{loss_meter.average:.4f}")
+            predictions.extend(
+                preds.cpu().numpy()
+            )
 
-    accuracy = accuracy_score(targets, predictions)
-    macro_f1 = f1_score(targets, predictions, average='macro')
-    cm = confusion_matrix(targets, predictions)
+            targets.extend(
+                labels.cpu().numpy()
+            )
 
-    return loss_meter.average, accuracy, macro_f1, cm
+            progress.set_postfix(
+                loss=f"{loss_meter.average:.4f}"
+            )
+
+    accuracy = accuracy_score(
+        targets,
+        predictions,
+    )
+
+    macro_f1 = f1_score(
+        targets,
+        predictions,
+        average='macro',
+    )
+
+    cm = confusion_matrix(
+        targets,
+        predictions,
+    )
+
+    return (
+        loss_meter.average,
+        accuracy,
+        macro_f1,
+        cm,
+    )
 
 
 # ==========================================================
@@ -388,39 +593,113 @@ def validate(
 # ==========================================================
 
 def train(seed=RANDOM_SEED):
+
     print(f"Device: {DEVICE}")
 
     if torch.cuda.is_available():
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(
+            f"GPU: {torch.cuda.get_device_name(0)}"
+        )
     else:
         print("Running on CPU")
 
     set_seed(seed)
 
-    train_loader, val_loader, oe_loader, class_weights = create_dataloaders()
+    # ==========================================================
+    # MLflow Training Run
+    # ==========================================================
+
+    start_training_run(
+        model_type="universal",
+        run_name="Universal Classifier Training",
+        params={
+            "model_name": MODEL_NAME,
+            "learning_rate": LEARNING_RATE,
+            "batch_size": BATCH_SIZE,
+            "epochs": EPOCHS,
+            "image_size": IMAGE_SIZE,
+            "optimizer": "AdamW",
+            "weight_decay": WEIGHT_DECAY,
+            "seed": seed,
+            "label_smoothing": LABEL_SMOOTHING,
+            "focal_loss": USE_FOCAL_LOSS,
+            "focal_gamma": FOCAL_GAMMA,
+            "num_classes": 3,
+            "pretrained": True,
+            "use_oe": USE_OE,
+            "oe_ratio": OE_RATIO,
+            "oe_loss_weight": OE_LOSS_WEIGHT,
+            "use_hard_negatives": USE_HARD_NEGATIVES,
+            "hard_negative_ratio": HARD_NEGATIVE_RATIO,
+            "calibrate_after_training": CALIBRATE_AFTER_TRAINING,
+        },
+    )
+
+    set_tags({
+        "model_name": MODEL_NAME,
+        "dataset": "UniversalImageDataset",
+    })
+
+    # ==========================================================
+    # Data
+    # ==========================================================
+
+    (
+        train_loader,
+        val_loader,
+        oe_loader,
+        class_weights,
+    ) = create_dataloaders()
+
+    # ==========================================================
+    # Model
+    # ==========================================================
 
     model = build_model().to(DEVICE)
 
-    # Loss function
+    # ==========================================================
+    # Loss Function
+    # ==========================================================
+
     if USE_FOCAL_LOSS:
+
         criterion = FocalLoss(
             gamma=FOCAL_GAMMA,
             weight=class_weights,
             label_smoothing=LABEL_SMOOTHING,
         )
-        print(f"Using Focal Loss (gamma={FOCAL_GAMMA}, label_smoothing={LABEL_SMOOTHING})")
+
+        print(
+            f"Using Focal Loss "
+            f"(gamma={FOCAL_GAMMA}, "
+            f"label_smoothing={LABEL_SMOOTHING})"
+        )
+
     else:
+
         criterion = nn.CrossEntropyLoss(
             weight=class_weights,
             label_smoothing=LABEL_SMOOTHING,
         )
-        print(f"Using CrossEntropy Loss (label_smoothing={LABEL_SMOOTHING})")
+
+        print(
+            f"Using CrossEntropy Loss "
+            f"(label_smoothing={LABEL_SMOOTHING})"
+        )
+
+    # ==========================================================
+    # Optimizer
+    # ==========================================================
 
     optimizer = AdamW(
         model.parameters(),
         lr=LEARNING_RATE,
         weight_decay=WEIGHT_DECAY,
     )
+
+    # ==========================================================
+    # Scheduler
+    # ==========================================================
 
     scheduler = ReduceLROnPlateau(
         optimizer,
@@ -429,7 +708,17 @@ def train(seed=RANDOM_SEED):
         patience=2,
     )
 
-    scaler = GradScaler(enabled=USE_AMP)
+    # ==========================================================
+    # Mixed Precision
+    # ==========================================================
+
+    scaler = GradScaler(
+        enabled=USE_AMP
+    )
+
+    # ==========================================================
+    # Early Stopping
+    # ==========================================================
 
     early_stopping = EarlyStopping(
         patience=PATIENCE,
@@ -444,11 +733,22 @@ def train(seed=RANDOM_SEED):
     print("\nTraining Started\n")
 
     for epoch in range(EPOCHS):
+
         print("=" * 60)
-        print(f"Epoch {epoch+1}/{EPOCHS}")
+        print(
+            f"Epoch {epoch+1}/{EPOCHS}"
+        )
         print("=" * 60)
 
-        train_loss, train_acc, train_f1 = train_one_epoch(
+        # ------------------------------------------------------
+        # Training
+        # ------------------------------------------------------
+
+        (
+            train_loss,
+            train_acc,
+            train_f1,
+        ) = train_one_epoch(
             model,
             train_loader,
             criterion,
@@ -458,21 +758,74 @@ def train(seed=RANDOM_SEED):
             epoch=epoch,
         )
 
-        val_loss, val_acc, val_f1, val_cm = validate(
+        # ------------------------------------------------------
+        # Validation
+        # ------------------------------------------------------
+
+        (
+            val_loss,
+            val_acc,
+            val_f1,
+            val_cm,
+        ) = validate(
             model,
             val_loader,
             criterion,
         )
 
-        scheduler.step(val_loss)
+        # ------------------------------------------------------
+        # Scheduler
+        # ------------------------------------------------------
 
-        print(f"Train Loss : {train_loss:.4f}")
-        print(f"Train Acc  : {train_acc:.4f}")
-        print(f"Train Macro F1: {train_f1:.4f}")
-        print(f"Val Loss   : {val_loss:.4f}")
-        print(f"Val Acc    : {val_acc:.4f}")
-        print(f"Val Macro F1 : {val_f1:.4f}")
-        print(f"Val Confusion Matrix:\n{val_cm}")
+        scheduler.step(
+            val_loss
+        )
+
+        # ------------------------------------------------------
+        # Current Learning Rate
+        # ------------------------------------------------------
+
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        # ------------------------------------------------------
+        # Console Output
+        # ------------------------------------------------------
+
+        print(
+            f"Train Loss : {train_loss:.4f}"
+        )
+
+        print(
+            f"Train Acc  : {train_acc:.4f}"
+        )
+
+        print(
+            f"Train Macro F1: {train_f1:.4f}"
+        )
+
+        print(
+            f"Val Loss   : {val_loss:.4f}"
+        )
+
+        print(
+            f"Val Acc    : {val_acc:.4f}"
+        )
+
+        print(
+            f"Val Macro F1 : {val_f1:.4f}"
+        )
+
+        print(
+            f"Learning Rate : {current_lr:.8f}"
+        )
+
+        print(
+            f"Val Confusion Matrix:\n{val_cm}"
+        )
+
+        # ------------------------------------------------------
+        # Save History
+        # ------------------------------------------------------
 
         history.append({
             "epoch": epoch + 1,
@@ -482,7 +835,29 @@ def train(seed=RANDOM_SEED):
             "val_loss": val_loss,
             "val_accuracy": val_acc,
             "val_macro_f1": val_f1,
+            "learning_rate": current_lr,
         })
+
+        # ------------------------------------------------------
+        # MLflow Epoch Metrics
+        # ------------------------------------------------------
+
+        log_epoch_metrics(
+            {
+                "train_loss": train_loss,
+                "train_accuracy": train_acc,
+                "train_macro_f1": train_f1,
+                "validation_loss": val_loss,
+                "validation_accuracy": val_acc,
+                "validation_macro_f1": val_f1,
+                "learning_rate": current_lr,
+            },
+            epoch=epoch + 1,
+        )
+
+        # ------------------------------------------------------
+        # Save Last Checkpoint
+        # ------------------------------------------------------
 
         save_checkpoint(
             {
@@ -495,7 +870,12 @@ def train(seed=RANDOM_SEED):
             LAST_MODEL_PATH,
         )
 
+        # ------------------------------------------------------
+        # Save Best Checkpoint
+        # ------------------------------------------------------
+
         if val_acc > best_accuracy:
+
             best_accuracy = val_acc
             best_macro_f1 = val_f1
 
@@ -510,29 +890,64 @@ def train(seed=RANDOM_SEED):
                 BEST_MODEL_PATH,
             )
 
-            print("Best model updated.")
+            print(
+                "Best model updated."
+            )
+
+        # ------------------------------------------------------
+        # Early Stopping
+        # ------------------------------------------------------
 
         if early_stopping(val_loss):
-            print("Early stopping triggered.")
+
+            print(
+                "Early stopping triggered."
+            )
+
             break
 
-    save_history(history, TRAIN_HISTORY)
+    # ==========================================================
+    # Save Training History
+    # ==========================================================
+
+    save_history(
+        history,
+        TRAIN_HISTORY,
+    )
 
     print("\nTraining Finished")
-    print(f"Best Validation Accuracy : {best_accuracy:.4f}")
-    print(f"Best Validation Macro F1 : {best_macro_f1:.4f}")
+
+    print(
+        f"Best Validation Accuracy : "
+        f"{best_accuracy:.4f}"
+    )
+
+    print(
+        f"Best Validation Macro F1 : "
+        f"{best_macro_f1:.4f}"
+    )
 
     # ==========================================================
     # Post-training Calibration
     # ==========================================================
+
     if CALIBRATE_AFTER_TRAINING:
+
         print("\n" + "=" * 60)
-        print("Calibrating model with Temperature Scaling...")
+        print(
+            "Calibrating model with Temperature Scaling..."
+        )
         print("=" * 60)
 
         # Load best model for calibration
-        checkpoint = torch.load(BEST_MODEL_PATH, map_location=DEVICE)
-        model.load_state_dict(checkpoint["model_state_dict"])
+        checkpoint = torch.load(
+            BEST_MODEL_PATH,
+            map_location=DEVICE,
+        )
+
+        model.load_state_dict(
+            checkpoint["model_state_dict"]
+        )
 
         temp_scaler = calibrate_model(
             model,
@@ -543,14 +958,54 @@ def train(seed=RANDOM_SEED):
         )
 
         # Save calibration temperature
-        cal_path = BEST_MODEL_PATH.parent / "temperature_scale.pth"
-        torch.save({
-            "temperature": temp_scaler.get_temperature(),
-            "model_state_dict": model.state_dict(),
-        }, cal_path)
+        cal_path = (
+            BEST_MODEL_PATH.parent
+            / "temperature_scale.pth"
+        )
 
-        print(f"Calibration temperature saved to {cal_path}")
-        print(f"Learned temperature: {temp_scaler.get_temperature():.4f}")
+        torch.save(
+            {
+                "temperature": temp_scaler.get_temperature(),
+                "model_state_dict": model.state_dict(),
+            },
+            cal_path,
+        )
+
+        print(
+            f"Calibration temperature saved to "
+            f"{cal_path}"
+        )
+
+        print(
+            f"Learned temperature: "
+            f"{temp_scaler.get_temperature():.4f}"
+        )
+
+    # ==========================================================
+    # MLflow Artifacts
+    # ==========================================================
+
+    log_artifact_if_exists(
+        BEST_MODEL_PATH,
+        artifact_path="model",
+    )
+
+    log_artifact_if_exists(
+        TRAIN_HISTORY,
+        artifact_path="training",
+    )
+
+    log_artifact_if_exists(
+        BEST_MODEL_PATH.parent
+        / "temperature_scale.pth",
+        artifact_path="model",
+    )
+
+    # ==========================================================
+    # End MLflow Run
+    # ==========================================================
+
+    end_run()
 
     return model
 
@@ -561,21 +1016,53 @@ def train(seed=RANDOM_SEED):
 
 def train_ensemble():
     """Train ensemble of models with different seeds."""
-    print(f"\nTraining ensemble of {ENSEMBLE_SIZE} models...")
+
+    print(
+        f"\nTraining ensemble of "
+        f"{ENSEMBLE_SIZE} models..."
+    )
+
     models = []
 
-    for i, seed in enumerate(ENSEMBLE_SEEDS):
-        print(f"\n{'='*60}")
-        print(f"Training ensemble model {i+1}/{ENSEMBLE_SIZE} (seed={seed})")
-        print(f"{'='*60}")
+    for i, seed in enumerate(
+        ENSEMBLE_SEEDS
+    ):
 
-        model = train(seed=seed)
+        print(
+            f"\n{'='*60}"
+        )
+
+        print(
+            f"Training ensemble model "
+            f"{i+1}/{ENSEMBLE_SIZE} "
+            f"(seed={seed})"
+        )
+
+        print(
+            f"{'='*60}"
+        )
+
+        model = train(
+            seed=seed
+        )
 
         # Save ensemble model
-        ensemble_path = BEST_MODEL_PATH.parent / f"best_model_ensemble_{i}.pth"
-        torch.save(model.state_dict(), ensemble_path)
+        ensemble_path = (
+            BEST_MODEL_PATH.parent
+            / f"best_model_ensemble_{i}.pth"
+        )
+
+        torch.save(
+            model.state_dict(),
+            ensemble_path,
+        )
+
         models.append(model)
-        print(f"Saved ensemble model {i} to {ensemble_path}")
+
+        print(
+            f"Saved ensemble model "
+            f"{i} to {ensemble_path}"
+        )
 
     return models
 
@@ -585,7 +1072,6 @@ def train_ensemble():
 # ==========================================================
 
 if __name__ == "__main__":
-    
 
     # Train single model
     model = train()
