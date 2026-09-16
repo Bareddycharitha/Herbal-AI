@@ -7,14 +7,18 @@ Tracking is backend-independent:
 """
 
 import os
+import subprocess
 from pathlib import Path
 
 import mlflow
+from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_TRACKING_DB = PROJECT_ROOT / "mlflow.db"
+
+load_dotenv()
 
 TRACKING_URI = os.getenv(
     "MLFLOW_TRACKING_URI",
@@ -29,9 +33,20 @@ EXPERIMENTS = {
 }
 
 
+# ==============================================================================
+# MLflow Configuration
+# ==============================================================================
+
+
 def configure_mlflow():
     """Configure MLflow tracking URI."""
+
     mlflow.set_tracking_uri(TRACKING_URI)
+
+
+# ==============================================================================
+# Training Tracking
+# ==============================================================================
 
 
 def start_training_run(model_type, run_name=None, params=None):
@@ -62,6 +77,11 @@ def start_training_run(model_type, run_name=None, params=None):
     return run
 
 
+# ==============================================================================
+# Evaluation Tracking
+# ==============================================================================
+
+
 def start_evaluation_run(model_type, run_name=None):
     """Start an MLflow evaluation run."""
 
@@ -83,6 +103,11 @@ def start_evaluation_run(model_type, run_name=None):
             "stage": "evaluation",
         },
     )
+
+
+# ==============================================================================
+# Metrics
+# ==============================================================================
 
 
 def log_epoch_metrics(metrics, epoch):
@@ -127,6 +152,11 @@ def log_final_metrics(metrics):
         mlflow.log_metrics(cleaned)
 
 
+# ==============================================================================
+# Artifacts
+# ==============================================================================
+
+
 def log_artifact_if_exists(path, artifact_path=None):
     """Log an artifact only if the file exists."""
 
@@ -152,13 +182,138 @@ def log_artifacts_if_exist(paths, artifact_path=None):
         )
 
 
+# ==============================================================================
+# Tags
+# ==============================================================================
+
+
 def set_tags(tags):
-    """Set MLflow tags."""
+    """Set MLflow run tags."""
 
     if mlflow.active_run() is None:
         return
 
     mlflow.set_tags(tags)
+
+
+# ==============================================================================
+# Git Metadata
+# ==============================================================================
+
+
+def get_git_commit():
+    """
+    Return the current Git commit hash.
+
+    Returns:
+        str: Current commit hash, or 'unknown' if unavailable.
+    """
+
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "rev-parse",
+                "HEAD",
+            ],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        commit = result.stdout.strip()
+
+        if commit:
+            return commit
+
+    except (
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        OSError,
+    ):
+        pass
+
+    return "unknown"
+
+
+# ==============================================================================
+# Model Registry
+# ==============================================================================
+
+
+def register_model(model_uri, model_name):
+    """
+    Register an MLflow model in the Model Registry.
+
+    Args:
+        model_uri: MLflow model URI, for example:
+            runs:/<run_id>/model
+        model_name: Registered model name.
+
+    Returns:
+        ModelVersion object returned by MLflow.
+    """
+
+    configure_mlflow()
+
+    if not model_uri:
+        raise ValueError("model_uri must not be empty.")
+
+    if not model_name:
+        raise ValueError("model_name must not be empty.")
+
+    model_version = mlflow.register_model(
+        model_uri=model_uri,
+        name=model_name,
+    )
+
+    return model_version
+
+
+def set_model_version_tags(model_name, version, tags):
+    """
+    Set metadata tags on a registered model version.
+
+    Args:
+        model_name: Registered model name.
+        version: Registered model version number.
+        tags: Dictionary containing model-version metadata.
+    """
+
+    configure_mlflow()
+
+    if not model_name:
+        raise ValueError("model_name must not be empty.")
+
+    if version is None:
+        raise ValueError("version must not be None.")
+
+    if not tags:
+        return
+
+    cleaned_tags = {}
+
+    for key, value in tags.items():
+
+        if value is None:
+            continue
+
+        cleaned_tags[str(key)] = str(value)
+
+    if cleaned_tags:
+        for key, value in cleaned_tags.items():
+            mlflow.set_model_version_tag(
+                name=model_name,
+                version=str(version),
+                key=key,
+                value=value,
+            )
+
+
+# ==============================================================================
+# Run Management
+# ==============================================================================
 
 
 def end_run(status="FINISHED"):

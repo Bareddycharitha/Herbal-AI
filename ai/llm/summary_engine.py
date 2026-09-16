@@ -85,9 +85,6 @@ class SummaryEngine:
             # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
             import concurrent.futures
             future = asyncio.run_coroutine_threadsafe(
-<<<<<<< HEAD
-                self._generate_async(prompt, temperature=0.3, max_tokens=900), loop
-=======
                 self._generate_async(
                     prompt,
                     temperature=0.2,
@@ -95,7 +92,6 @@ class SummaryEngine:
                     system_prompt=SUMMARY_SYSTEM_PROMPT,
                 ),
                 loop,
->>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
             )
             result = future.result(timeout=60)
         except RuntimeError:
@@ -106,16 +102,12 @@ class SummaryEngine:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             result = loop.run_until_complete(
-<<<<<<< HEAD
-                self._generate_async(prompt, temperature=0.3, max_tokens=900)
-=======
                 self._generate_async(
                     prompt,
                     temperature=0.2,
                     max_tokens=1500,
                     system_prompt=SUMMARY_SYSTEM_PROMPT,
                 )
->>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
             )
 
         if result["success"]:
@@ -151,16 +143,12 @@ class SummaryEngine:
             herbs,
         )
 
-<<<<<<< HEAD
-        result = await self._generate_async(prompt, temperature=0.3, max_tokens=900)
-=======
         result = await self._generate_async(
             prompt,
             temperature=0.2,
             max_tokens=1500,
             system_prompt=SUMMARY_SYSTEM_PROMPT,
         )
->>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
 
         if result["success"]:
             return result["response"]
@@ -188,9 +176,6 @@ class SummaryEngine:
             # Loop is running (e.g., in pytest-asyncio), use run_coroutine_threadsafe
             import concurrent.futures
             future = asyncio.run_coroutine_threadsafe(
-<<<<<<< HEAD
-                self._generate_async(prompt, temperature=0.3, max_tokens=450), loop
-=======
                 self._generate_async(
                     prompt,
                     temperature=0.2,
@@ -198,7 +183,6 @@ class SummaryEngine:
                     system_prompt=HERB_SUMMARY_SYSTEM_PROMPT,
                 ),
                 loop,
->>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
             )
             result = future.result(timeout=60)
         except RuntimeError:
@@ -209,16 +193,12 @@ class SummaryEngine:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             result = loop.run_until_complete(
-<<<<<<< HEAD
-                self._generate_async(prompt, temperature=0.3, max_tokens=450)
-=======
                 self._generate_async(
                     prompt,
                     temperature=0.2,
                     max_tokens=1500,
                     system_prompt=HERB_SUMMARY_SYSTEM_PROMPT,
                 )
->>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
             )
 
         if result["success"]:
@@ -237,16 +217,12 @@ class SummaryEngine:
         """Async version of generate_herb_summary."""
         prompt = build_herb_summary_prompt(herb, herb_information)
 
-<<<<<<< HEAD
-        result = await self._generate_async(prompt, temperature=0.3, max_tokens=450)
-=======
         result = await self._generate_async(
             prompt,
             temperature=0.2,
             max_tokens=1500,
             system_prompt=HERB_SUMMARY_SYSTEM_PROMPT,
         )
->>>>>>> ac7e83f81b2ee49e15de6fba6f33e739aef42954
 
         if result["success"]:
             return result["response"]

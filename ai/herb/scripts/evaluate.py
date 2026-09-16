@@ -77,9 +77,42 @@ def main():
             map_location=DEVICE,
         )
 
-        model.load_state_dict(
-            checkpoint["model_state_dict"]
-        )
+        # ======================================================================
+        # Normalize checkpoint keys
+        # Existing Herb checkpoint uses:
+        #     model.*
+        #
+        # Current HerbClassifier expects:
+        #     backbone.*
+        #     classifier.*
+        # ======================================================================
+
+        state_dict = checkpoint["model_state_dict"]
+
+        normalized_state_dict = {}
+
+        for key, value in state_dict.items():
+
+            if key.startswith("model.classifier."):
+                new_key = key.replace(
+                    "model.classifier.",
+                    "classifier.",
+                    1,
+                )
+
+            elif key.startswith("model."):
+                new_key = key.replace(
+                    "model.",
+                    "backbone.",
+                    1,
+                )
+
+            else:
+                new_key = key
+
+            normalized_state_dict[new_key] = value
+
+        model.load_state_dict(normalized_state_dict)
 
         model.to(DEVICE)
 
