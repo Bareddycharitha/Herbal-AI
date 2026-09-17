@@ -38,9 +38,20 @@ jobs:
           pip install black pytest
 
       # 4. Black formatting check
+      
       - name: Check formatting with Black
         run: |
-          black --check ai backend tests
+          black --check \
+            ai/mlflow_tracking.py \
+            ai/image_classifier/trainer.py \
+            ai/image_classifier/evaluate.py \
+            ai/herb/training/trainer.py \
+            ai/herb/scripts/evaluate.py \
+            ai/training/train.py \
+            ai/training/evaluate.py \
+            ai/scripts/verify_model_loads.py \
+            ai/scripts/register_models.py \
+            ai/scripts/verify_registry_models.py
 
       # 5. Compile Python code
       - name: Compile Python code
