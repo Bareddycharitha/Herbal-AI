@@ -118,7 +118,7 @@ class HerbInference:
         else:
             self.class_mapping = load_class_mapping() or {}
 
-        self.num_classes = len(self.class_mapping) if self.class_mapping else 100
+        self.num_classes = len(self.class_mapping) if self.class_mapping else 40
 
         self.model = None
         self.models = []
@@ -134,10 +134,10 @@ class HerbInference:
         )
 
         # Load models — set load status if required checkpoint is missing/corrupt
+        self.use_calibration = use_calibration
         try:
             self._load_models(model_path)
-            # Calibration
-            self.use_calibration = use_calibration
+            
             if use_calibration and calibration_path and Path(calibration_path).exists():
                 self._load_calibration(calibration_path)
 

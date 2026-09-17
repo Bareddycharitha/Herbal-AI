@@ -96,12 +96,16 @@ ai/checkpoints/
 ai/herb/checkpoints/
 ai/image_classifier/checkpoints/
 
+
 # Training outputs
 runs/
 outputs/
 checkpoints/
-lightning_logs/
-wandb/
+
+
+# Keep Herb class mapping required for model inference
+!ai/herb/checkpoints/
+!ai/herb/checkpoints/class_mapping.json
 
 # AI output results (Grad-CAM images, etc. - generated at runtime, not version-controlled)
 ai/results/
