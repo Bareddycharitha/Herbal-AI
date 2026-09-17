@@ -1,0 +1,812 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "last_updated": "2026-07-27",
+    "total_diseases": 22,
+    "description": "Knowledge base for Herbal-AI skin disease prediction system."
+  },
+  "diseases": [
+
+    {
+      "id": "acne",
+      "label": "Acne",
+
+      "description": "Acne is a common skin condition that develops when hair follicles become clogged with oil, dead skin cells, and bacteria. It commonly appears on the face, chest, shoulders, and back.",
+
+      "symptoms": [
+        "Pimples",
+        "Blackheads",
+        "Whiteheads",
+        "Red inflamed bumps",
+        "Occasional painful nodules"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Neem",
+          "benefits": [
+            "May help reduce acne-causing bacteria",
+            "May help reduce skin inflammation"
+          ],
+          "preparation_method": "Apply diluted neem oil or fresh neem leaf paste to the affected area.",
+          "evidence_level": "High"
+        },
+        {
+          "name": "Tulsi",
+          "benefits": [
+            "May help soothe irritated skin",
+            "May help reduce bacterial growth"
+          ],
+          "preparation_method": "Apply fresh tulsi leaf extract using a clean cotton pad.",
+          "evidence_level": "Moderate"
+        },
+        {
+          "name": "Turmeric",
+          "benefits": [
+            "May help reduce inflammation",
+            "May support skin healing"
+          ],
+          "preparation_method": "Mix turmeric powder with honey or yogurt to make a paste and apply for 10–15 minutes before rinsing.",
+          "evidence_level": "High"
+        }
+      ],
+
+      "self_care": [
+        "Wash your face twice daily with a gentle cleanser.",
+        "Avoid touching or picking pimples.",
+        "Use non-comedogenic skincare products.",
+        "Keep pillowcases and towels clean.",
+        "Stay hydrated."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if acne becomes severe, painful, leaves scars, or does not improve with regular skincare.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "actinic_keratosis",
+      "label": "Actinic Keratosis",
+
+      "description": "Actinic keratosis is a rough, scaly patch of skin caused by long-term exposure to ultraviolet (UV) rays. It is considered a precancerous skin condition.",
+
+      "symptoms": [
+        "Rough scaly patch",
+        "Dry skin lesion",
+        "Pink or brown patch",
+        "Mild itching",
+        "Tender skin"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Use sunscreen every day.",
+        "Avoid excessive sun exposure.",
+        "Wear protective clothing outdoors.",
+        "Monitor the lesion for changes."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if the patch grows, bleeds, becomes painful, or changes in appearance.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "benign_tumors",
+      "label": "Benign Tumors",
+
+      "description": "Benign skin tumors are non-cancerous growths that usually grow slowly and do not spread to other parts of the body.",
+
+      "symptoms": [
+        "Small skin lump",
+        "Slow-growing bump",
+        "Smooth skin growth",
+        "Usually painless"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Avoid scratching the growth.",
+        "Keep the area clean.",
+        "Monitor for changes in size or color.",
+        "Protect the area from injury."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if the growth becomes painful, bleeds, changes rapidly, or interferes with daily activities.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+    {
+      "id": "bullous",
+      "label": "Bullous Disease",
+
+      "description": "Bullous diseases are skin conditions that cause fluid-filled blisters due to damage within the layers of the skin. Some types require prompt medical treatment.",
+
+      "symptoms": [
+        "Fluid-filled blisters",
+        "Painful skin",
+        "Redness around blisters",
+        "Skin tenderness",
+        "Blisters that break easily"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Do not burst blisters.",
+        "Keep affected areas clean and dry.",
+        "Protect the skin from friction and injury.",
+        "Follow wound care instructions if blisters rupture."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist immediately if blisters are widespread, painful, infected, or accompanied by fever.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "candidiasis",
+      "label": "Candidiasis",
+
+      "description": "Candidiasis is a fungal infection caused by an overgrowth of Candida yeast. It commonly affects warm and moist areas of the skin.",
+
+      "symptoms": [
+        "Red rash",
+        "Itching",
+        "Burning sensation",
+        "Moist skin patches",
+        "Small red bumps around the rash"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Karanj",
+          "benefits": [
+            "May help reduce fungal growth",
+            "May soothe irritated skin"
+          ],
+          "preparation_method": "Dilute Karanj oil with coconut oil before applying to the affected area.",
+          "evidence_level": "Moderate"
+        },
+        {
+          "name": "Neem",
+          "benefits": [
+            "May help reduce fungal growth",
+            "May help calm skin irritation"
+          ],
+          "preparation_method": "Apply diluted neem oil or neem leaf paste to the affected area.",
+          "evidence_level": "High"
+        },
+        {
+          "name": "Tulsi",
+          "benefits": [
+            "May support healthy skin",
+            "May help soothe irritation"
+          ],
+          "preparation_method": "Apply fresh tulsi leaf extract using a clean cotton pad.",
+          "evidence_level": "Moderate"
+        }
+      ],
+
+      "self_care": [
+        "Keep the affected area clean and dry.",
+        "Wear loose, breathable clothing.",
+        "Maintain good personal hygiene.",
+        "Avoid sharing towels or personal items."
+      ],
+
+      "when_to_consult_doctor": "Consult a doctor if the infection spreads, recurs frequently, or does not improve after treatment.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "drugeruption",
+      "label": "Drug Eruption",
+
+      "description": "Drug eruption is a skin reaction caused by certain medications. Symptoms usually appear after starting a new medicine and may vary from mild to severe.",
+
+      "symptoms": [
+        "Skin rash",
+        "Itching",
+        "Red patches",
+        "Swelling",
+        "Small bumps"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Do not stop prescribed medicines without medical advice.",
+        "Avoid scratching the rash.",
+        "Keep the skin cool and clean.",
+        "Stay hydrated."
+      ],
+
+      "when_to_consult_doctor": "Seek immediate medical attention if the rash is severe, spreads rapidly, causes blistering, facial swelling, or difficulty breathing.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "eczema",
+      "label": "Eczema",
+
+      "description": "Eczema is a chronic skin condition that causes dry, itchy, and inflamed skin. It often occurs in flare-ups and may be triggered by allergens, irritants, or environmental factors.",
+
+      "symptoms": [
+        "Dry skin",
+        "Intense itching",
+        "Red patches",
+        "Cracked skin",
+        "Skin irritation"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Aloe Vera",
+          "benefits": [
+            "May soothe irritated skin",
+            "May help keep the skin moisturized"
+          ],
+          "preparation_method": "Apply fresh Aloe Vera gel directly to clean skin.",
+          "evidence_level": "High"
+        },
+        {
+          "name": "Karanj",
+          "benefits": [
+            "May help reduce skin inflammation",
+            "May soothe irritated skin"
+          ],
+          "preparation_method": "Dilute Karanj oil with coconut oil before applying to the affected area.",
+          "evidence_level": "Moderate"
+        },
+        {
+          "name": "Giloy",
+          "benefits": [
+            "May help support skin health",
+            "May help reduce skin inflammation"
+          ],
+          "preparation_method": "Prepare a cooled Giloy decoction and gently wash the affected skin.",
+          "evidence_level": "Moderate"
+        }
+      ],
+
+      "self_care": [
+        "Moisturize your skin regularly.",
+        "Avoid scratching affected areas.",
+        "Use mild, fragrance-free skincare products.",
+        "Avoid known allergens or irritants.",
+        "Wear soft cotton clothing."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if eczema becomes severe, infected, spreads, or does not improve with regular skin care.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    }
+    ,
+{
+      "id": "infestations_bites",
+      "label": "Infestations & Bites",
+
+      "description": "Infestations and insect bites are skin conditions caused by insects, mites, or parasites. They often lead to itching, redness, and skin irritation.",
+
+      "symptoms": [
+        "Itching",
+        "Red bumps",
+        "Skin rash",
+        "Swelling",
+        "Small bite marks"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Avoid scratching the affected area.",
+        "Keep the skin clean.",
+        "Apply a cold compress to reduce itching.",
+        "Use insect repellents to prevent future bites."
+      ],
+
+      "when_to_consult_doctor": "Consult a doctor if the swelling becomes severe, signs of infection develop, or symptoms do not improve.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "lichen",
+      "label": "Lichenoid Disorders",
+
+      "description": "Lichenoid disorders are inflammatory skin conditions that cause itchy, flat-topped, purple-colored skin lesions. They may affect the skin, nails, or mouth.",
+
+      "symptoms": [
+        "Purple skin bumps",
+        "Itching",
+        "Flat skin lesions",
+        "Skin discoloration",
+        "Mild irritation"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Avoid scratching the affected area.",
+        "Use mild skin moisturizers.",
+        "Reduce stress whenever possible.",
+        "Avoid products that irritate the skin."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if the rash spreads, becomes painful, or affects the mouth or nails.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "lupus",
+      "label": "Lupus (Cutaneous)",
+
+      "description": "Cutaneous lupus is an autoimmune skin condition that commonly causes red, scaly rashes, especially on areas exposed to sunlight.",
+
+      "symptoms": [
+        "Red skin rash",
+        "Scaly patches",
+        "Sensitivity to sunlight",
+        "Skin discoloration",
+        "Hair loss in affected areas"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Use sunscreen daily.",
+        "Avoid prolonged sun exposure.",
+        "Wear protective clothing outdoors.",
+        "Follow your prescribed treatment plan."
+      ],
+
+      "when_to_consult_doctor": "Consult a doctor if new rashes appear, symptoms worsen, or you experience joint pain or persistent fatigue.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "moles",
+      "label": "Moles / Nevi",
+
+      "description": "Moles are common pigmented skin growths. Most are harmless, but changes in their size, shape, or color should be evaluated by a dermatologist.",
+
+      "symptoms": [
+        "Brown or black skin spot",
+        "Round or oval shape",
+        "Smooth or slightly raised surface",
+        "Usually painless"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Check your moles regularly.",
+        "Protect your skin from excessive sunlight.",
+        "Avoid scratching or injuring the mole.",
+        "Take photographs to monitor changes over time."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if a mole changes in size, shape, color, starts bleeding, or becomes painful.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    }
+    ,
+{
+      "id": "psoriasis",
+      "label": "Psoriasis",
+
+      "description": "Psoriasis is a chronic autoimmune skin condition that causes skin cells to build up rapidly, forming thick, red, scaly patches. It is not contagious but often occurs in flare-ups.",
+
+      "symptoms": [
+        "Red patches of skin",
+        "Silvery-white scales",
+        "Dry or cracked skin",
+        "Itching or burning sensation",
+        "Thickened nails"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Karanj",
+          "benefits": [
+            "May help reduce skin inflammation",
+            "May help soothe irritated skin"
+          ],
+          "preparation_method": "Dilute Karanj oil with coconut oil and apply gently to affected areas.",
+          "evidence_level": "Moderate"
+        },
+        {
+          "name": "Giloy",
+          "benefits": [
+            "May support immune balance",
+            "May help reduce inflammation"
+          ],
+          "preparation_method": "Prepare a cooled Giloy decoction and gently wash the affected skin.",
+          "evidence_level": "Moderate"
+        },
+        {
+          "name": "Neem",
+          "benefits": [
+            "May help reduce itching",
+            "May help calm inflamed skin"
+          ],
+          "preparation_method": "Apply diluted neem oil or neem leaf paste to affected areas.",
+          "evidence_level": "High"
+        }
+      ],
+
+      "self_care": [
+        "Moisturize your skin every day.",
+        "Avoid scratching affected areas.",
+        "Reduce stress whenever possible.",
+        "Take short, lukewarm showers.",
+        "Follow your prescribed treatment plan."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if the patches spread, become painful, crack severely, or interfere with daily life.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "rosacea",
+      "label": "Rosacea",
+
+      "description": "Rosacea is a long-term skin condition that mainly affects the face, causing redness, visible blood vessels, and sometimes acne-like bumps.",
+
+      "symptoms": [
+        "Facial redness",
+        "Visible blood vessels",
+        "Small red bumps",
+        "Burning sensation",
+        "Sensitive skin"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Aloe Vera",
+          "benefits": [
+            "May soothe irritated skin",
+            "May help reduce redness"
+          ],
+          "preparation_method": "Apply fresh Aloe Vera gel to clean skin.",
+          "evidence_level": "High"
+        },
+        {
+          "name": "Turmeric",
+          "benefits": [
+            "May help reduce inflammation",
+            "May calm irritated skin"
+          ],
+          "preparation_method": "Mix turmeric powder with honey to form a paste and apply for 10 minutes before rinsing.",
+          "evidence_level": "High"
+        },
+        {
+          "name": "Giloy",
+          "benefits": [
+            "May support healthy skin",
+            "May help reduce inflammation"
+          ],
+          "preparation_method": "Prepare a cooled Giloy decoction and gently rinse the affected skin.",
+          "evidence_level": "Moderate"
+        }
+      ],
+
+      "self_care": [
+        "Use a gentle facial cleanser.",
+        "Wear sunscreen every day.",
+        "Avoid spicy foods if they trigger symptoms.",
+        "Limit alcohol intake if it worsens redness.",
+        "Avoid very hot water on the face."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if redness worsens, eye symptoms develop, or home care does not improve the condition.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "seborrh_keratoses",
+      "label": "Seborrheic Keratoses",
+
+      "description": "Seborrheic keratoses are common non-cancerous skin growths that usually appear as brown, black, or tan raised spots.",
+
+      "symptoms": [
+        "Raised skin growth",
+        "Brown or black patches",
+        "Waxy appearance",
+        "Rough surface"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Avoid scratching the growth.",
+        "Keep the skin clean.",
+        "Monitor for changes in appearance.",
+        "Protect the area from repeated friction."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if the growth changes rapidly, bleeds, or becomes painful.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "skincancer",
+      "label": "Skin Cancer",
+
+      "description": "Skin cancer is the uncontrolled growth of abnormal skin cells, often caused by long-term exposure to ultraviolet (UV) radiation. Early diagnosis is important for successful treatment.",
+
+      "symptoms": [
+        "New or changing mole",
+        "Non-healing sore",
+        "Bleeding skin lesion",
+        "Persistent skin growth",
+        "Irregular borders on a mole"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Protect your skin from excessive sunlight.",
+        "Use broad-spectrum sunscreen daily.",
+        "Perform regular skin self-examinations.",
+        "Avoid tanning beds."
+      ],
+
+      "when_to_consult_doctor": "Seek immediate evaluation from a dermatologist if you notice a new, changing, bleeding, or non-healing skin lesion.",
+
+      "medical_disclaimer": "This information is for educational purposes only. Herbal remedies should not be used as a substitute for professional diagnosis or treatment of skin cancer."
+    }
+    ,
+    {
+      "id": "sun_sunlight_damage",
+      "label": "Sun / Sunlight Damage",
+
+      "description": "Sun damage occurs due to prolonged exposure to ultraviolet (UV) rays, leading to premature aging, pigmentation, sunburn, and an increased risk of skin cancer.",
+
+      "symptoms": [
+        "Red or sunburned skin",
+        "Dark spots",
+        "Dry or rough skin",
+        "Wrinkles",
+        "Increased skin sensitivity"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Aloe Vera",
+          "benefits": [
+            "May soothe sunburned skin",
+            "May help keep the skin moisturized"
+          ],
+          "preparation_method": "Apply fresh Aloe Vera gel to the affected area 2–3 times daily.",
+          "evidence_level": "High"
+        }
+      ],
+
+      "self_care": [
+        "Apply sunscreen with SPF 30 or higher.",
+        "Avoid direct sunlight during peak hours.",
+        "Wear protective clothing and a hat.",
+        "Drink plenty of water."
+      ],
+
+      "when_to_consult_doctor": "Consult a doctor if you develop severe sunburn, large blisters, fever, or signs of heat illness.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "tinea",
+      "label": "Tinea",
+
+      "description": "Tinea is a common fungal skin infection that causes itchy, ring-shaped rashes. It can affect different parts of the body including the feet, scalp, groin, and body.",
+
+      "symptoms": [
+        "Ring-shaped rash",
+        "Itching",
+        "Red scaly patches",
+        "Cracked skin",
+        "Burning sensation"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Neem",
+          "benefits": [
+            "May help reduce fungal growth",
+            "May soothe irritated skin"
+          ],
+          "preparation_method": "Apply diluted neem oil or neem leaf paste to clean, dry skin.",
+          "evidence_level": "High"
+        },
+        {
+          "name": "Karanj",
+          "benefits": [
+            "May help support healthy skin",
+            "May help reduce fungal growth"
+          ],
+          "preparation_method": "Dilute Karanj oil before topical application.",
+          "evidence_level": "Moderate"
+        }
+      ],
+
+      "self_care": [
+        "Keep the affected area clean and dry.",
+        "Avoid sharing towels or clothing.",
+        "Wear breathable clothing.",
+        "Wash hands after touching the affected area."
+      ],
+
+      "when_to_consult_doctor": "Consult a doctor if the infection spreads, becomes painful, or does not improve with treatment.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "unknown_normal",
+      "label": "Unknown / Normal",
+
+      "description": "The uploaded image does not show a recognizable skin disease or does not contain enough information for a reliable prediction. The skin may appear normal or require a clearer image.",
+
+      "symptoms": [],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Maintain a regular skincare routine.",
+        "Keep your skin clean and moisturized.",
+        "Use sunscreen daily.",
+        "Upload a clearer image if you need another analysis."
+      ],
+
+      "when_to_consult_doctor": "Consult a healthcare professional if you notice persistent skin changes, pain, or unusual lesions.",
+
+      "medical_disclaimer": "AI predictions are not a medical diagnosis. Always seek professional medical advice if you have concerns."
+    },
+
+    {
+      "id": "vascular_tumors",
+      "label": "Vascular Tumors",
+
+      "description": "Vascular tumors are abnormal growths formed from blood vessels. Many are benign, but some require medical evaluation.",
+
+      "symptoms": [
+        "Red or purple skin growth",
+        "Raised lesion",
+        "Soft skin lump",
+        "Occasional bleeding"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Avoid injuring the lesion.",
+        "Keep the area clean.",
+        "Monitor for changes in size or color."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if the lesion grows rapidly, bleeds repeatedly, or becomes painful.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "vasculitis",
+      "label": "Vasculitis",
+
+      "description": "Vasculitis is inflammation of blood vessels that can affect the skin and other organs. Skin symptoms often appear as red or purple spots.",
+
+      "symptoms": [
+        "Purple spots",
+        "Skin rash",
+        "Painful skin lesions",
+        "Swelling",
+        "Skin ulcers"
+      ],
+
+      "recommended_herbs": [],
+
+      "self_care": [
+        "Follow your prescribed medications.",
+        "Avoid smoking.",
+        "Maintain a healthy lifestyle.",
+        "Monitor for worsening symptoms."
+      ],
+
+      "when_to_consult_doctor": "Seek medical care immediately if you develop severe pain, fever, numbness, or rapidly worsening skin lesions.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "vitiligo",
+      "label": "Vitiligo",
+
+      "description": "Vitiligo is a long-term condition in which patches of skin lose their pigment due to the destruction of melanocytes. It is not contagious.",
+
+      "symptoms": [
+        "White skin patches",
+        "Premature whitening of hair",
+        "Symmetrical depigmentation",
+        "Slow spread of pigment loss"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Bakuchi",
+          "benefits": [
+            "May support skin pigmentation when used under medical supervision"
+          ],
+          "preparation_method": "Use only under the guidance of a qualified healthcare professional.",
+          "evidence_level": "Traditional"
+        },
+        {
+          "name": "Giloy",
+          "benefits": [
+            "May support overall skin health"
+          ],
+          "preparation_method": "Consume or use only as advised by a qualified practitioner.",
+          "evidence_level": "Traditional"
+        }
+      ],
+
+      "self_care": [
+        "Use sunscreen every day.",
+        "Protect depigmented skin from sunburn.",
+        "Use cosmetic camouflage if desired.",
+        "Maintain regular dermatology follow-ups."
+      ],
+
+      "when_to_consult_doctor": "Consult a dermatologist if pigment loss spreads rapidly or affects your quality of life.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    },
+
+    {
+      "id": "warts",
+      "label": "Warts",
+
+      "description": "Warts are small, rough skin growths caused by infection with the human papillomavirus (HPV). They are generally harmless but can spread through direct contact.",
+
+      "symptoms": [
+        "Rough raised bumps",
+        "Small black dots",
+        "Skin-colored growths",
+        "Occasional tenderness"
+      ],
+
+      "recommended_herbs": [
+        {
+          "name": "Neem",
+          "benefits": [
+            "May support healthy skin",
+            "May help soothe irritated skin"
+          ],
+          "preparation_method": "Apply diluted neem oil to the affected area.",
+          "evidence_level": "Moderate"
+        }
+      ],
+
+      "self_care": [
+        "Do not pick or scratch warts.",
+        "Keep the affected area clean.",
+        "Avoid sharing personal items.",
+        "Cover the wart if it is likely to come into contact with others."
+      ],
+
+      "when_to_consult_doctor": "Consult a doctor if the wart is painful, bleeds, spreads rapidly, or does not improve with treatment.",
+
+      "medical_disclaimer": "This information is for educational purposes only and should not replace professional medical advice."
+    }
+     ]
+      }

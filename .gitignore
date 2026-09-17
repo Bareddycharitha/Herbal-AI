@@ -78,12 +78,14 @@ frontend/.turbo/
 # AI / Machine Learning
 # ============================================================
 # Datasets (managed by DVC)
+
 ai/datasets/*
 datasets/*
-
-# Allow DVC tracking files
 !ai/datasets/*.dvc
 !datasets/*.dvc
+
+!ai/datasets/knowledge_base/
+!ai/datasets/knowledge_base/*.json
 
 # Allow DVC tracking files to be committed to Git
 !ai/datasets/*.dvc

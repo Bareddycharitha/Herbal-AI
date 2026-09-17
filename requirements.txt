@@ -90,3 +90,4 @@ requests
 tqdm
 
 seaborn
+mlflow==3.16.0

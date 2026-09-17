@@ -1,0 +1,2787 @@
+{
+  "Neem": {
+    "name": "Neem",
+    "botanical_name": "Azadirachta indica",
+    "family": "Meliaceae",
+    "active_compounds": [
+      "Nimbin",
+      "Azadirachtin",
+      "Nimbidin",
+      "Gedunin",
+      "Quercetin"
+    ],
+    "phytochemicals": [
+      "Limonoids",
+      "Flavonoids",
+      "Triterpenoids",
+      "Beta-sitosterol"
+    ],
+    "benefits": [
+      "Antibacterial",
+      "Anti-inflammatory",
+      "Controls excess oil",
+      "Reduces acne-causing bacteria",
+      "Promotes skin healing"
+    ],
+    "side_effects": [
+      "May cause mild dryness or irritation on extremely sensitive skin if used undiluted"
+    ],
+    "contraindications": [
+      "Extremely dry skin conditions (use with a hydrating carrier)"
+    ],
+    "evidence_level": "High (Multiple Clinical Trials)",
+    "research_papers": [
+      "Alzohairy MA. Therapeutics Role of Azadirachta indica (Neem) and Their Active Constituents in Diseases Prevention and Treatment. Evid Based Complement Alternat Med. 2016.",
+      "Kumar VS, Navaratnam V. Neem (Azadirachta indica): Prehistory to contemporary medicinal uses to humankind. Asian Pac J Trop Biomed. 2013."
+    ],
+    "preparation_method": "Grind fresh neem leaves with water to form a paste and apply to affected areas, or dilute neem oil (2-3 drops) in coconut oil.",
+    "skin_types": [
+      "Oily",
+      "Acne-prone",
+      "Combination"
+    ],
+    "disease_mapping": {
+      "Acne": {
+        "efficacy": 96,
+        "weight": 0.98
+      },
+      "Dermatitis": {
+        "efficacy": 85,
+        "weight": 0.88
+      },
+      "Psoriasis": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Fungal Infection": {
+        "efficacy": 90,
+        "weight": 0.92
+      },
+      "Rosacea": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Aloe Vera": {
+    "name": "Aloe Vera",
+    "botanical_name": "Aloe barbadensis Miller",
+    "family": "Asphodelaceae",
+    "active_compounds": [
+      "Aloin",
+      "Aloesin",
+      "Aloe-emodin",
+      "Acemannan",
+      "Salicylic Acid"
+    ],
+    "phytochemicals": [
+      "Anthraquinones",
+      "Polysaccharides",
+      "Sterols",
+      "Saponins"
+    ],
+    "benefits": [
+      "Dry skin relief",
+      "Soothes sunburn",
+      "Speeds up wound healing",
+      "Skin hydration",
+      "Anti-inflammatory"
+    ],
+    "side_effects": [
+      "Rare allergic contact dermatitis in sensitive individuals"
+    ],
+    "contraindications": [
+      "Open deep surgical wounds"
+    ],
+    "evidence_level": "High (Widely Researched)",
+    "research_papers": [
+      "Surjushe A, Vasani R, Saple DG. Aloe vera: a short review. Indian J Dermatol. 2008.",
+      "Hekmatpou D, et al. Effect of Aloe Vera Clinical Trials on Skin Prevention and Healing: A Systematic Review. Iran J Med Sci. 2019."
+    ],
+    "preparation_method": "Extract fresh gel from an Aloe leaf and apply directly to the skin. No dilution required.",
+    "skin_types": [
+      "Dry",
+      "Sensitive",
+      "All",
+      "Sunburnt"
+    ],
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 98,
+        "weight": 0.99
+      },
+      "Eczema": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Dermatitis": {
+        "efficacy": 85,
+        "weight": 0.87
+      },
+      "Healthy Skin": {
+        "efficacy": 95,
+        "weight": 0.96
+      },
+      "Rosacea": {
+        "efficacy": 90,
+        "weight": 0.92
+      }
+    }
+  },
+  "Turmeric": {
+    "name": "Turmeric",
+    "botanical_name": "Curcuma longa",
+    "family": "Zingiberaceae",
+    "active_compounds": [
+      "Curcumin",
+      "Demethoxycurcumin",
+      "Bisdemethoxycurcumin",
+      "Turmerone"
+    ],
+    "phytochemicals": [
+      "Diarylheptanoids",
+      "Sesquiterpenes",
+      "Curcuminoids"
+    ],
+    "benefits": [
+      "Reduces pigmentation",
+      "Fades acne scars",
+      "Skin brightening",
+      "Anti-inflammatory",
+      "Antioxidant protection"
+    ],
+    "side_effects": [
+      "Temporary yellow skin staining",
+      "Mild contact dermatitis in rare cases"
+    ],
+    "contraindications": [
+      "None major, but avoid applying to fresh open bleeding wounds"
+    ],
+    "evidence_level": "High (Strong Evidence)",
+    "research_papers": [
+      "Vaughn AR, Branum A, Sivamani RK. Effects of Turmeric (Curcuma longa) on Skin Health: A Systematic Review of the Clinical Evidence. Phytother Res. 2016."
+    ],
+    "preparation_method": "Mix 1/2 teaspoon of turmeric powder with yogurt or honey to form a paste. Apply for 10-15 minutes and rinse.",
+    "skin_types": [
+      "Combination",
+      "Pigmented",
+      "Dull"
+    ],
+    "disease_mapping": {
+      "Pigmentation": {
+        "efficacy": 94,
+        "weight": 0.96
+      },
+      "Acne": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Melasma": {
+        "efficacy": 92,
+        "weight": 0.95
+      },
+      "Vitiligo": {
+        "efficacy": 75,
+        "weight": 0.78
+      },
+      "Rosacea": {
+        "efficacy": 85,
+        "weight": 0.88
+      }
+    }
+  },
+  "Tulsi": {
+    "name": "Tulsi",
+    "botanical_name": "Ocimum tenuiflorum",
+    "family": "Lamiaceae",
+    "active_compounds": [
+      "Eugenol",
+      "Ursolic Acid",
+      "Carvacrol",
+      "Linalool"
+    ],
+    "phytochemicals": [
+      "Tannins",
+      "Flavonoids",
+      "Terpenoids"
+    ],
+    "benefits": [
+      "Clears acne",
+      "Anti-microbial skin protection",
+      "Soothes skin infections",
+      "Balances oily skin"
+    ],
+    "side_effects": [
+      "Generally very safe; mild warming sensation on application"
+    ],
+    "contraindications": [
+      "None reported for topical applications"
+    ],
+    "evidence_level": "Medium-High",
+    "research_papers": [
+      "Cohen MM. Tulsi - Ocimum sanctum: A herb for all reasons. J Ayurveda Integr Med. 2014."
+    ],
+    "preparation_method": "Crush tulsi leaves and extract the juice. Apply this juice directly using a cotton ball to acne lesions.",
+    "skin_types": [
+      "Oily",
+      "Acne-prone"
+    ],
+    "disease_mapping": {
+      "Acne": {
+        "efficacy": 92,
+        "weight": 0.95
+      },
+      "Fungal Infection": {
+        "efficacy": 80,
+        "weight": 0.85
+      },
+      "Healthy Skin": {
+        "efficacy": 85,
+        "weight": 0.88
+      }
+    }
+  },
+  "Amla": {
+    "name": "Amla",
+    "botanical_name": "Phyllanthus emblica",
+    "family": "Phyllanthaceae",
+    "active_compounds": [
+      "Vitamin C (Ascorbic Acid)",
+      "Ellagic Acid",
+      "Gallic Acid",
+      "Emblicanin"
+    ],
+    "phytochemicals": [
+      "Tannins",
+      "Polyphenols",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Anti-aging",
+      "Promotes skin glow",
+      "Supports collagen production",
+      "Fights oxidative stress"
+    ],
+    "side_effects": [
+      "Highly acidic; might cause mild tingling on sensitive skin"
+    ],
+    "contraindications": [
+      "Extremely sensitive or peeled skin"
+    ],
+    "evidence_level": "Medium (Strong Antioxidant Action)",
+    "research_papers": [
+      "Fujii T, et al. Amla (Emblica officinalis Gaertn.) extract promotes procollagen production and inhibits matrix metalloproteinase-1 in human skin fibroblasts. J Ethnopharmacol. 2008."
+    ],
+    "preparation_method": "Mix amla powder with raw honey or rose water, apply as a mask for 10 minutes, then wash off.",
+    "skin_types": [
+      "Aging",
+      "Dull",
+      "Normal"
+    ],
+    "disease_mapping": {
+      "Wrinkles": {
+        "efficacy": 91,
+        "weight": 0.93
+      },
+      "Pigmentation": {
+        "efficacy": 82,
+        "weight": 0.85
+      },
+      "Healthy Skin": {
+        "efficacy": 90,
+        "weight": 0.92
+      }
+    }
+  },
+  "Harra": {
+    "name": "Harra",
+    "botanical_name": "Terminalia chebula",
+    "family": "Combretaceae",
+    "active_compounds": [
+      "Chebulinic Acid",
+      "Chebulagic Acid",
+      "Corilagin",
+      "Gallic Acid"
+    ],
+    "phytochemicals": [
+      "Hydrolyzable Tannins",
+      "Polyphenols"
+    ],
+    "benefits": [
+      "Wound healing",
+      "Soothes skin infections",
+      "Antioxidant activity",
+      "Astringent properties"
+    ],
+    "side_effects": [
+      "Can cause dryness due to high tannin content"
+    ],
+    "contraindications": [
+      "Extremely dry skin (always combine with a lipid carrier)"
+    ],
+    "evidence_level": "Medium",
+    "research_papers": [
+      "Bag A, et al. The development of Terminalia chebula Retz. (Combretaceae) in clinical research. Asian Pac J Trop Biomed. 2013."
+    ],
+    "preparation_method": "Make a fine paste of Harra powder with water and apply as a spot treatment on minor wounds or rashes.",
+    "skin_types": [
+      "Oily",
+      "Infected",
+      "Normal"
+    ],
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Eczema": {
+        "efficacy": 75,
+        "weight": 0.78
+      },
+      "Fungal Infection": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Bahera": {
+    "name": "Bahera",
+    "botanical_name": "Terminalia bellirica",
+    "family": "Combretaceae",
+    "active_compounds": [
+      "Bellericanin",
+      "Gallic Acid",
+      "Ellagic Acid",
+      "Chebulinic Acid"
+    ],
+    "phytochemicals": [
+      "Tannins",
+      "Saponins",
+      "Cardiac Glycosides"
+    ],
+    "benefits": [
+      "Skin detoxification",
+      "Antioxidant protection",
+      "Reduces swelling and redness"
+    ],
+    "side_effects": [
+      "Mild drying effect"
+    ],
+    "contraindications": [
+      "None reported for external use"
+    ],
+    "evidence_level": "Medium",
+    "research_papers": [
+      "Saraswathi V, et al. Antioxidant and anti-inflammatory activity of Terminalia bellirica. Journal of Pharmacy Research. 2012."
+    ],
+    "preparation_method": "Mix Bahera powder with warm water, apply as a paste on inflamed or swollen skin patches.",
+    "skin_types": [
+      "Normal",
+      "Congested"
+    ],
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Eczema": {
+        "efficacy": 76,
+        "weight": 0.79
+      }
+    }
+  },
+  "Giloy": {
+    "name": "Giloy",
+    "botanical_name": "Tinospora cordifolia",
+    "family": "Menispermaceae",
+    "active_compounds": [
+      "Tinosporide",
+      "Cordifolide",
+      "Berberine",
+      "Gilonin"
+    ],
+    "phytochemicals": [
+      "Alkaloids",
+      "Diterpenoid Lactones",
+      "Glycosides",
+      "Steroids"
+    ],
+    "benefits": [
+      "Soothes skin allergies",
+      "Anti-inflammatory",
+      "Manages autoimmune skin disorders",
+      "Purifies blood topically"
+    ],
+    "side_effects": [
+      "Generally extremely safe; no significant topical side effects"
+    ],
+    "contraindications": [
+      "None major for topical application"
+    ],
+    "evidence_level": "Medium-High",
+    "research_papers": [
+      "Saha S, Ghosh S. Tinospora cordifolia: One plant, many roles. Anc Sci Life. 2012."
+    ],
+    "preparation_method": "Boil Giloy stems in water to prepare a decoction, let it cool, and wash the affected skin areas.",
+    "skin_types": [
+      "Sensitive",
+      "Allergy-prone"
+    ],
+    "disease_mapping": {
+      "Eczema": {
+        "efficacy": 86,
+        "weight": 0.89
+      },
+      "Psoriasis": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Dermatitis": {
+        "efficacy": 84,
+        "weight": 0.86
+      },
+      "Rosacea": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Mahua": {
+    "name": "Mahua",
+    "botanical_name": "Madhuca longifolia",
+    "family": "Sapotaceae",
+    "active_compounds": [
+      "Mahuasin",
+      "Mowrin",
+      "Oleic Acid",
+      "Linoleic Acid"
+    ],
+    "phytochemicals": [
+      "Saponins",
+      "Triterpenoids",
+      "Fatty Acids"
+    ],
+    "benefits": [
+      "Deeply moisturizes dry skin",
+      "Soothes skin irritation",
+      "Promotes wound healing"
+    ],
+    "side_effects": [
+      "Can feel heavy or greasy; may clog pores on oily skin"
+    ],
+    "contraindications": [
+      "Active acne-prone skin (due to high lipid content)"
+    ],
+    "evidence_level": "Medium-Low (Traditional Usage)",
+    "research_papers": [
+      "Ramadan MF, et al. Bioactive lipids and phytochemicals of Madhuca longifolia seed oil. Food Chemistry. 2006."
+    ],
+    "preparation_method": "Apply cold-pressed Mahua seed oil directly onto patches of dry skin, or mix with beeswax to form a salve.",
+    "skin_types": [
+      "Dry",
+      "Very Dry",
+      "Chapped"
+    ],
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 95,
+        "weight": 0.94
+      },
+      "Eczema": {
+        "efficacy": 80,
+        "weight": 0.82
+      }
+    }
+  },
+  "Karanj": {
+    "name": "Karanj",
+    "botanical_name": "Pongamia pinnata",
+    "family": "Fabaceae",
+    "active_compounds": [
+      "Karanjin",
+      "Pongamol",
+      "Kanjone",
+      "Pongapin"
+    ],
+    "phytochemicals": [
+      "Furanoflavonoids",
+      "Chalcones",
+      "Flavones"
+    ],
+    "benefits": [
+      "Eczema relief",
+      "Psoriasis management",
+      "Antifungal activity",
+      "Heals chronic skin diseases"
+    ],
+    "side_effects": [
+      "Strong smell; may cause warmth or mild burning sensation initially"
+    ],
+    "contraindications": [
+      "Do not apply to open bleeding lesions"
+    ],
+    "evidence_level": "Medium-High",
+    "research_papers": [
+      "Ramesh M, et al. Antifungal and antibacterial activity of Pongamia pinnata (Karanj) seed oil. Fitoterapia. 2002."
+    ],
+    "preparation_method": "Dilute Karanj oil with neem oil or coconut oil in a 1:5 ratio and apply to affected patches.",
+    "skin_types": [
+      "Dry",
+      "Scaly",
+      "Infected"
+    ],
+    "disease_mapping": {
+      "Eczema": {
+        "efficacy": 92,
+        "weight": 0.94
+      },
+      "Psoriasis": {
+        "efficacy": 90,
+        "weight": 0.92
+      },
+      "Fungal Infection": {
+        "efficacy": 94,
+        "weight": 0.95
+      }
+    }
+  },
+  "Palash": {
+    "name": "Palash",
+    "botanical_name": "Butea monosperma",
+    "family": "Fabaceae",
+    "active_compounds": [
+      "Butin",
+      "Butrin",
+      "Isobutrin",
+      "Palasitrin"
+    ],
+    "phytochemicals": [
+      "Flavonoids",
+      "Glucosides",
+      "Alkaloids"
+    ],
+    "benefits": [
+      "Treats skin infections",
+      "Promotes wound healing",
+      "Anti-inflammatory"
+    ],
+    "side_effects": [
+      "Palash flower extract may dye the skin temporarily orange"
+    ],
+    "contraindications": [
+      "None reported"
+    ],
+    "evidence_level": "Medium-Low",
+    "research_papers": [
+      "Mishra M, et al. Butea monosperma (Palash): A review on its phytochemical and pharmacological profile. Int J Phytomed. 2011."
+    ],
+    "preparation_method": "Infuse Palash flowers in hot water to create a soothing rinse, or crush flowers into a paste.",
+    "skin_types": [
+      "Normal",
+      "Sensitive",
+      "Infected"
+    ],
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 82,
+        "weight": 0.83
+      },
+      "Eczema": {
+        "efficacy": 80,
+        "weight": 0.8
+      }
+    }
+  },
+  "Moringa": {
+    "name": "Moringa",
+    "botanical_name": "Moringa oleifera",
+    "family": "Moringaceae",
+    "active_compounds": [
+      "Zeatin",
+      "Quercetin",
+      "Kaempferol",
+      "Moringine",
+      "Isothiocyanates"
+    ],
+    "phytochemicals": [
+      "Glucosinolates",
+      "Polyphenols",
+      "Vitamins A, C, and E"
+    ],
+    "benefits": [
+      "Skin nourishment",
+      "Deeply hydrates dry skin",
+      "Antioxidant protection",
+      "Anti-aging properties"
+    ],
+    "side_effects": [
+      "Very well tolerated; extremely low incidence of reactions"
+    ],
+    "contraindications": [
+      "None"
+    ],
+    "evidence_level": "High",
+    "research_papers": [
+      "Ali A, et al. Enhancement of human skin facial revitalization by moringa leaf extract cream. Postepy Dermatol Alergol. 2014."
+    ],
+    "preparation_method": "Apply cold-pressed Moringa seed oil as a moisturizer or face oil, or make a leaf powder paste.",
+    "skin_types": [
+      "Dry",
+      "Aging",
+      "Normal"
+    ],
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 94,
+        "weight": 0.95
+      },
+      "Wrinkles": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Healthy Skin": {
+        "efficacy": 92,
+        "weight": 0.93
+      }
+    }
+  },
+  "Hibiscus": {
+    "name": "Hibiscus",
+    "botanical_name": "Hibiscus rosa-sinensis",
+    "family": "Malvaceae",
+    "active_compounds": [
+      "Anthocyanins",
+      "Citric Acid",
+      "Malic Acid",
+      "Mucilage"
+    ],
+    "phytochemicals": [
+      "Alpha-hydroxy acids (AHAs)",
+      "Flavonoids",
+      "Organic Acids"
+    ],
+    "benefits": [
+      "Anti-aging (natural botox effect)",
+      "Improves skin elasticity",
+      "Exfoliates gently to reduce wrinkles"
+    ],
+    "side_effects": [
+      "Mild tingling due to natural fruit acids"
+    ],
+    "contraindications": [
+      "Raw applying on sunburns or fresh peeling skin"
+    ],
+    "evidence_level": "Medium",
+    "research_papers": [
+      "Nanda A, et al. Evaluation of cosmetic potential of Hibiscus rosa-sinensis petals. Journal of Cosmetic Dermatology. 2019."
+    ],
+    "preparation_method": "Crush fresh hibiscus petals with a little yogurt, apply to face for 15 minutes, then rinse with warm water.",
+    "skin_types": [
+      "Aging",
+      "Normal",
+      "Dull"
+    ],
+    "disease_mapping": {
+      "Wrinkles": {
+        "efficacy": 93,
+        "weight": 0.95
+      },
+      "Pigmentation": {
+        "efficacy": 84,
+        "weight": 0.86
+      },
+      "Healthy Skin": {
+        "efficacy": 90,
+        "weight": 0.91
+      }
+    }
+  },
+  "Ashwagandha": {
+    "name": "Ashwagandha",
+    "botanical_name": "Withania somnifera",
+    "family": "Solanaceae",
+    "active_compounds": [
+      "Withaferin A",
+      "Withanolides",
+      "Sitoindosides",
+      "Somniferine"
+    ],
+    "phytochemicals": [
+      "Alkaloids",
+      "Steroidal Lactones"
+    ],
+    "benefits": [
+      "Skin rejuvenation",
+      "Fades wrinkles",
+      "Stimulates collagen",
+      "Calms skin stress & cortisol impact"
+    ],
+    "side_effects": [
+      "Very rare contact allergy"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "evidence_level": "Medium-High",
+    "research_papers": [
+      "Sikandar M, et al. Ashwagandha (Withania somnifera) in skincare: Clinical studies and phytochemical insights. Phytotherapy Letters. 2021."
+    ],
+    "preparation_method": "Mix Ashwagandha root powder with ghee or honey and apply to areas showing fine lines or fatigue.",
+    "skin_types": [
+      "Aging",
+      "Stressed",
+      "All"
+    ],
+    "disease_mapping": {
+      "Wrinkles": {
+        "efficacy": 90,
+        "weight": 0.92
+      },
+      "Dry Skin": {
+        "efficacy": 84,
+        "weight": 0.85
+      },
+      "Healthy Skin": {
+        "efficacy": 88,
+        "weight": 0.9
+      }
+    }
+  },
+  "Bael": {
+    "name": "Bael",
+    "botanical_name": "Aegle marmelos",
+    "family": "Rutaceae",
+    "active_compounds": [
+      "Marmelosin",
+      "Limonene",
+      "Luvangetin",
+      "Aegeline"
+    ],
+    "phytochemicals": [
+      "Coumarins",
+      "Alkaloids",
+      "Tannins"
+    ],
+    "benefits": [
+      "Soothes skin irritation",
+      "Speeds up wound healing",
+      "Anti-inflammatory relief"
+    ],
+    "side_effects": [
+      "May cause slight dryness if used excessively"
+    ],
+    "contraindications": [
+      "Very dry skin without mixing with oils"
+    ],
+    "evidence_level": "Medium-Low",
+    "research_papers": [
+      "Bhalodia NR, Shukla VJ. Antibacterial and wound healing properties of Aegle marmelos fruit extracts. J Adv Pharm Technol Res. 2011."
+    ],
+    "preparation_method": "Mash the pulp of ripe Bael fruit, apply to irritated skin patch, let sit for 15 minutes, wash off.",
+    "skin_types": [
+      "Normal",
+      "Irritated"
+    ],
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 83,
+        "weight": 0.85
+      },
+      "Eczema": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Arjun": {
+    "name": "Arjun",
+    "botanical_name": "Terminalia arjuna",
+    "family": "Combretaceae",
+    "active_compounds": [
+      "Arjunic Acid",
+      "Arjunetin",
+      "Arjunolone",
+      "Beta-sitosterol"
+    ],
+    "phytochemicals": [
+      "Triterpenoid Saponins",
+      "Flavonoids",
+      "Tannins"
+    ],
+    "benefits": [
+      "Skin barrier repair",
+      "Antioxidant protection",
+      "Improves skin microcirculation",
+      "Tightens sagging skin"
+    ],
+    "side_effects": [
+      "Mild astringent drying effect"
+    ],
+    "contraindications": [
+      "None reported"
+    ],
+    "evidence_level": "Medium",
+    "research_papers": [
+      "Chaudhari M, et al. Terminalia arjuna bark extract: barrier repair and microcirculation benefits in skin care. Journal of Ethnopharmacology. 2014."
+    ],
+    "preparation_method": "Mix Arjun bark powder with honey and milk to make a skin paste. Apply twice a week.",
+    "skin_types": [
+      "Aging",
+      "Damaged",
+      "Normal"
+    ],
+    "disease_mapping": {
+      "Wrinkles": {
+        "efficacy": 86,
+        "weight": 0.88
+      },
+      "Dry Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Healthy Skin": {
+        "efficacy": 85,
+        "weight": 0.86
+      }
+    }
+  },
+  "Chironji": {
+    "name": "Chironji",
+    "botanical_name": "Buchanania lanzan",
+    "family": "Anacardiaceae",
+    "active_compounds": [
+      "Oleic Acid",
+      "Linoleic Acid",
+      "Myristic Acid",
+      "Gallic Acid"
+    ],
+    "phytochemicals": [
+      "Fatty Acids",
+      "Tannins",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Deep skin nourishment",
+      "Softens and moisturizes skin",
+      "Reduces blemishes and spots"
+    ],
+    "side_effects": [
+      "Comedogenic risk for highly oily acne-prone skin"
+    ],
+    "contraindications": [
+      "Oily acne-prone skin types"
+    ],
+    "evidence_level": "Medium-Low",
+    "research_papers": [
+      "Siddiqui AA, et al. Phytochemical and therapeutic potential of Buchanania lanzan (Chironji) seeds. Journal of Natural Remedies. 2015."
+    ],
+    "preparation_method": "Grind Chironji seeds with milk to make a paste, apply on skin for soft texture and fading of dry patches.",
+    "skin_types": [
+      "Dry",
+      "Flaky",
+      "Normal"
+    ],
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 92,
+        "weight": 0.93
+      },
+      "Pigmentation": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Bhringraj": {
+    "name": "Bhringraj",
+    "botanical_name": "Eclipta prostrata",
+    "family": "Asteraceae",
+    "active_compounds": [
+      "Wedelolactone",
+      "Demethylwedelolactone",
+      "Ecliptine",
+      "Stigmasterol"
+    ],
+    "phytochemicals": [
+      "Coumestans",
+      "Alkaloids",
+      "Thiophenes"
+    ],
+    "benefits": [
+      "Skin regeneration and repair",
+      "Soothes skin inflammation",
+      "Heals minor wounds and burns",
+      "Antiallergic action"
+    ],
+    "side_effects": [
+      "Very high tolerance rate; no common side effects reported"
+    ],
+    "contraindications": [
+      "None reported"
+    ],
+    "evidence_level": "Medium-High",
+    "research_papers": [
+      "Tewtrakul S, et al. Anti-inflammatory and wound healing activities of Eclipta prostrata. Journal of Ethnopharmacology. 2011."
+    ],
+    "preparation_method": "Extract juice from crushed fresh Bhringraj leaves and apply to wounds, or apply Bhringraj leaf powder paste.",
+    "skin_types": [
+      "Normal",
+      "Sensitive",
+      "Damaged"
+    ],
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Eczema": {
+        "efficacy": 84,
+        "weight": 0.85
+      },
+      "Healthy Skin": {
+        "efficacy": 85,
+        "weight": 0.87
+      }
+    }
+  },
+  "Brahmi": {
+    "name": "Brahmi",
+    "botanical_name": "Bacopa monnieri",
+    "family": "Plantaginaceae",
+    "active_compounds": [
+      "Bacosides",
+      "Bacopaside",
+      "Saponins",
+      "Alkaloids"
+    ],
+    "phytochemicals": [
+      "Triterpenoid saponins",
+      "Bacosides",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Skin rejuvenation",
+      "Reduces anxiety and stress",
+      "Improves skin texture",
+      "Anti-aging"
+    ],
+    "preparation_method": "Apply Brahmi paste made from fresh leaves or use Brahmi oil for topical massage.",
+    "side_effects": [
+      "Mild stomach upset if ingested in large quantities"
+    ],
+    "contraindications": [
+      "Pregnancy and breastfeeding (consult doctor)"
+    ],
+    "research_papers": [
+      "Stough C, et al. Bacopa monnieri improves human memory. J Altern Complement Med. 2001."
+    ],
+    "skin_types": [
+      "All",
+      "Aging",
+      "Stressed"
+    ],
+    "evidence_level": "Medium-High",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 82,
+        "weight": 0.85
+      },
+      "Wrinkles": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Dry Skin": {
+        "efficacy": 75,
+        "weight": 0.78
+      }
+    }
+  },
+  "Castor": {
+    "name": "Castor",
+    "botanical_name": "Ricinus communis",
+    "family": "Euphorbiaceae",
+    "active_compounds": [
+      "Ricinoleic acid",
+      "Ricin",
+      "Castor oil"
+    ],
+    "phytochemicals": [
+      "Fatty acids",
+      "Triterpenes",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Deep moisturization",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Skin softening"
+    ],
+    "preparation_method": "Apply cold-pressed castor oil directly to skin or mix with carrier oil.",
+    "side_effects": [
+      "May clog pores for oily skin types"
+    ],
+    "contraindications": [
+      "Oily and acne-prone skin (use sparingly)"
+    ],
+    "research_papers": [
+      "Oh JW, et al. Castor oil: a review of pharmacology and toxicology. J Toxicol. 2014."
+    ],
+    "skin_types": [
+      "Dry",
+      "Very Dry",
+      "Normal"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 90,
+        "weight": 0.92
+      },
+      "Eczema": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Wrinkles": {
+        "efficacy": 75,
+        "weight": 0.78
+      }
+    }
+  },
+  "Curry_Leaf": {
+    "name": "Curry Leaf",
+    "botanical_name": "Murraya koenigii",
+    "family": "Rutaceae",
+    "active_compounds": [
+      "Curryine",
+      "Mahanimbine",
+      "Glycosides",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Alkaloids",
+      "Flavonoids",
+      "Phenolic compounds"
+    ],
+    "benefits": [
+      "Antioxidant protection",
+      "Skin brightening",
+      "Wound healing",
+      "Anti-aging"
+    ],
+    "preparation_method": "Crush fresh curry leaves into a paste and apply to skin, or use curry leaf infused oil.",
+    "side_effects": [
+      "Generally very safe for topical use"
+    ],
+    "contraindications": [
+      "None reported for topical applications"
+    ],
+    "research_papers": [
+      "Nadkarni KM, et al. Indian Materia Medica. 1976."
+    ],
+    "skin_types": [
+      "All",
+      "Dull",
+      "Aging"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Pigmentation": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Wrinkles": {
+        "efficacy": 72,
+        "weight": 0.75
+      }
+    }
+  },
+  "Doddapatre": {
+    "name": "Doddapatre",
+    "botanical_name": "Coleus aromaticus",
+    "family": "Lamiaceae",
+    "active_compounds": [
+      "Essential oils",
+      "Flavonoids",
+      "Tannins",
+      "Terpenes"
+    ],
+    "phytochemicals": [
+      "Volatile oils",
+      "Flavonoids",
+      "Phenolic acids"
+    ],
+    "benefits": [
+      "Antimicrobial",
+      "Skin cleansing",
+      "Anti-inflammatory",
+      "Astringent"
+    ],
+    "preparation_method": "Use fresh Doddapatre leaves as a paste or infuse in water for a skin rinse.",
+    "side_effects": [
+      "Mild tingling sensation on sensitive skin"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Coleus aromaticus"
+    ],
+    "skin_types": [
+      "Oily",
+      "Acne-prone",
+      "Combination"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Acne": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Fungal Infection": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Healthy Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      }
+    }
+  },
+  "Ekka": {
+    "name": "Ekka",
+    "botanical_name": "Calotropis gigantea",
+    "family": "Apocynaceae",
+    "active_compounds": [
+      "Calotropin",
+      "Uscharin",
+      "Gigantein",
+      "Calotropigenin"
+    ],
+    "phytochemicals": [
+      "Cardenolides",
+      "Flavonoids",
+      "Tannins"
+    ],
+    "benefits": [
+      "Wound healing",
+      "Anti-inflammatory",
+      "Antimicrobial",
+      "Skin disease treatment"
+    ],
+    "preparation_method": "Apply Ekka leaf paste to affected areas. Use with caution and under guidance.",
+    "side_effects": [
+      "Can cause skin irritation in sensitive individuals"
+    ],
+    "contraindications": [
+      "Do not use on open wounds without medical supervision",
+      "Pregnancy contraindicated"
+    ],
+    "research_papers": [
+      "Khare CP, et al. Indian Medicinal Plants. 2007."
+    ],
+    "skin_types": [
+      "Normal",
+      "Infected"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Eczema": {
+        "efficacy": 75,
+        "weight": 0.78
+      },
+      "Fungal Infection": {
+        "efficacy": 80,
+        "weight": 0.82
+      }
+    }
+  },
+  "Ganike": {
+    "name": "Ganike",
+    "botanical_name": "Solanum xanthocarpum",
+    "family": "Solanaceae",
+    "active_compounds": [
+      "Solasonine",
+      "Solamargine",
+      "Glycoalkaloids",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Glycoalkaloids",
+      "Steroidal saponins",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Anti-inflammatory",
+      "Antimicrobial",
+      "Skin disease treatment",
+      "Wound healing"
+    ],
+    "preparation_method": "Apply Ganike fruit paste or use Ganike leaf decoction for skin application.",
+    "side_effects": [
+      "Mild skin irritation possible"
+    ],
+    "contraindications": [
+      "Avoid use during pregnancy"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Solanum xanthocarpum"
+    ],
+    "skin_types": [
+      "Oily",
+      "Infected",
+      "Normal"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Acne": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Fungal Infection": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Dermatitis": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Gauva": {
+    "name": "Gauva",
+    "botanical_name": "Psidium guajava",
+    "family": "Myrtaceae",
+    "active_compounds": [
+      "Guaijaverin",
+      "Quercetin",
+      "Tannins",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Tannins",
+      "Flavonoids",
+      "Phenolic compounds",
+      "Carotenoids"
+    ],
+    "benefits": [
+      "Astringent properties",
+      "Wound healing",
+      "Anti-inflammatory",
+      "Skin tightening"
+    ],
+    "preparation_method": "Apply Guava leaf paste or use Guava leaf decoction as a skin toner.",
+    "side_effects": [
+      "Generally very safe for topical use"
+    ],
+    "contraindications": [
+      "None reported for topical applications"
+    ],
+    "research_papers": [
+      "Dua P, et al. Psidium guajava: A review. Pharmacogn Rev. 2011."
+    ],
+    "skin_types": [
+      "All",
+      "Oily",
+      "Normal"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Eczema": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Geranium": {
+    "name": "Geranium",
+    "botanical_name": "Pelargonium graveolens",
+    "family": "Geraniaceae",
+    "active_compounds": [
+      "Geraniol",
+      "Citronellol",
+      "Linalool",
+      "Geranyl acetate"
+    ],
+    "phytochemicals": [
+      "Essential oils",
+      "Terpenes",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Balances skin oils",
+      "Anti-aging",
+      "Skin regeneration",
+      "Aromatherapy"
+    ],
+    "preparation_method": "Use geranium essential oil diluted in a carrier oil for massage, or apply geranium-infused water as a toner.",
+    "side_effects": [
+      "Mild skin irritation possible with undiluted oil"
+    ],
+    "contraindications": [
+      "Sensitive skin should dilute properly"
+    ],
+    "research_papers": [
+      "Diniz SO, et al. Phytochemical and pharmacological profile of Pelargonium. 2019."
+    ],
+    "skin_types": [
+      "All",
+      "Combination",
+      "Oily"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Rosacea": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Wrinkles": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Henna": {
+    "name": "Henna",
+    "botanical_name": "Lawsonia inermis",
+    "family": "Lythraceae",
+    "active_compounds": [
+      "Lawsone",
+      "Tannins",
+      "Flavonoids",
+      "Naphtoquinones"
+    ],
+    "phytochemicals": [
+      "Lawsone",
+      "Tannins",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Hair coloring",
+      "Skin cooling",
+      "Antimicrobial",
+      "Wound healing"
+    ],
+    "preparation_method": "Apply henna paste made from dried henna leaves mixed with water or lemon juice.",
+    "side_effects": [
+      "Skin staining that lasts 1-2 weeks",
+      "Mild allergic reactions possible"
+    ],
+    "contraindications": [
+      "Do a patch test before use",
+      "Avoid on broken skin"
+    ],
+    "research_papers": [
+      "Inamdar AA, et al. Lawsonia inermis: an ethnopharmacological review. Pharmacogn Rev. 2011."
+    ],
+    "skin_types": [
+      "All"
+    ],
+    "evidence_level": "High (Traditional Use)",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 75,
+        "weight": 0.78
+      },
+      "Wounds": {
+        "efficacy": 80,
+        "weight": 0.82
+      }
+    }
+  },
+  "Honge": {
+    "name": "Honge",
+    "botanical_name": "Pongamia pinnata",
+    "family": "Fabaceae",
+    "active_compounds": [
+      "Karanjin",
+      "Pongamol",
+      "Kanjone",
+      "Pongapin"
+    ],
+    "phytochemicals": [
+      "Furanoflavonoids",
+      "Chalcones",
+      "Flavones",
+      "Triterpenes"
+    ],
+    "benefits": [
+      "Skin disease treatment",
+      "Anti-inflammatory",
+      "Antifungal",
+      "Wound healing"
+    ],
+    "preparation_method": "Apply Honge oil (diluted) to affected skin areas. Mix with coconut oil before use.",
+    "side_effects": [
+      "Strong smell; may cause mild burning sensation"
+    ],
+    "contraindications": [
+      "Do not apply to open bleeding lesions"
+    ],
+    "research_papers": [
+      "Ramesh M, et al. Antifungal activity of Pongamia pinnata seed oil. Fitoterapia. 2002."
+    ],
+    "skin_types": [
+      "Dry",
+      "Scaly",
+      "Infected"
+    ],
+    "evidence_level": "Medium-High",
+    "disease_mapping": {
+      "Eczema": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Psoriasis": {
+        "efficacy": 85,
+        "weight": 0.88
+      },
+      "Fungal Infection": {
+        "efficacy": 90,
+        "weight": 0.92
+      }
+    }
+  },
+  "Insulin": {
+    "name": "Insulin Plant",
+    "botanical_name": "Costus igneus",
+    "family": "Costaceae",
+    "active_compounds": [
+      "Diosgenin",
+      "Saponins",
+      "Flavonoids",
+      "Terpenoids"
+    ],
+    "phytochemicals": [
+      "Steroidal saponins",
+      "Flavonoids",
+      "Phenolic compounds"
+    ],
+    "benefits": [
+      "Blood sugar regulation",
+      "Skin healing",
+      "Anti-inflammatory",
+      "Antioxidant"
+    ],
+    "preparation_method": "Chew fresh Insulin plant leaves or apply leaf paste to skin for wound healing.",
+    "side_effects": [
+      "Mild gastrointestinal discomfort if consumed in excess"
+    ],
+    "contraindications": [
+      "Diabetic patients should monitor blood sugar when using"
+    ],
+    "research_papers": [
+      "Indian traditional medicine texts on Costus igneus"
+    ],
+    "skin_types": [
+      "All"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Wounds": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Jasmine": {
+    "name": "Jasmine",
+    "botanical_name": "Jasminum officinale",
+    "family": "Oleaceae",
+    "active_compounds": [
+      "Jasmonate",
+      "Linalool",
+      "Benzyl acetate",
+      "Geraniol"
+    ],
+    "phytochemicals": [
+      "Essential oils",
+      "Terpenes",
+      "Flavonoids",
+      "Phenolic acids"
+    ],
+    "benefits": [
+      "Skin soothing",
+      "Moisturization",
+      "Anti-inflammatory",
+      "Aromatherapy"
+    ],
+    "preparation_method": "Use jasmine essential oil diluted in a carrier oil, or apply jasmine-infused water as a toner.",
+    "side_effects": [
+      "Mild skin irritation possible with undiluted oil"
+    ],
+    "contraindications": [
+      "Sensitive skin should dilute properly"
+    ],
+    "research_papers": [
+      "Trotin F, et al. Antioxidant properties of Jasminum officinale. 2003."
+    ],
+    "skin_types": [
+      "All",
+      "Dry",
+      "Sensitive"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Dry Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Rosacea": {
+        "efficacy": 74,
+        "weight": 0.76
+      }
+    }
+  },
+  "Lemon": {
+    "name": "Lemon",
+    "botanical_name": "Citrus limon",
+    "family": "Rutaceae",
+    "active_compounds": [
+      "Citric acid",
+      "Vitamin C",
+      "Limonene",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Citric acid",
+      "Ascorbic acid",
+      "Limonene",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Skin brightening",
+      "Anti-aging",
+      "Antioxidant",
+      "Astringent"
+    ],
+    "preparation_method": "Apply fresh lemon juice diluted with water to skin, or use lemon-infused honey mask.",
+    "side_effects": [
+      "Photosensitivity - avoid sun exposure after application",
+      "Mild stinging on sensitive skin"
+    ],
+    "contraindications": [
+      "Do not apply before sun exposure",
+      "Avoid on broken or irritated skin"
+    ],
+    "research_papers": [
+      "Kumar S, et al. Citrus limon: A review. Pharmacogn Rev. 2008."
+    ],
+    "skin_types": [
+      "Oily",
+      "Combination",
+      "Dull"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Pigmentation": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Wrinkles": {
+        "efficacy": 75,
+        "weight": 0.78
+      }
+    }
+  },
+  "Lemon_grass": {
+    "name": "Lemon Grass",
+    "botanical_name": "Cymbopogon citratus",
+    "family": "Poaceae",
+    "active_compounds": [
+      "Citral",
+      "Geraniol",
+      "Limonene",
+      "Myrcene"
+    ],
+    "phytochemicals": [
+      "Essential oils",
+      "Citral",
+      "Flavonoids",
+      "Phenolic acids"
+    ],
+    "benefits": [
+      "Antimicrobial",
+      "Astringent",
+      "Skin cleansing",
+      "Anti-inflammatory"
+    ],
+    "preparation_method": "Use lemon grass essential oil diluted in a carrier oil, or apply lemon grass infusion as a skin toner.",
+    "side_effects": [
+      "Mild skin irritation possible with undiluted oil"
+    ],
+    "contraindications": [
+      "Sensitive skin should dilute properly"
+    ],
+    "research_papers": [
+      "Santos-Buelga C, et al. Phytochemical analysis of Cymbopogon citratus. 2014."
+    ],
+    "skin_types": [
+      "Oily",
+      "Combination",
+      "Normal"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Acne": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Fungal Infection": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Healthy Skin": {
+        "efficacy": 76,
+        "weight": 0.78
+      }
+    }
+  },
+  "Mango": {
+    "name": "Mango",
+    "botanical_name": "Mangifera indica",
+    "family": "Anacardiaceae",
+    "active_compounds": [
+      "Mangiferin",
+      "Beta-carotene",
+      "Vitamin C",
+      "Tannins"
+    ],
+    "phytochemicals": [
+      "Xanthones",
+      "Carotenoids",
+      "Flavonoids",
+      "Tannins"
+    ],
+    "benefits": [
+      "Skin brightening",
+      "Anti-aging",
+      "Moisturization",
+      "Antioxidant protection"
+    ],
+    "preparation_method": "Apply mango pulp directly to skin as a mask, or use mango butter for moisturizing.",
+    "side_effects": [
+      "Mild allergic reaction possible in sensitive individuals"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Siddiqui IA, et al. Mangifera indica: A review. Pharmacogn Rev. 2012."
+    ],
+    "skin_types": [
+      "All",
+      "Dry",
+      "Aging"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Wrinkles": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Healthy Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      }
+    }
+  },
+  "Mint": {
+    "name": "Mint",
+    "botanical_name": "Mentha spicata",
+    "family": "Lamiaceae",
+    "active_compounds": [
+      "Menthol",
+      "Menthone",
+      "Limone",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Essential oils",
+      "Menthol",
+      "Terpenes",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Cooling effect",
+      "Anti-inflammatory",
+      "Skin soothing",
+      "Antimicrobial"
+    ],
+    "preparation_method": "Apply fresh mint leaf paste to skin, or use mint-infused water as a toner.",
+    "side_effects": [
+      "Mild cooling sensation may be intense on sensitive skin"
+    ],
+    "contraindications": [
+      "Avoid on broken or irritated skin"
+    ],
+    "research_papers": [
+      "McKay DL, et al. Mentha spicata: A review. J Tradit Complement Med. 2014."
+    ],
+    "skin_types": [
+      "Oily",
+      "Normal",
+      "Sensitive"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Acne": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Rosacea": {
+        "efficacy": 72,
+        "weight": 0.74
+      },
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Nagadali": {
+    "name": "Nagadali",
+    "botanical_name": "Rubia cordifolia",
+    "family": "Rubiaceae",
+    "active_compounds": [
+      "Alizarin",
+      "Purpurin",
+      "Munjistin",
+      "Ruberythric acid"
+    ],
+    "phytochemicals": [
+      "Anthraquinones",
+      "Purpurin",
+      "Alizarin",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Skin brightening",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Detoxification"
+    ],
+    "preparation_method": "Apply Manjistha root powder paste to skin, or use Manjistha-infused water as a skin tonic.",
+    "side_effects": [
+      "Mild skin irritation possible"
+    ],
+    "contraindications": [
+      "Pregnancy should consult doctor before use"
+    ],
+    "research_papers": [
+      "Aggarwal BB, et al. Curcuma longa: A review. 2007."
+    ],
+    "skin_types": [
+      "All",
+      "Dull",
+      "Pigmented"
+    ],
+    "evidence_level": "Medium-High",
+    "disease_mapping": {
+      "Pigmentation": {
+        "efficacy": 84,
+        "weight": 0.86
+      },
+      "Dermatitis": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Healthy Skin": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Nithyapushpa": {
+    "name": "Nithyapushpa",
+    "botanical_name": "Tradescantia zebrina",
+    "family": "Commelinaceae",
+    "active_compounds": [
+      "Flavonoids",
+      "Phenolic acids",
+      "Saponins",
+      "Terpenes"
+    ],
+    "phytochemicals": [
+      "Flavonoids",
+      "Phenolic compounds",
+      "Saponins"
+    ],
+    "benefits": [
+      "Skin rejuvenation",
+      "Anti-aging",
+      "Antioxidant",
+      "Wound healing"
+    ],
+    "preparation_method": "Apply fresh Nithyapushpa leaf paste to skin, or use leaf-infused water as a toner.",
+    "side_effects": [
+      "Mild skin irritation possible"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Traditional Ayurvedic texts on Tradescantia"
+    ],
+    "skin_types": [
+      "All",
+      "Aging",
+      "Dull"
+    ],
+    "evidence_level": "Low (Traditional Use)",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 75,
+        "weight": 0.78
+      },
+      "Wrinkles": {
+        "efficacy": 72,
+        "weight": 0.74
+      },
+      "Wounds": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Nooni": {
+    "name": "Nooni",
+    "botanical_name": "Ziziphus mauritiana",
+    "family": "Rhamnaceae",
+    "active_compounds": [
+      "Triterpenic acids",
+      "Flavonoids",
+      "Saponins",
+      "Phenolic acids"
+    ],
+    "phytochemicals": [
+      "Triterpenes",
+      "Flavonoids",
+      "Saponins",
+      "Phenolic compounds"
+    ],
+    "benefits": [
+      "Skin toning",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Astringent"
+    ],
+    "preparation_method": "Apply Nooni fruit paste or use Nooni bark decoction as a skin wash.",
+    "side_effects": [
+      "Mild drying effect"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Ziziphus mauritiana"
+    ],
+    "skin_types": [
+      "All",
+      "Oily",
+      "Normal"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Eczema": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Pappaya": {
+    "name": "Pappaya",
+    "botanical_name": "Carica papaya",
+    "family": "Caricaceae",
+    "active_compounds": [
+      "Papain",
+      "Chymopapain",
+      "Caricain",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Proteolytic enzymes",
+      "Flavonoids",
+      "Carotenoids",
+      "Vitamins A, C, E"
+    ],
+    "benefits": [
+      "Exfoliation",
+      "Skin brightening",
+      "Wound healing",
+      "Moisturization"
+    ],
+    "preparation_method": "Apply fresh papaya pulp as a face mask, or use papaya enzyme powder mixed with honey.",
+    "side_effects": [
+      "Mild tingling or irritation possible on sensitive skin"
+    ],
+    "contraindications": [
+      "Avoid on broken or irritated skin",
+      "Latex allergy may cross-react"
+    ],
+    "research_papers": [
+      "Purnima S, et al. Carica papaya: A review. Pharmacogn Rev. 2010."
+    ],
+    "skin_types": [
+      "All",
+      "Dull",
+      "Aging"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Pigmentation": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Wrinkles": {
+        "efficacy": 76,
+        "weight": 0.78
+      }
+    }
+  },
+  "Pepper": {
+    "name": "Pepper",
+    "botanical_name": "Piper nigrum",
+    "family": "Piperaceae",
+    "active_compounds": [
+      "Piperine",
+      "Piperonal",
+      "Volatile oils",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Alkaloids",
+      "Piperine",
+      "Essential oils",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Circulation improvement",
+      "Anti-inflammatory",
+      "Skin warming",
+      "Antioxidant"
+    ],
+    "preparation_method": "Use diluted black pepper essential oil in a carrier oil for massage, or apply pepper-infused water.",
+    "side_effects": [
+      "Burning sensation on sensitive skin",
+      "Photosensitivity"
+    ],
+    "contraindications": [
+      "Avoid on broken skin",
+      "Do not use undiluted essential oil"
+    ],
+    "research_papers": [
+      "Srinivasan K. Piper nigrum (black pepper): A review. Crit Rev Food Sci Nutr. 2007."
+    ],
+    "skin_types": [
+      "Normal",
+      "Dull",
+      "Congested"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Healthy Skin": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Pigmentation": {
+        "efficacy": 72,
+        "weight": 0.74
+      },
+      "Dermatitis": {
+        "efficacy": 70,
+        "weight": 0.72
+      }
+    }
+  },
+  "Pomegranate": {
+    "name": "Pomegranate",
+    "botanical_name": "Punica granatum",
+    "family": "Lythraceae",
+    "active_compounds": [
+      "Ellagic acid",
+      "Punicalagin",
+      "Anthocyanins",
+      "Tannins"
+    ],
+    "phytochemicals": [
+      "Ellagitannins",
+      "Anthocyanins",
+      "Flavonoids",
+      "Punicic acid"
+    ],
+    "benefits": [
+      "Anti-aging",
+      "Antioxidant protection",
+      "Skin regeneration",
+      "Anti-inflammatory"
+    ],
+    "preparation_method": "Apply pomegranate seed oil or fresh pomegranate juice to skin, or use pomegranate extract serum.",
+    "side_effects": [
+      "Mild stomach upset if consumed in excess"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Seeram NP, et al. Pomegranate: A review of its anti-inflammatory and skin benefits. 2010."
+    ],
+    "skin_types": [
+      "All",
+      "Aging",
+      "Damaged"
+    ],
+    "evidence_level": "High",
+    "disease_mapping": {
+      "Wrinkles": {
+        "efficacy": 86,
+        "weight": 0.88
+      },
+      "Healthy Skin": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Pigmentation": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Raktachandini": {
+    "name": "Raktachandini",
+    "botanical_name": "Pterocarpus santalinus",
+    "family": "Fabaceae",
+    "active_compounds": [
+      "Santalin",
+      "Pterostilbene",
+      "Flavonoids",
+      "Tannins"
+    ],
+    "phytochemicals": [
+      "Red pigments",
+      "Flavonoids",
+      "Tannins",
+      "Steroids"
+    ],
+    "benefits": [
+      "Skin brightening",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Detoxification"
+    ],
+    "preparation_method": "Apply Raktachandini powder paste to skin, or use decoction as a skin wash.",
+    "side_effects": [
+      "Mild skin irritation possible"
+    ],
+    "contraindications": [
+      "Pregnancy should consult doctor before use"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Pterocarpus santalinus"
+    ],
+    "skin_types": [
+      "All",
+      "Pigmented",
+      "Dull"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Pigmentation": {
+        "efficacy": 86,
+        "weight": 0.88
+      },
+      "Dermatitis": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Healthy Skin": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Rose": {
+    "name": "Rose",
+    "botanical_name": "Rosa damascena",
+    "family": "Rosaceae",
+    "active_compounds": [
+      "Geraniol",
+      "Citronellol",
+      "Rosa damascena oil",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Essential oils",
+      "Terpenes",
+      "Flavonoids",
+      "Phenolic acids"
+    ],
+    "benefits": [
+      "Skin soothing",
+      "Moisturization",
+      "Anti-inflammatory",
+      "Aromatherapy"
+    ],
+    "preparation_method": "Use rose water as a skin toner, or apply rose essential oil diluted in a carrier oil.",
+    "side_effects": [
+      "Mild skin irritation possible with undiluted oil"
+    ],
+    "contraindications": [
+      "Sensitive skin should dilute properly"
+    ],
+    "research_papers": [
+      "Koulivand PH, et al. Rosa damascena: A review. Complement Ther Med. 2013."
+    ],
+    "skin_types": [
+      "All",
+      "Dry",
+      "Sensitive"
+    ],
+    "evidence_level": "High",
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Rosacea": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Healthy Skin": {
+        "efficacy": 86,
+        "weight": 0.88
+      }
+    }
+  },
+  "Sapota": {
+    "name": "Sapota",
+    "botanical_name": "Manilkara zapota",
+    "family": "Sapotaceae",
+    "active_compounds": [
+      "Tannins",
+      "Saponins",
+      "Flavonoids",
+      "Vitamins A, C"
+    ],
+    "phytochemicals": [
+      "Tannins",
+      "Flavonoids",
+      "Phenolic compounds",
+      "Carotenoids"
+    ],
+    "benefits": [
+      "Skin nourishment",
+      "Anti-aging",
+      "Moisturization",
+      "Wound healing"
+    ],
+    "preparation_method": "Apply fresh Sapota fruit pulp as a face mask, or use Sapota seed oil for moisturizing.",
+    "side_effects": [
+      "Mild allergic reaction possible in sensitive individuals"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Manilkara zapota"
+    ],
+    "skin_types": [
+      "All",
+      "Dry",
+      "Aging"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Wrinkles": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Wood_sorel": {
+    "name": "Wood Sorel",
+    "botanical_name": "Oxalis corniculata",
+    "family": "Oxalidaceae",
+    "active_compounds": [
+      "Oxalic acid",
+      "Flavonoids",
+      "Tannins",
+      "Vitamins C and A"
+    ],
+    "phytochemicals": [
+      "Oxalic acid",
+      "Flavonoids",
+      "Tannins",
+      "Phenolic acids"
+    ],
+    "benefits": [
+      "Skin cooling",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Antimicrobial"
+    ],
+    "preparation_method": "Apply fresh Wood Sorel leaf paste to skin, or use leaf infusion as a skin wash.",
+    "side_effects": [
+      "Mild skin irritation possible"
+    ],
+    "contraindications": [
+      "Avoid excessive use due to oxalic acid content"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Oxalis corniculata"
+    ],
+    "skin_types": [
+      "All",
+      "Sensitive",
+      "Irritated"
+    ],
+    "evidence_level": "Low (Traditional Use)",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Eczema": {
+        "efficacy": 72,
+        "weight": 0.74
+      },
+      "Healthy Skin": {
+        "efficacy": 76,
+        "weight": 0.78
+      }
+    }
+  },
+  "Amruta Balli": {
+    "name": "Amruta Balli",
+    "botanical_name": "Tinospora cordifolia",
+    "family": "Menispermaceae",
+    "active_compounds": [
+      "Berberine",
+      "Tinosporide",
+      "Gilonin",
+      "Cordifolide"
+    ],
+    "phytochemicals": [
+      "Alkaloids",
+      "Diterpenoid lactones",
+      "Glycosides",
+      "Steroids"
+    ],
+    "benefits": [
+      "Immune modulation",
+      "Anti-inflammatory",
+      "Skin disease treatment",
+      "Detoxification"
+    ],
+    "preparation_method": "Boil Amruta Balli stems in water to prepare a decoction, let it cool, and wash the affected skin areas.",
+    "side_effects": [
+      "Generally very safe; no significant topical side effects"
+    ],
+    "contraindications": [
+      "None major for topical application"
+    ],
+    "research_papers": [
+      "Saha S, Ghosh S. Tinospora cordifolia: One plant, many roles. Anc Sci Life. 2012."
+    ],
+    "skin_types": [
+      "Sensitive",
+      "Allergy-prone",
+      "All"
+    ],
+    "evidence_level": "Medium-High",
+    "disease_mapping": {
+      "Eczema": {
+        "efficacy": 86,
+        "weight": 0.89
+      },
+      "Psoriasis": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Dermatitis": {
+        "efficacy": 84,
+        "weight": 0.86
+      },
+      "Rosacea": {
+        "efficacy": 82,
+        "weight": 0.84
+      }
+    }
+  },
+  "Arali": {
+    "name": "Arali",
+    "botanical_name": "Aralia chinensis",
+    "family": "Araliaceae",
+    "active_compounds": [
+      "Aralioside",
+      "Beta-sitosterol",
+      "Saponins",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Triterpenoid saponins",
+      "Sterols",
+      "Flavonoids"
+    ],
+    "benefits": [
+      "Anti-inflammatory",
+      "Wound healing",
+      "Skin nourishment",
+      "Detoxification"
+    ],
+    "preparation_method": "Apply Arali root powder paste to skin, or use root decoction as a skin wash.",
+    "side_effects": [
+      "Mild stomach upset if ingested in large quantities"
+    ],
+    "contraindications": [
+      "Pregnancy should consult doctor before use"
+    ],
+    "research_papers": [
+      "Chinese medicinal texts on Aralia chinensis"
+    ],
+    "skin_types": [
+      "All",
+      "Normal",
+      "Damaged"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Wounds": {
+        "efficacy": 80,
+        "weight": 0.82
+      },
+      "Healthy Skin": {
+        "efficacy": 78,
+        "weight": 0.8
+      }
+    }
+  },
+  "Ashoka": {
+    "name": "Ashoka",
+    "botanical_name": "Saraca asoca",
+    "family": "Fabaceae",
+    "active_compounds": [
+      "Ashokine",
+      "Saracain",
+      "Flavonoids",
+      "Tannins"
+    ],
+    "phytochemicals": [
+      "Flavonoids",
+      "Tannins",
+      "Steroids",
+      "Saponins"
+    ],
+    "benefits": [
+      "Skin rejuvenation",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Blood purification"
+    ],
+    "preparation_method": "Apply Ashoka bark decoction to skin, or use Ashoka flower paste for skin care.",
+    "side_effects": [
+      "Mild digestive discomfort if ingested"
+    ],
+    "contraindications": [
+      "Pregnancy should consult doctor before use"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Saraca asoca"
+    ],
+    "skin_types": [
+      "All",
+      "Sensitive",
+      "Damaged"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Eczema": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Healthy Skin": {
+        "efficacy": 80,
+        "weight": 0.82
+      }
+    }
+  },
+  "Avocado": {
+    "name": "Avocado",
+    "botanical_name": "Persea americana",
+    "family": "Lauraceae",
+    "active_compounds": [
+      "Oleic acid",
+      "Vitamin E",
+      "Lutein",
+      "Beta-sitosterol"
+    ],
+    "phytochemicals": [
+      "Fatty acids",
+      "Tocopherols",
+      "Carotenoids",
+      "Phytosterols"
+    ],
+    "benefits": [
+      "Deep moisturization",
+      "Skin nourishment",
+      "Anti-aging",
+      "Wound healing"
+    ],
+    "preparation_method": "Apply mashed avocado pulp directly to skin as a mask, or use avocado oil for moisturizing.",
+    "side_effects": [
+      "Mild allergic reaction possible in sensitive individuals"
+    ],
+    "contraindications": [
+      "None reported for topical use"
+    ],
+    "research_papers": [
+      "Draelos ZD. Avocado oil: A review. J Clin Aesthet Dermatol. 2019."
+    ],
+    "skin_types": [
+      "All",
+      "Dry",
+      "Aging"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dry Skin": {
+        "efficacy": 88,
+        "weight": 0.9
+      },
+      "Wrinkles": {
+        "efficacy": 82,
+        "weight": 0.84
+      },
+      "Healthy Skin": {
+        "efficacy": 86,
+        "weight": 0.88
+      }
+    }
+  },
+  "Bamboo": {
+    "name": "Bamboo",
+    "botanical_name": "Bambusa vulgaris",
+    "family": "Poaceae",
+    "active_compounds": [
+      "Silica",
+      "Flavonoids",
+      "Phenolic acids",
+      "Alkaloids"
+    ],
+    "phytochemicals": [
+      "Silica",
+      "Flavonoids",
+      "Phenolic compounds",
+      "Organic acids"
+    ],
+    "benefits": [
+      "Skin healing",
+      "Anti-inflammatory",
+      "Wound care",
+      "Skin tightening"
+    ],
+    "preparation_method": "Apply bamboo leaf decoction to skin, or use bamboo silica extract as a skin treatment.",
+    "side_effects": [
+      "Generally very safe for topical use"
+    ],
+    "contraindications": [
+      "None reported for topical applications"
+    ],
+    "research_papers": [
+      "Traditional Ayurvedic and Chinese medicinal texts on Bambusa vulgaris"
+    ],
+    "skin_types": [
+      "All",
+      "Normal",
+      "Damaged"
+    ],
+    "evidence_level": "Low (Traditional Use)",
+    "disease_mapping": {
+      "Wounds": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Dermatitis": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Healthy Skin": {
+        "efficacy": 76,
+        "weight": 0.78
+      }
+    }
+  },
+  "Basale": {
+    "name": "Basale",
+    "botanical_name": "Basella alba",
+    "family": "Basellaceae",
+    "active_compounds": [
+      "Baselloside",
+      "Flavonoids",
+      "Vitamins A and C",
+      "Minerals"
+    ],
+    "phytochemicals": [
+      "Flavonoids",
+      "Phenolic acids",
+      "Vitamins",
+      "Minerals"
+    ],
+    "benefits": [
+      "Skin nourishment",
+      "Anti-inflammatory",
+      "Wound healing",
+      "Cooling effect"
+    ],
+    "preparation_method": "Apply fresh Basale leaf paste to skin, or use leaf infusion as a skin wash.",
+    "side_effects": [
+      "Generally very safe for topical use"
+    ],
+    "contraindications": [
+      "None reported for topical applications"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Basella alba"
+    ],
+    "skin_types": [
+      "All",
+      "Sensitive",
+      "Irritated"
+    ],
+    "evidence_level": "Low (Traditional Use)",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Eczema": {
+        "efficacy": 72,
+        "weight": 0.74
+      },
+      "Healthy Skin": {
+        "efficacy": 76,
+        "weight": 0.78
+      }
+    }
+  },
+  "Betel": {
+    "name": "Betel",
+    "botanical_name": "Piper betle",
+    "family": "Piperaceae",
+    "active_compounds": [
+      "Eugenol",
+      "Chavicol",
+      "Betel oil",
+      "Flavonoids"
+    ],
+    "phytochemicals": [
+      "Essential oils",
+      "Phenolic compounds",
+      "Flavonoids",
+      "Tannins"
+    ],
+    "benefits": [
+      "Antimicrobial",
+      "Wound healing",
+      "Anti-inflammatory",
+      "Skin cleansing"
+    ],
+    "preparation_method": "Apply fresh Betel leaf paste to skin, or use Betel leaf decoction as a skin wash.",
+    "side_effects": [
+      "Mild skin irritation possible with prolonged use"
+    ],
+    "contraindications": [
+      "Avoid on broken or irritated skin"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Piper betle"
+    ],
+    "skin_types": [
+      "All",
+      "Oily",
+      "Normal"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 76,
+        "weight": 0.78
+      },
+      "Fungal Infection": {
+        "efficacy": 78,
+        "weight": 0.8
+      },
+      "Healthy Skin": {
+        "efficacy": 74,
+        "weight": 0.76
+      }
+    }
+  },
+  "Bakuchi": {
+  "name": "Bakuchi",
+  "botanical_name": "Psoralea corylifolia L.",
+  "family": "Fabaceae",
+  "active_compounds": [
+    "Psoralen",
+    "Isopsoralen",
+    "Bakuchiol",
+    "Psoralidin",
+    "Bavachin",
+    "Bavachalcone"
+  ],
+  "phytochemicals": [
+    "Furanocoumarins",
+    "Coumarins",
+    "Flavonoids",
+    "Meroterpenes",
+    "Monoterpene phenols"
+  ],
+  "benefits": [
+    "Traditionally used in preparations for vitiligo and other depigmentation-related skin conditions",
+    "Contains photosensitizing compounds that have been studied in relation to repigmentation approaches",
+    "Has demonstrated anti-inflammatory and antioxidant activities in experimental studies"
+  ],
+  "preparation_method": "Use only under the guidance of a qualified healthcare professional. Bakuchi preparations, particularly seed or seed-oil preparations, should not be self-applied because photosensitivity and other adverse effects have been reported.",
+  "side_effects": [
+    "Photosensitivity",
+    "Erythema",
+    "Skin irritation",
+    "Blistering",
+    "Itching",
+    "Potential liver injury with systemic or prolonged use"
+  ],
+  "contraindications": [
+    "Avoid unsupervised use in people with liver disease",
+    "Avoid unsupervised use in people with known photosensitivity or conditions associated with light sensitivity",
+    "Avoid direct exposure to sunlight or ultraviolet radiation after topical use unless specifically directed by a qualified healthcare professional",
+    "Pregnancy and breastfeeding require professional medical advice before use"
+  ],
+  "research_papers": [
+    "Psoralea corylifolia L.: a comprehensive review of its botany, traditional uses, phytochemistry, pharmacology, toxicology, quality control and pharmacokinetics (PMID: 36627680)",
+    "Psoralea corylifolia L: Ethnobotanical, biological, and chemical aspects: A review (PMID: 29243333)",
+    "The Safety of Medicinal Plants Used in the Treatment of Vitiligo and Hypermelanosis: A Systematic Review of Use and Reports of Harm (PMID: 33790609)"
+  ],
+  "skin_types": [
+    "Not specified"
+  ],
+  "evidence_level": "Traditional use with limited clinical evidence; safety concerns require professional supervision"
+},
+  "Betel Nut": {
+    "name": "Betel Nut",
+    "botanical_name": "Areca catechu",
+    "family": "Arecaceae",
+    "active_compounds": [
+      "Arecoline",
+      "Tannins",
+      "Flavonoids",
+      "Alkaloids"
+    ],
+    "phytochemicals": [
+      "Alkaloids",
+      "Tannins",
+      "Flavonoids",
+      "Phenolic compounds"
+    ],
+    "benefits": [
+      "Astringent properties",
+      "Wound healing",
+      "Anti-inflammatory",
+      "Antimicrobial"
+    ],
+    "preparation_method": "Apply Betel nut powder paste to skin, or use Betel nut decoction as a skin wash.",
+    "side_effects": [
+      "Mild skin irritation possible",
+      "Can be drying"
+    ],
+    "contraindications": [
+      "Avoid on broken or irritated skin",
+      "Do not ingest"
+    ],
+    "research_papers": [
+      "Indian Ayurvedic texts on Areca catechu"
+    ],
+    "skin_types": [
+      "Oily",
+      "Normal",
+      "Congested"
+    ],
+    "evidence_level": "Medium",
+    "disease_mapping": {
+      "Dermatitis": {
+        "efficacy": 72,
+        "weight": 0.74
+      },
+      "Fungal Infection": {
+        "efficacy": 74,
+        "weight": 0.76
+      },
+      "Healthy Skin": {
+        "efficacy": 70,
+        "weight": 0.72
+      }
+    }
+  }
+}
