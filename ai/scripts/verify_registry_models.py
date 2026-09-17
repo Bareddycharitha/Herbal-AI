@@ -144,9 +144,7 @@ def verify_model(display_name, config):
 
     print("[4/5] Forward pass ......................", end=" ")
 
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu"
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model.to(device)
 
@@ -179,12 +177,8 @@ def verify_model(display_name, config):
 
     if tuple(output.shape) != expected_shape:
         print("FAIL")
-        print(
-            f"\nExpected output shape: {expected_shape}"
-        )
-        print(
-            f"Actual output shape  : {tuple(output.shape)}"
-        )
+        print(f"\nExpected output shape: {expected_shape}")
+        print(f"Actual output shape  : {tuple(output.shape)}")
         return False
 
     print("PASS")
@@ -264,17 +258,14 @@ def main():
 
         status = "PASS" if passed else "FAIL"
 
-        print(
-            f"{display_name:<32}: {status}"
-        )
+        print(f"{display_name:<32}: {status}")
 
     print("\n" + "-" * 75)
 
     if all(results.values()):
 
         print(
-            "RESULT: ALL REGISTERED MODELS PASSED "
-            "RETRIEVAL + INFERENCE VERIFICATION"
+            "RESULT: ALL REGISTERED MODELS PASSED " "RETRIEVAL + INFERENCE VERIFICATION"
         )
 
         print("-" * 75)
@@ -287,16 +278,11 @@ def main():
 
     else:
 
-        print(
-            "RESULT: ONE OR MORE REGISTERED MODELS FAILED "
-            "VERIFICATION"
-        )
+        print("RESULT: ONE OR MORE REGISTERED MODELS FAILED " "VERIFICATION")
 
         print("-" * 75)
 
-        print(
-            "\nPhase 4.3 is NOT complete."
-        )
+        print("\nPhase 4.3 is NOT complete.")
 
         sys.exit(1)
 

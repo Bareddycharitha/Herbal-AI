@@ -18,6 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_TRACKING_DB = PROJECT_ROOT / "mlflow.db"
 
+
 def get_tracking_uri():
     """Return the configured MLflow tracking URI."""
 

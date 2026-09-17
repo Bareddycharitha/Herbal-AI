@@ -58,11 +58,13 @@ def main():
         run_name="Herb Classifier Test Evaluation",
     )
 
-    set_tags({
-        "dataset": "Medicinal_plant_dataset",
-        "split": "test",
-        "model_name": "tf_efficientnetv2_s",
-    })
+    set_tags(
+        {
+            "dataset": "Medicinal_plant_dataset",
+            "split": "test",
+            "model_name": "tf_efficientnetv2_s",
+        }
+    )
 
     try:
 
@@ -133,13 +135,15 @@ def main():
         # Log Test Metrics to MLflow
         # ======================================================================
 
-        log_final_metrics({
-            "test_loss": loss,
-            "test_accuracy": acc,
-            "test_precision": precision,
-            "test_recall": recall,
-            "test_f1_score": f1,
-        })
+        log_final_metrics(
+            {
+                "test_loss": loss,
+                "test_accuracy": acc,
+                "test_precision": precision,
+                "test_recall": recall,
+                "test_f1_score": f1,
+            }
+        )
 
         # ======================================================================
         # Log Existing Evaluation Artifacts

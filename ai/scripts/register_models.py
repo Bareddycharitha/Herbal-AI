@@ -102,13 +102,10 @@ MODELS = {
         "num_classes": UNIVERSAL_NUM_CLASSES,
         "device": UNIVERSAL_DEVICE,
         "build_model": build_universal_model,
-
         # Existing evaluation run
         "evaluation_run_id": "1fc0a9c6065d42458c5d673ab467c571",
-
         # Existing training experiment
         "experiment": "Herbal-AI / Universal Classifier",
-
         "metrics": {
             "test_accuracy": 0.9932,
             "skin_accuracy": 0.9948,
@@ -121,7 +118,6 @@ MODELS = {
             "high_confidence_error_rate": None,
         },
     },
-
     "herb": {
         "registry_name": "HerbClassifier",
         "checkpoint": HERB_CHECKPOINT,
@@ -129,12 +125,9 @@ MODELS = {
         "num_classes": 40,
         "device": HERB_DEVICE,
         "build_model": build_herb_model,
-
         # Existing evaluation run
         "evaluation_run_id": "aca98c9d7341488082359d89367d2b51",
-
         "experiment": "Herbal-AI / Herb Classifier",
-
         "metrics": {
             "test_accuracy": 0.9984,
             "test_precision": 0.9985,
@@ -142,7 +135,6 @@ MODELS = {
             "test_f1_score": 0.9984,
         },
     },
-
     "skin": {
         "registry_name": "SkinDiseaseClassifier",
         "checkpoint": SKIN_CHECKPOINT,
@@ -150,12 +142,9 @@ MODELS = {
         "num_classes": SKIN_NUM_CLASSES,
         "device": SKIN_DEVICE,
         "build_model": build_skin_model,
-
         # Existing evaluation run
         "evaluation_run_id": "7930f0ec39a14aa88f45c1974ae1913c",
-
         "experiment": "Herbal-AI / Skin Disease Classifier",
-
         "metrics": {
             "test_accuracy": 0.7924,
             "test_macro_precision": 0.7601,
@@ -187,14 +176,11 @@ def extract_state_dict(checkpoint):
 
         # Raw state_dict checkpoint
         if checkpoint and all(
-            isinstance(value, torch.Tensor)
-            for value in checkpoint.values()
+            isinstance(value, torch.Tensor) for value in checkpoint.values()
         ):
             return checkpoint
 
-    raise ValueError(
-        "Could not find a valid model state dictionary in checkpoint."
-    )
+    raise ValueError("Could not find a valid model state dictionary in checkpoint.")
 
 
 def normalize_herb_state_dict(state_dict):
@@ -242,9 +228,7 @@ def load_checkpoint_model(model_type, config):
     checkpoint_path = Path(config["checkpoint"])
 
     if not checkpoint_path.exists():
-        raise FileNotFoundError(
-            f"{model_type} checkpoint not found: {checkpoint_path}"
-        )
+        raise FileNotFoundError(f"{model_type} checkpoint not found: {checkpoint_path}")
 
     print(f"\nLoading {model_type} model")
     print(f"Checkpoint : {checkpoint_path}")
@@ -265,9 +249,7 @@ def load_checkpoint_model(model_type, config):
         model = build_model()
 
     else:
-        model = build_model(
-            num_classes=config["num_classes"]
-        )
+        model = build_model(num_classes=config["num_classes"])
 
     model.load_state_dict(
         state_dict,
@@ -303,9 +285,7 @@ def log_and_register_model(model_type, config, git_commit):
 
     configure_mlflow()
 
-    mlflow.set_experiment(
-        config["experiment"]
-    )
+    mlflow.set_experiment(config["experiment"])
 
     with mlflow.start_run(
         run_name=f"{registry_name} Model Packaging",
@@ -378,7 +358,6 @@ def log_and_register_model(model_type, config, git_commit):
             input_example=input_example,
             serialization_format="pickle",
         )
-        
 
         model_uri = model_info.model_uri
 
@@ -388,18 +367,14 @@ def log_and_register_model(model_type, config, git_commit):
         # Register model
         # ----------------------------------------------------------------------
 
-        print(
-            f"Registering as: {registry_name}"
-        )
+        print(f"Registering as: {registry_name}")
 
         model_version = register_model(
             model_uri=model_uri,
             model_name=registry_name,
         )
 
-        print(
-            f"Registered Version : {model_version.version}"
-        )
+        print(f"Registered Version : {model_version.version}")
 
         # ----------------------------------------------------------------------
         # Model-version metadata
@@ -423,10 +398,7 @@ def log_and_register_model(model_type, config, git_commit):
 
         print("Metadata tags   : PASS")
 
-    print(
-        f"\n>>> {registry_name} Version "
-        f"{model_version.version}: SUCCESS"
-    )
+    print(f"\n>>> {registry_name} Version " f"{model_version.version}: SUCCESS")
 
 
 # ------------------------------------------------------------------------------

@@ -135,9 +135,7 @@ class HerbTrainer:
 
         # -----------------------------------------------------
 
-        self.metrics = MetricsCalculator(
-            class_names
-        )
+        self.metrics = MetricsCalculator(class_names)
 
         self.checkpoint = CheckpointManager()
 
@@ -182,7 +180,8 @@ class HerbTrainer:
             "mixed_precision": USE_AMP,
             "number_of_classes": self.num_classes,
             "class_names": self.class_names,
-            "use_arcface": "USE_ARCFACE" in globals() or True,  # Will be set from config
+            "use_arcface": "USE_ARCFACE" in globals()
+            or True,  # Will be set from config
             "use_oe": USE_OE,
             "oe_loss_weight": OE_LOSS_WEIGHT,
         }
@@ -197,9 +196,7 @@ class HerbTrainer:
     # ==========================================================
 
     def save_model_information(self):
-        total_params = sum(
-            p.numel() for p in self.model.parameters()
-        )
+        total_params = sum(p.numel() for p in self.model.parameters())
         trainable_params = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
@@ -250,13 +247,13 @@ class HerbTrainer:
             ):
                 # Forward pass
                 # For ArcFace, model needs labels during training
-                if hasattr(self.model, 'use_arcface') and self.model.use_arcface:
+                if hasattr(self.model, "use_arcface") and self.model.use_arcface:
                     outputs = self.model(images, labels)
                 else:
                     outputs = self.model(images)
 
                 # Classification loss
-                cls_loss = self.criteria['cls'](outputs, labels)
+                cls_loss = self.criteria["cls"](outputs, labels)
 
                 # Outlier Exposure loss
                 oe_loss_val = 0.0
@@ -272,12 +269,12 @@ class HerbTrainer:
                         non_blocking=True,
                     )
 
-                    if hasattr(self.model, 'use_arcface') and self.model.use_arcface:
+                    if hasattr(self.model, "use_arcface") and self.model.use_arcface:
                         oe_outputs = self.model(oe_images)  # No labels for OE
                     else:
                         oe_outputs = self.model(oe_images)
 
-                    oe_loss_val = self.criteria['oe'](oe_outputs)
+                    oe_loss_val = self.criteria["oe"](oe_outputs)
                     cls_loss = cls_loss + OE_LOSS_WEIGHT * oe_loss_val
 
             self.scaler.scale(cls_loss).backward()
@@ -285,7 +282,7 @@ class HerbTrainer:
             self.scaler.update()
 
             running_loss += cls_loss.item()
-            running_cls_loss += self.criteria['cls'](
+            running_cls_loss += self.criteria["cls"](
                 outputs,
                 labels,
             ).item()
@@ -301,28 +298,20 @@ class HerbTrainer:
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-            postfix = {
-                'loss': f"{running_loss / (progress_bar.n + 1):.4f}"
-            }
+            postfix = {"loss": f"{running_loss / (progress_bar.n + 1):.4f}"}
 
             if USE_OE:
-                postfix['oe_loss'] = (
-                    f"{running_oe_loss / (progress_bar.n + 1):.4f}"
-                )
+                postfix["oe_loss"] = f"{running_oe_loss / (progress_bar.n + 1):.4f}"
 
-            postfix['acc'] = f"{100 * correct / total:.2f}%"
+            postfix["acc"] = f"{100 * correct / total:.2f}%"
 
             progress_bar.set_postfix(postfix)
 
         train_loss = running_loss / len(self.train_loader)
         train_accuracy = 100 * correct / total
 
-        self.logger.info(
-            f"Train Loss : {train_loss:.4f}"
-        )
-        self.logger.info(
-            f"Train Accuracy : {train_accuracy:.2f}%"
-        )
+        self.logger.info(f"Train Loss : {train_loss:.4f}")
+        self.logger.info(f"Train Accuracy : {train_accuracy:.2f}%")
 
         return train_loss, train_accuracy
 
@@ -355,12 +344,12 @@ class HerbTrainer:
                 device_type=self.device.type,
                 enabled=USE_AMP,
             ):
-                if hasattr(self.model, 'use_arcface') and self.model.use_arcface:
+                if hasattr(self.model, "use_arcface") and self.model.use_arcface:
                     outputs = self.model(images)  # No labels for inference
                 else:
                     outputs = self.model(images)
 
-                loss = self.criteria['cls'](
+                loss = self.criteria["cls"](
                     outputs,
                     labels,
                 )
@@ -371,12 +360,8 @@ class HerbTrainer:
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-            all_predictions.extend(
-                predictions.cpu().numpy()
-            )
-            all_labels.extend(
-                labels.cpu().numpy()
-            )
+            all_predictions.extend(predictions.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
 
         val_loss = running_loss / len(self.val_loader)
         val_accuracy = 100 * correct / total
@@ -396,21 +381,11 @@ class HerbTrainer:
             all_predictions,
         )
 
-        self.logger.info(
-            f"Validation Loss : {val_loss:.4f}"
-        )
-        self.logger.info(
-            f"Validation Accuracy : {val_accuracy:.2f}%"
-        )
-        self.logger.info(
-            f"Precision : {metrics['precision']:.4f}"
-        )
-        self.logger.info(
-            f"Recall : {metrics['recall']:.4f}"
-        )
-        self.logger.info(
-            f"F1 Score : {metrics['f1_score']:.4f}"
-        )
+        self.logger.info(f"Validation Loss : {val_loss:.4f}")
+        self.logger.info(f"Validation Accuracy : {val_accuracy:.2f}%")
+        self.logger.info(f"Precision : {metrics['precision']:.4f}")
+        self.logger.info(f"Recall : {metrics['recall']:.4f}")
+        self.logger.info(f"F1 Score : {metrics['f1_score']:.4f}")
 
         return val_loss, val_accuracy, metrics
 
@@ -486,9 +461,7 @@ class HerbTrainer:
                 val_acc,
             )
 
-            self.logger.info(
-                f"Epoch checkpoint saved ({epoch})."
-            )
+            self.logger.info(f"Epoch checkpoint saved ({epoch}).")
 
     # ==========================================================
     # Early Stopping
@@ -548,10 +521,12 @@ class HerbTrainer:
             },
         )
 
-        set_tags({
-            "model_name": MODEL_NAME,
-            "dataset": "Medicinal_plant_dataset",
-        })
+        set_tags(
+            {
+                "model_name": MODEL_NAME,
+                "dataset": "Medicinal_plant_dataset",
+            }
+        )
 
         self.save_model_information()
         self.training_start_time = time.time()
@@ -568,18 +543,14 @@ class HerbTrainer:
 
             self.logger.info("")
             self.logger.info("-" * 70)
-            self.logger.info(
-                f"Epoch {epoch}/{EPOCHS}"
-            )
+            self.logger.info(f"Epoch {epoch}/{EPOCHS}")
             self.logger.info("-" * 70)
 
             # --------------------------------------------------
             # Training
             # --------------------------------------------------
 
-            train_loss, train_acc = self.train_one_epoch(
-                epoch
-            )
+            train_loss, train_acc = self.train_one_epoch(epoch)
 
             # --------------------------------------------------
             # Validation
@@ -661,9 +632,7 @@ class HerbTrainer:
 
             if stop:
                 self.logger.info("")
-                self.logger.info(
-                    "Early stopping triggered."
-                )
+                self.logger.info("Early stopping triggered.")
                 break
 
         # ======================================================
@@ -674,9 +643,7 @@ class HerbTrainer:
 
             self.logger.info("")
             self.logger.info("=" * 60)
-            self.logger.info(
-                "Calibrating model with Temperature Scaling..."
-            )
+            self.logger.info("Calibrating model with Temperature Scaling...")
             self.logger.info("=" * 60)
 
             # Load best model for calibration
@@ -685,9 +652,7 @@ class HerbTrainer:
                 map_location=DEVICE,
             )
 
-            self.model.load_state_dict(
-                checkpoint["model_state_dict"]
-            )
+            self.model.load_state_dict(checkpoint["model_state_dict"])
 
             temp_scaler = calibrate_model(
                 self.model,
@@ -728,9 +693,7 @@ class HerbTrainer:
         # Generate Graphs
         # ======================================================
 
-        self.visualizer.generate(
-            self.history
-        )
+        self.visualizer.generate(self.history)
 
         # ======================================================
         # MLflow Artifacts
@@ -763,21 +726,11 @@ class HerbTrainer:
 
         self.logger.info("")
         self.logger.info("=" * 70)
-        self.logger.info(
-            "Training Finished Successfully"
-        )
+        self.logger.info("Training Finished Successfully")
         self.logger.info("=" * 70)
-        self.logger.info(
-            f"Best Validation Accuracy : "
-            f"{self.best_accuracy:.2f}%"
-        )
-        self.logger.info(
-            f"Training Time : "
-            f"{hours}h {minutes}m {seconds}s"
-        )
-        self.logger.info(
-            f"History Saved : {HISTORY_FILE}"
-        )
+        self.logger.info(f"Best Validation Accuracy : " f"{self.best_accuracy:.2f}%")
+        self.logger.info(f"Training Time : " f"{hours}h {minutes}m {seconds}s")
+        self.logger.info(f"History Saved : {HISTORY_FILE}")
         self.logger.info("=" * 70)
 
         # ======================================================

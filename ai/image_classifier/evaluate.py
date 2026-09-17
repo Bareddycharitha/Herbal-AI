@@ -77,31 +77,22 @@ def load_test_data() -> List[Tuple[Path, int]]:
             )
 
             if label == -1:
-                print(
-                    f"Warning: Unknown dataset "
-                    f"{dataset_name}, skipping"
-                )
+                print(f"Warning: Unknown dataset " f"{dataset_name}, skipping")
                 continue
 
         # Collect all image files in the test directory
         image_extensions = {
-            '.jpg',
-            '.jpeg',
-            '.png',
-            '.bmp',
-            '.webp',
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".bmp",
+            ".webp",
         }
 
-        for image_path in test_dir.rglob('*'):
+        for image_path in test_dir.rglob("*"):
 
-            if (
-                image_path.is_file()
-                and image_path.suffix.lower()
-                in image_extensions
-            ):
-                samples.append(
-                    (image_path, label)
-                )
+            if image_path.is_file() and image_path.suffix.lower() in image_extensions:
+                samples.append((image_path, label))
 
     return samples
 
@@ -123,11 +114,13 @@ def evaluate_model() -> Dict:
         run_name="Universal Classifier Test Evaluation",
     )
 
-    set_tags({
-        "dataset": "UniversalImageDataset",
-        "split": "test",
-        "model_name": "tf_efficientnetv2_s",
-    })
+    set_tags(
+        {
+            "dataset": "UniversalImageDataset",
+            "split": "test",
+            "model_name": "tf_efficientnetv2_s",
+        }
+    )
 
     try:
 
@@ -135,15 +128,10 @@ def evaluate_model() -> Dict:
 
         samples = load_test_data()
 
-        print(
-            f"Found {len(samples)} test images"
-        )
+        print(f"Found {len(samples)} test images")
 
         if len(samples) == 0:
-            raise ValueError(
-                "No test images found. "
-                "Check TEST_DIRS in config.py"
-            )
+            raise ValueError("No test images found. " "Check TEST_DIRS in config.py")
 
         # ==================================================================
         # Initialize classifier
@@ -182,9 +170,9 @@ def evaluate_model() -> Dict:
                     return_details=False,
                 )
 
-                pred_label_str = result['class']
+                pred_label_str = result["class"]
 
-                confidence = result['confidence']
+                confidence = result["confidence"]
 
                 # Already in 0-100 scale
                 # Map class name to label
@@ -194,22 +182,14 @@ def evaluate_model() -> Dict:
                     "Other": 2,
                 }
 
-                pred_label = label_map[
-                    pred_label_str
-                ]
+                pred_label = label_map[pred_label_str]
 
                 # Store results
-                true_labels.append(
-                    true_label
-                )
+                true_labels.append(true_label)
 
-                pred_labels.append(
-                    pred_label
-                )
+                pred_labels.append(pred_label)
 
-                confidences.append(
-                    confidence
-                )
+                confidences.append(confidence)
 
                 # Check if prediction is incorrect
                 if true_label != pred_label:
@@ -234,74 +214,59 @@ def evaluate_model() -> Dict:
                         f"{true_label}->{pred_label}",
                     )
 
-                    failed_predictions.append({
-                        'image_path': str(
-                            image_path
-                        ),
-                        'actual_class': [
-                            'Skin',
-                            'Medicinal',
-                            'Other',
-                        ][true_label],
-                        'predicted_class': [
-                            'Skin',
-                            'Medicinal',
-                            'Other',
-                        ][pred_label],
-                        'confidence': confidence,
-                        'error_type': error_type,
-                    })
+                    failed_predictions.append(
+                        {
+                            "image_path": str(image_path),
+                            "actual_class": [
+                                "Skin",
+                                "Medicinal",
+                                "Other",
+                            ][true_label],
+                            "predicted_class": [
+                                "Skin",
+                                "Medicinal",
+                                "Other",
+                            ][pred_label],
+                            "confidence": confidence,
+                            "error_type": error_type,
+                        }
+                    )
 
             except Exception as e:
 
-                print(
-                    f"Error processing "
-                    f"{image_path}: {e}"
-                )
+                print(f"Error processing " f"{image_path}: {e}")
 
                 # Still count as failed prediction
                 # with error
-                true_labels.append(
-                    true_label
-                )
+                true_labels.append(true_label)
 
-                pred_labels.append(
-                    -1
-                )
+                pred_labels.append(-1)
 
-                confidences.append(
-                    0.0
-                )
+                confidences.append(0.0)
 
-                failed_predictions.append({
-                    'image_path': str(
-                        image_path
-                    ),
-                    'actual_class': [
-                        'Skin',
-                        'Medicinal',
-                        'Other',
-                    ][true_label],
-                    'predicted_class': 'Error',
-                    'confidence': 0.0,
-                    'error_type': 'ProcessingError',
-                })
+                failed_predictions.append(
+                    {
+                        "image_path": str(image_path),
+                        "actual_class": [
+                            "Skin",
+                            "Medicinal",
+                            "Other",
+                        ][true_label],
+                        "predicted_class": "Error",
+                        "confidence": 0.0,
+                        "error_type": "ProcessingError",
+                    }
+                )
 
         # ==================================================================
         # Convert to numpy arrays
         # ==================================================================
 
-        true_labels = np.array(
-            true_labels
-        )
+        true_labels = np.array(true_labels)
 
-        pred_labels = np.array(
-            pred_labels
-        )
+        pred_labels = np.array(pred_labels)
 
-        confidences = np.array(
-            confidences
-        )
+        confidences = np.array(confidences)
 
         # ==================================================================
         # Filter invalid predictions
@@ -318,24 +283,14 @@ def evaluate_model() -> Dict:
                 f"were excluded from metrics"
             )
 
-            true_labels_valid = (
-                true_labels[valid_mask]
-            )
+            true_labels_valid = true_labels[valid_mask]
 
-            pred_labels_valid = (
-                pred_labels[valid_mask]
-            )
+            pred_labels_valid = pred_labels[valid_mask]
 
-            confidences_valid = (
-                confidences[valid_mask]
-            )
+            confidences_valid = confidences[valid_mask]
 
             failed_predictions_valid = [
-                fp
-                for i, fp in enumerate(
-                    failed_predictions
-                )
-                if valid_mask[i]
+                fp for i, fp in enumerate(failed_predictions) if valid_mask[i]
             ]
 
         else:
@@ -346,9 +301,7 @@ def evaluate_model() -> Dict:
 
             confidences_valid = confidences
 
-            failed_predictions_valid = (
-                failed_predictions
-            )
+            failed_predictions_valid = failed_predictions
 
         # ==================================================================
         # Calculate metrics
@@ -367,37 +320,26 @@ def evaluate_model() -> Dict:
 
         for class_idx, class_name in enumerate(
             [
-                'Skin',
-                'Medicinal',
-                'Other',
+                "Skin",
+                "Medicinal",
+                "Other",
             ]
         ):
 
-            class_mask = (
-                true_labels_valid
-                == class_idx
-            )
+            class_mask = true_labels_valid == class_idx
 
             if np.sum(class_mask) > 0:
 
                 class_acc = accuracy_score(
-                    true_labels_valid[
-                        class_mask
-                    ],
-                    pred_labels_valid[
-                        class_mask
-                    ],
+                    true_labels_valid[class_mask],
+                    pred_labels_valid[class_mask],
                 )
 
-                class_accuracies[
-                    class_name
-                ] = float(class_acc)
+                class_accuracies[class_name] = float(class_acc)
 
             else:
 
-                class_accuracies[
-                    class_name
-                ] = 0.0
+                class_accuracies[class_name] = 0.0
 
         # ==================================================================
         # Confusion matrix
@@ -414,9 +356,9 @@ def evaluate_model() -> Dict:
         # ==================================================================
 
         class_names = [
-            'Skin',
-            'Medicinal',
-            'Other',
+            "Skin",
+            "Medicinal",
+            "Other",
         ]
 
         cr = classification_report(
@@ -436,63 +378,30 @@ def evaluate_model() -> Dict:
         # Confidence analysis
         # ==================================================================
 
-        correct_mask = (
-            true_labels_valid
-            == pred_labels_valid
-        )
+        correct_mask = true_labels_valid == pred_labels_valid
 
-        correct_confidences = (
-            confidences_valid[
-                correct_mask
-            ]
-        )
+        correct_confidences = confidences_valid[correct_mask]
 
-        incorrect_confidences = (
-            confidences_valid[
-                ~correct_mask
-            ]
-        )
+        incorrect_confidences = confidences_valid[~correct_mask]
 
         avg_confidence_correct = (
-            float(
-                np.mean(
-                    correct_confidences
-                )
-            )
-            if len(correct_confidences) > 0
-            else 0.0
+            float(np.mean(correct_confidences)) if len(correct_confidences) > 0 else 0.0
         )
 
         avg_confidence_incorrect = (
-            float(
-                np.mean(
-                    incorrect_confidences
-                )
-            )
+            float(np.mean(incorrect_confidences))
             if len(incorrect_confidences) > 0
             else 0.0
         )
 
         # High-confidence incorrect predictions
         # (>90% confidence but wrong)
-        high_conf_incorrect_mask = (
-            (~correct_mask)
-            & (confidences_valid > 90.0)
-        )
+        high_conf_incorrect_mask = (~correct_mask) & (confidences_valid > 90.0)
 
-        high_conf_incorrect_count = int(
-            np.sum(
-                high_conf_incorrect_mask
-            )
-        )
+        high_conf_incorrect_count = int(np.sum(high_conf_incorrect_mask))
 
         high_conf_incorrect_rate = (
-            float(
-                np.sum(
-                    high_conf_incorrect_mask
-                )
-                / len(confidences_valid)
-            )
+            float(np.sum(high_conf_incorrect_mask) / len(confidences_valid))
             if len(confidences_valid) > 0
             else 0.0
         )
@@ -504,141 +413,70 @@ def evaluate_model() -> Dict:
         safety_metrics = {}
 
         # Skin incorrectly classified as Other
-        skin_as_other = np.sum(
-            (true_labels_valid == 0)
-            & (pred_labels_valid == 2)
-        )
+        skin_as_other = np.sum((true_labels_valid == 0) & (pred_labels_valid == 2))
 
-        safety_metrics[
-            'Skin_as_Other'
-        ] = int(
-            skin_as_other
-        )
+        safety_metrics["Skin_as_Other"] = int(skin_as_other)
 
-        safety_metrics[
-            'Skin_as_Other_rate'
-        ] = float(
-            skin_as_other
-            / np.sum(
-                true_labels_valid == 0
-            )
-        ) if np.sum(
-            true_labels_valid == 0
-        ) > 0 else 0.0
+        safety_metrics["Skin_as_Other_rate"] = (
+            float(skin_as_other / np.sum(true_labels_valid == 0))
+            if np.sum(true_labels_valid == 0) > 0
+            else 0.0
+        )
 
         # Medicinal incorrectly classified as Other
-        medicinal_as_other = np.sum(
-            (true_labels_valid == 1)
-            & (pred_labels_valid == 2)
-        )
+        medicinal_as_other = np.sum((true_labels_valid == 1) & (pred_labels_valid == 2))
 
-        safety_metrics[
-            'Medicinal_as_Other'
-        ] = int(
-            medicinal_as_other
-        )
+        safety_metrics["Medicinal_as_Other"] = int(medicinal_as_other)
 
-        safety_metrics[
-            'Medicinal_as_Other_rate'
-        ] = float(
-            medicinal_as_other
-            / np.sum(
-                true_labels_valid == 1
-            )
-        ) if np.sum(
-            true_labels_valid == 1
-        ) > 0 else 0.0
+        safety_metrics["Medicinal_as_Other_rate"] = (
+            float(medicinal_as_other / np.sum(true_labels_valid == 1))
+            if np.sum(true_labels_valid == 1) > 0
+            else 0.0
+        )
 
         # Other incorrectly classified as Skin
-        other_as_skin = np.sum(
-            (true_labels_valid == 2)
-            & (pred_labels_valid == 0)
-        )
+        other_as_skin = np.sum((true_labels_valid == 2) & (pred_labels_valid == 0))
 
-        safety_metrics[
-            'Other_as_Skin'
-        ] = int(
-            other_as_skin
-        )
+        safety_metrics["Other_as_Skin"] = int(other_as_skin)
 
-        safety_metrics[
-            'Other_as_Skin_rate'
-        ] = float(
-            other_as_skin
-            / np.sum(
-                true_labels_valid == 2
-            )
-        ) if np.sum(
-            true_labels_valid == 2
-        ) > 0 else 0.0
+        safety_metrics["Other_as_Skin_rate"] = (
+            float(other_as_skin / np.sum(true_labels_valid == 2))
+            if np.sum(true_labels_valid == 2) > 0
+            else 0.0
+        )
 
         # Other incorrectly classified as Medicinal
-        other_as_medicinal = np.sum(
-            (true_labels_valid == 2)
-            & (pred_labels_valid == 1)
-        )
+        other_as_medicinal = np.sum((true_labels_valid == 2) & (pred_labels_valid == 1))
 
-        safety_metrics[
-            'Other_as_Medicinal'
-        ] = int(
-            other_as_medicinal
-        )
+        safety_metrics["Other_as_Medicinal"] = int(other_as_medicinal)
 
-        safety_metrics[
-            'Other_as_Medicinal_rate'
-        ] = float(
-            other_as_medicinal
-            / np.sum(
-                true_labels_valid == 2
-            )
-        ) if np.sum(
-            true_labels_valid == 2
-        ) > 0 else 0.0
+        safety_metrics["Other_as_Medicinal_rate"] = (
+            float(other_as_medicinal / np.sum(true_labels_valid == 2))
+            if np.sum(true_labels_valid == 2) > 0
+            else 0.0
+        )
 
         # ==================================================================
         # Prepare results dictionary
         # ==================================================================
 
         results = {
-            'overall_accuracy': float(
-                overall_accuracy
-            ),
-            'per_class_accuracy':
-                class_accuracies,
-            'confusion_matrix':
-                cm.tolist(),
-            'classification_report':
-                cr,
-            'confidence_analysis': {
-                'avg_confidence_correct':
-                    avg_confidence_correct,
-                'avg_confidence_incorrect':
-                    avg_confidence_incorrect,
-                'high_confidence_incorrect_count':
-                    high_conf_incorrect_count,
-                'high_confidence_incorrect_rate':
-                    high_conf_incorrect_rate,
-                'total_samples':
-                    int(
-                        len(
-                            confidences_valid
-                        )
-                    ),
+            "overall_accuracy": float(overall_accuracy),
+            "per_class_accuracy": class_accuracies,
+            "confusion_matrix": cm.tolist(),
+            "classification_report": cr,
+            "confidence_analysis": {
+                "avg_confidence_correct": avg_confidence_correct,
+                "avg_confidence_incorrect": avg_confidence_incorrect,
+                "high_confidence_incorrect_count": high_conf_incorrect_count,
+                "high_confidence_incorrect_rate": high_conf_incorrect_rate,
+                "total_samples": int(len(confidences_valid)),
             },
-            'safety_metrics':
-                safety_metrics,
-            'failed_predictions_count':
-                len(
-                    failed_predictions_valid
-                ),
-            'processing_errors':
-                int(
-                    np.sum(
-                        ~valid_mask
-                    )
-                )
-                if 'valid_mask' in locals()
-                else 0,
+            "safety_metrics": safety_metrics,
+            "failed_predictions_count": len(failed_predictions_valid),
+            "processing_errors": (
+                int(np.sum(~valid_mask)) if "valid_mask" in locals() else 0
+            ),
         }
 
         # ==================================================================
@@ -656,14 +494,11 @@ def evaluate_model() -> Dict:
         # 1. evaluation_report.json
         # ------------------------------------------------------------------
 
-        eval_report_path = (
-            RESULTS_DIR
-            / 'evaluation_report.json'
-        )
+        eval_report_path = RESULTS_DIR / "evaluation_report.json"
 
         with open(
             eval_report_path,
-            'w',
+            "w",
         ) as f:
 
             json.dump(
@@ -676,55 +511,39 @@ def evaluate_model() -> Dict:
         # 2. classification_report.txt
         # ------------------------------------------------------------------
 
-        cr_path = (
-            RESULTS_DIR
-            / 'classification_report.txt'
-        )
+        cr_path = RESULTS_DIR / "classification_report.txt"
 
         with open(
             cr_path,
-            'w',
+            "w",
         ) as f:
 
-            f.write(
-                cr_text
-            )
+            f.write(cr_text)
 
         # ------------------------------------------------------------------
         # 3. confusion_matrix.png
         # ------------------------------------------------------------------
 
-        plt.figure(
-            figsize=(8, 6)
-        )
+        plt.figure(figsize=(8, 6))
 
         sns.heatmap(
             cm,
             annot=True,
-            fmt='d',
-            cmap='Blues',
+            fmt="d",
+            cmap="Blues",
             xticklabels=class_names,
             yticklabels=class_names,
         )
 
-        plt.title(
-            'Confusion Matrix'
-        )
+        plt.title("Confusion Matrix")
 
-        plt.ylabel(
-            'True Label'
-        )
+        plt.ylabel("True Label")
 
-        plt.xlabel(
-            'Predicted Label'
-        )
+        plt.xlabel("Predicted Label")
 
         plt.tight_layout()
 
-        cm_path = (
-            RESULTS_DIR
-            / 'confusion_matrix.png'
-        )
+        cm_path = RESULTS_DIR / "confusion_matrix.png"
 
         plt.savefig(
             cm_path,
@@ -737,18 +556,11 @@ def evaluate_model() -> Dict:
         # 4. failed_predictions.csv
         # ------------------------------------------------------------------
 
-        if len(
-            failed_predictions_valid
-        ) > 0:
+        if len(failed_predictions_valid) > 0:
 
-            failed_df = pd.DataFrame(
-                failed_predictions_valid
-            )
+            failed_df = pd.DataFrame(failed_predictions_valid)
 
-            failed_path = (
-                RESULTS_DIR
-                / 'failed_predictions.csv'
-            )
+            failed_path = RESULTS_DIR / "failed_predictions.csv"
 
             failed_df.to_csv(
                 failed_path,
@@ -760,18 +572,15 @@ def evaluate_model() -> Dict:
             # Create empty CSV with headers
             failed_df = pd.DataFrame(
                 columns=[
-                    'image_path',
-                    'actual_class',
-                    'predicted_class',
-                    'confidence',
-                    'error_type',
+                    "image_path",
+                    "actual_class",
+                    "predicted_class",
+                    "confidence",
+                    "error_type",
                 ]
             )
 
-            failed_path = (
-                RESULTS_DIR
-                / 'failed_predictions.csv'
-            )
+            failed_path = RESULTS_DIR / "failed_predictions.csv"
 
             failed_df.to_csv(
                 failed_path,
@@ -782,42 +591,19 @@ def evaluate_model() -> Dict:
         # Log Universal Evaluation Metrics to MLflow
         # ==================================================================
 
-        log_final_metrics({
-            "test_accuracy":
-                overall_accuracy,
-
-            "skin_accuracy":
-                class_accuracies["Skin"],
-
-            "medicinal_accuracy":
-                class_accuracies["Medicinal"],
-
-            "other_accuracy":
-                class_accuracies["Other"],
-
-            "skin_to_other_errors":
-                safety_metrics[
-                    "Skin_as_Other"
-                ],
-
-            "medicinal_to_other_errors":
-                safety_metrics[
-                    "Medicinal_as_Other"
-                ],
-
-            "other_to_skin_errors":
-                safety_metrics[
-                    "Other_as_Skin"
-                ],
-
-            "other_to_medicinal_errors":
-                safety_metrics[
-                    "Other_as_Medicinal"
-                ],
-
-            "high_confidence_error_rate":
-                high_conf_incorrect_rate,
-        })
+        log_final_metrics(
+            {
+                "test_accuracy": overall_accuracy,
+                "skin_accuracy": class_accuracies["Skin"],
+                "medicinal_accuracy": class_accuracies["Medicinal"],
+                "other_accuracy": class_accuracies["Other"],
+                "skin_to_other_errors": safety_metrics["Skin_as_Other"],
+                "medicinal_to_other_errors": safety_metrics["Medicinal_as_Other"],
+                "other_to_skin_errors": safety_metrics["Other_as_Skin"],
+                "other_to_medicinal_errors": safety_metrics["Other_as_Medicinal"],
+                "high_confidence_error_rate": high_conf_incorrect_rate,
+            }
+        )
 
         # ==================================================================
         # Log Existing Evaluation Artifacts to MLflow
@@ -847,45 +633,21 @@ def evaluate_model() -> Dict:
         # Print Results
         # ==================================================================
 
-        print(
-            f"Evaluation complete. "
-            f"Results saved to {RESULTS_DIR}"
-        )
+        print(f"Evaluation complete. " f"Results saved to {RESULTS_DIR}")
 
-        print(
-            f"Overall Accuracy: "
-            f"{overall_accuracy:.4f}"
-        )
+        print(f"Overall Accuracy: " f"{overall_accuracy:.4f}")
 
-        print(
-            f"Skin Accuracy: "
-            f"{class_accuracies['Skin']:.4f}"
-        )
+        print(f"Skin Accuracy: " f"{class_accuracies['Skin']:.4f}")
 
-        print(
-            f"Medicinal Accuracy: "
-            f"{class_accuracies['Medicinal']:.4f}"
-        )
+        print(f"Medicinal Accuracy: " f"{class_accuracies['Medicinal']:.4f}")
 
-        print(
-            f"Other Accuracy: "
-            f"{class_accuracies['Other']:.4f}"
-        )
+        print(f"Other Accuracy: " f"{class_accuracies['Other']:.4f}")
 
-        print(
-            f"Dangerous Skin->Other: "
-            f"{safety_metrics['Skin_as_Other']}"
-        )
+        print(f"Dangerous Skin->Other: " f"{safety_metrics['Skin_as_Other']}")
 
-        print(
-            f"Dangerous Medicinal->Other: "
-            f"{safety_metrics['Medicinal_as_Other']}"
-        )
+        print(f"Dangerous Medicinal->Other: " f"{safety_metrics['Medicinal_as_Other']}")
 
-        print(
-            f"High-confidence wrong predictions: "
-            f"{high_conf_incorrect_count}"
-        )
+        print(f"High-confidence wrong predictions: " f"{high_conf_incorrect_count}")
 
         return results
 
@@ -898,5 +660,5 @@ def evaluate_model() -> Dict:
         end_run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     evaluate_model()

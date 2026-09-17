@@ -81,11 +81,13 @@ def main():
         run_name="Skin Disease Test Evaluation",
     )
 
-    set_tags({
-        "dataset": "SkinDisease",
-        "split": "test",
-        "model_name": "tf_efficientnetv2_s",
-    })
+    set_tags(
+        {
+            "dataset": "SkinDisease",
+            "split": "test",
+            "model_name": "tf_efficientnetv2_s",
+        }
+    )
 
     try:
 
@@ -102,40 +104,24 @@ def main():
             val_loader,
             class_names,
             test_loader,
-        ) = create_dataloaders(
-            TRAIN_DIR
-        )
+        ) = create_dataloaders(TRAIN_DIR)
 
         print("\n" + "=" * 60)
         print("SKIN DISEASE DATASET")
         print("=" * 60)
 
-        print(
-            f"Training samples   : "
-            f"{len(train_loader.dataset)}"
-        )
+        print(f"Training samples   : " f"{len(train_loader.dataset)}")
 
-        print(
-            f"Validation samples : "
-            f"{len(val_loader.dataset)}"
-        )
+        print(f"Validation samples : " f"{len(val_loader.dataset)}")
 
-        print(
-            f"Testing samples    : "
-            f"{len(test_loader.dataset)}"
-        )
+        print(f"Testing samples    : " f"{len(test_loader.dataset)}")
 
-        print(
-            f"Number of classes  : "
-            f"{len(class_names)}"
-        )
+        print(f"Number of classes  : " f"{len(class_names)}")
 
         print("\nClasses:")
 
         for i, name in enumerate(class_names):
-            print(
-                f"  {i}: {name}"
-            )
+            print(f"  {i}: {name}")
 
         # -----------------------------------------------------
         # MODEL
@@ -149,40 +135,27 @@ def main():
         # build_model() only accepts num_classes.
         # PRETRAINED is handled internally by ai.config.
 
-        model = build_model(
-            num_classes=NUM_CLASSES
-        ).to(DEVICE)
+        model = build_model(num_classes=NUM_CLASSES).to(DEVICE)
 
         checkpoint = load_checkpoint(model)
 
         model.eval()
 
-        print(
-            "Model Loaded Successfully"
-        )
+        print("Model Loaded Successfully")
 
         if isinstance(checkpoint, dict):
 
             if "epoch" in checkpoint:
 
-                print(
-                    f"Best checkpoint epoch : "
-                    f"{checkpoint['epoch']}"
-                )
+                print(f"Best checkpoint epoch : " f"{checkpoint['epoch']}")
 
             if "best_metric" in checkpoint:
 
-                print(
-                    f"Stored best Macro F1 : "
-                    f"{checkpoint['best_metric']:.4f}"
-                )
+                print(f"Stored best Macro F1 : " f"{checkpoint['best_metric']:.4f}")
 
             if "val_f1" in checkpoint:
 
-                print(
-                    f"Stored validation F1 : "
-                    f"{checkpoint['val_f1']:.4f}"
-                )
+                print(f"Stored validation F1 : " f"{checkpoint['val_f1']:.4f}")
 
         # -----------------------------------------------------
         # TEST EVALUATION
@@ -202,34 +175,22 @@ def main():
                 desc="Testing",
             ):
 
-                images = images.to(
-                    DEVICE
-                )
+                images = images.to(DEVICE)
 
-                outputs = model(
-                    images
-                )
+                outputs = model(images)
 
                 predictions = torch.argmax(
                     outputs,
                     dim=1,
                 )
 
-                all_targets.extend(
-                    targets.cpu().numpy()
-                )
+                all_targets.extend(targets.cpu().numpy())
 
-                all_predictions.extend(
-                    predictions.cpu().numpy()
-                )
+                all_predictions.extend(predictions.cpu().numpy())
 
-        y_true = np.asarray(
-            all_targets
-        )
+        y_true = np.asarray(all_targets)
 
-        y_pred = np.asarray(
-            all_predictions
-        )
+        y_pred = np.asarray(all_predictions)
 
         # -----------------------------------------------------
         # METRICS
@@ -267,9 +228,7 @@ def main():
         report = classification_report(
             y_true,
             y_pred,
-            labels=list(
-                range(len(class_names))
-            ),
+            labels=list(range(len(class_names))),
             target_names=class_names,
             digits=4,
             zero_division=0,
@@ -278,9 +237,7 @@ def main():
         cm = confusion_matrix(
             y_true,
             y_pred,
-            labels=list(
-                range(len(class_names))
-            ),
+            labels=list(range(len(class_names))),
         )
 
         # -----------------------------------------------------
@@ -291,44 +248,21 @@ def main():
         print("TEST RESULTS")
         print("=" * 60)
 
-        print(
-            f"Accuracy           : "
-            f"{accuracy:.4f}"
-        )
+        print(f"Accuracy           : " f"{accuracy:.4f}")
 
-        print(
-            f"Macro Precision    : "
-            f"{macro_precision:.4f}"
-        )
+        print(f"Macro Precision    : " f"{macro_precision:.4f}")
 
-        print(
-            f"Macro Recall       : "
-            f"{macro_recall:.4f}"
-        )
+        print(f"Macro Recall       : " f"{macro_recall:.4f}")
 
-        print(
-            f"Macro F1           : "
-            f"{macro_f1:.4f}"
-        )
+        print(f"Macro F1           : " f"{macro_f1:.4f}")
 
-        print(
-            f"Weighted Precision : "
-            f"{weighted_precision:.4f}"
-        )
+        print(f"Weighted Precision : " f"{weighted_precision:.4f}")
 
-        print(
-            f"Weighted Recall    : "
-            f"{weighted_recall:.4f}"
-        )
+        print(f"Weighted Recall    : " f"{weighted_recall:.4f}")
 
-        print(
-            f"Weighted F1        : "
-            f"{weighted_f1:.4f}"
-        )
+        print(f"Weighted F1        : " f"{weighted_f1:.4f}")
 
-        print(
-            "\nClassification Report:"
-        )
+        print("\nClassification Report:")
 
         print(report)
 
@@ -336,9 +270,7 @@ def main():
         # RESULTS DIRECTORY
         # -----------------------------------------------------
 
-        results_dir = (
-            Path("ai") / "results"
-        )
+        results_dir = Path("ai") / "results"
 
         results_dir.mkdir(
             parents=True,
@@ -349,10 +281,7 @@ def main():
         # CLASSIFICATION REPORT
         # -----------------------------------------------------
 
-        report_path = (
-            results_dir
-            / "classification_report.txt"
-        )
+        report_path = results_dir / "classification_report.txt"
 
         with open(
             report_path,
@@ -366,19 +295,14 @@ def main():
         # CONFUSION MATRIX
         # -----------------------------------------------------
 
-        cm_path = (
-            results_dir
-            / "confusion_matrix.png"
-        )
+        cm_path = results_dir / "confusion_matrix.png"
 
         try:
 
             import matplotlib.pyplot as plt
             import seaborn as sns
 
-            plt.figure(
-                figsize=(16, 14)
-            )
+            plt.figure(figsize=(16, 14))
 
             sns.heatmap(
                 cm,
@@ -389,17 +313,11 @@ def main():
                 yticklabels=class_names,
             )
 
-            plt.xlabel(
-                "Predicted"
-            )
+            plt.xlabel("Predicted")
 
-            plt.ylabel(
-                "Actual"
-            )
+            plt.ylabel("Actual")
 
-            plt.title(
-                "Skin Disease Test Confusion Matrix"
-            )
+            plt.title("Skin Disease Test Confusion Matrix")
 
             plt.tight_layout()
 
@@ -413,10 +331,7 @@ def main():
 
         except Exception as e:
 
-            print(
-                f"\nWarning: Could not save "
-                f"confusion matrix: {e}"
-            )
+            print(f"\nWarning: Could not save " f"confusion matrix: {e}")
 
         # -----------------------------------------------------
         # METRICS JSON
@@ -424,39 +339,18 @@ def main():
 
         metrics = {
             "dataset": "test",
-            "num_samples": int(
-                len(y_true)
-            ),
-            "num_classes": int(
-                len(class_names)
-            ),
-            "accuracy": float(
-                accuracy
-            ),
-            "macro_precision": float(
-                macro_precision
-            ),
-            "macro_recall": float(
-                macro_recall
-            ),
-            "macro_f1": float(
-                macro_f1
-            ),
-            "weighted_precision": float(
-                weighted_precision
-            ),
-            "weighted_recall": float(
-                weighted_recall
-            ),
-            "weighted_f1": float(
-                weighted_f1
-            ),
+            "num_samples": int(len(y_true)),
+            "num_classes": int(len(class_names)),
+            "accuracy": float(accuracy),
+            "macro_precision": float(macro_precision),
+            "macro_recall": float(macro_recall),
+            "macro_f1": float(macro_f1),
+            "weighted_precision": float(weighted_precision),
+            "weighted_recall": float(weighted_recall),
+            "weighted_f1": float(weighted_f1),
         }
 
-        metrics_path = (
-            results_dir
-            / "evaluation_metrics.json"
-        )
+        metrics_path = results_dir / "evaluation_metrics.json"
 
         with open(
             metrics_path,
@@ -474,29 +368,17 @@ def main():
         # LOG TEST METRICS TO MLflow
         # =====================================================
 
-        log_final_metrics({
-
-            "test_accuracy":
-                accuracy,
-
-            "test_macro_precision":
-                macro_precision,
-
-            "test_macro_recall":
-                macro_recall,
-
-            "test_macro_f1":
-                macro_f1,
-
-            "test_weighted_precision":
-                weighted_precision,
-
-            "test_weighted_recall":
-                weighted_recall,
-
-            "test_weighted_f1":
-                weighted_f1,
-        })
+        log_final_metrics(
+            {
+                "test_accuracy": accuracy,
+                "test_macro_precision": macro_precision,
+                "test_macro_recall": macro_recall,
+                "test_macro_f1": macro_f1,
+                "test_weighted_precision": weighted_precision,
+                "test_weighted_recall": weighted_recall,
+                "test_weighted_f1": weighted_f1,
+            }
+        )
 
         # =====================================================
         # LOG EXISTING EVALUATION ARTIFACTS TO MLflow
@@ -525,17 +407,11 @@ def main():
         print("TEST ARTIFACTS SAVED")
         print("=" * 60)
 
-        print(
-            report_path.resolve()
-        )
+        print(report_path.resolve())
 
-        print(
-            cm_path.resolve()
-        )
+        print(cm_path.resolve())
 
-        print(
-            metrics_path.resolve()
-        )
+        print(metrics_path.resolve())
 
         print("=" * 60)
 

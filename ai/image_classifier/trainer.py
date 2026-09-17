@@ -82,6 +82,7 @@ from pathlib import Path
 # Focal Loss
 # ==========================================================
 
+
 class FocalLoss(nn.Module):
     """
     Focal Loss for addressing class imbalance.
@@ -103,7 +104,7 @@ class FocalLoss(nn.Module):
             targets,
             weight=self.weight,
             label_smoothing=self.label_smoothing,
-            reduction='none'
+            reduction="none",
         )
         pt = torch.exp(-ce_loss)
         focal_loss = ((1 - pt) ** self.gamma) * ce_loss
@@ -113,6 +114,7 @@ class FocalLoss(nn.Module):
 # ==========================================================
 # Outlier Exposure Loss
 # ==========================================================
+
 
 def oe_loss(logits, temperature=1.0):
     """
@@ -131,7 +133,7 @@ def oe_loss(logits, temperature=1.0):
     loss = F.kl_div(
         log_probs,
         uniform_target,
-        reduction='batchmean',
+        reduction="batchmean",
         log_target=False,
     )
 
@@ -142,12 +144,11 @@ def oe_loss(logits, temperature=1.0):
 # DataLoaders with Hard Negatives & OE
 # ==========================================================
 
+
 def create_oe_dataset():
     """Create Outlier Exposure dataset from diverse images."""
     if not OE_DATASET_DIR.exists():
-        print(
-            f"OE dataset not found at {OE_DATASET_DIR}, skipping OE"
-        )
+        print(f"OE dataset not found at {OE_DATASET_DIR}, skipping OE")
         return None
 
     oe_dataset = UniversalImageDataset(
@@ -163,10 +164,7 @@ def create_oe_dataset():
 def create_hard_negative_dataset():
     """Create hard negative dataset for 'Other' class."""
     if not HARD_NEGATIVE_DIR.exists():
-        print(
-            f"Hard negative dataset not found at "
-            f"{HARD_NEGATIVE_DIR}, skipping"
-        )
+        print(f"Hard negative dataset not found at " f"{HARD_NEGATIVE_DIR}, skipping")
         return None
 
     hard_neg_dataset = UniversalImageDataset(
@@ -174,10 +172,7 @@ def create_hard_negative_dataset():
         transform=train_transform,
     )
 
-    print(
-        f"Loaded hard negative dataset: "
-        f"{len(hard_neg_dataset)} images"
-    )
+    print(f"Loaded hard negative dataset: " f"{len(hard_neg_dataset)} images")
 
     return hard_neg_dataset
 
@@ -197,9 +192,7 @@ def create_dataloaders():
     )
 
     # Dataset Statistics
-    train_counts = Counter(
-        label for _, label in train_dataset.samples
-    )
+    train_counts = Counter(label for _, label in train_dataset.samples)
 
     print("\n" + "=" * 60)
     print("TRAIN DATASET DISTRIBUTION")
@@ -208,9 +201,7 @@ def create_dataloaders():
     print(f"Medicinal  : {train_counts[1]}")
     print(f"Other      : {train_counts[2]}")
 
-    val_counts = Counter(
-        label for _, label in val_dataset.samples
-    )
+    val_counts = Counter(label for _, label in val_dataset.samples)
 
     print("\n" + "=" * 60)
     print("VALIDATION DATASET DISTRIBUTION")
@@ -222,14 +213,10 @@ def create_dataloaders():
 
     # Compute class weights
     if CLASS_WEIGHTS is None:
-        labels = [
-            label for _, label in train_dataset.samples
-        ]
+        labels = [label for _, label in train_dataset.samples]
 
         class_weights = compute_class_weight(
-            class_weight='balanced',
-            classes=np.unique(labels),
-            y=labels
+            class_weight="balanced", classes=np.unique(labels), y=labels
         )
 
         class_weights = torch.tensor(
@@ -237,10 +224,7 @@ def create_dataloaders():
             dtype=torch.float32,
         ).to(DEVICE)
 
-        print(
-            f"\nComputed class weights: "
-            f"{class_weights.cpu().numpy()}"
-        )
+        print(f"\nComputed class weights: " f"{class_weights.cpu().numpy()}")
 
     else:
         class_weights = torch.tensor(
@@ -248,10 +232,7 @@ def create_dataloaders():
             dtype=torch.float32,
         ).to(DEVICE)
 
-        print(
-            f"\nUsing provided class weights: "
-            f"{class_weights.cpu().numpy()}"
-        )
+        print(f"\nUsing provided class weights: " f"{class_weights.cpu().numpy()}")
 
     # Optional: Hard Negative Mining
     if USE_HARD_NEGATIVES:
@@ -259,14 +240,9 @@ def create_dataloaders():
 
         if hard_neg_dataset is not None:
             # Combine with main dataset
-            train_dataset = ConcatDataset(
-                [train_dataset, hard_neg_dataset]
-            )
+            train_dataset = ConcatDataset([train_dataset, hard_neg_dataset])
 
-            print(
-                f"Combined train dataset size: "
-                f"{len(train_dataset)}"
-            )
+            print(f"Combined train dataset size: " f"{len(train_dataset)}")
 
     # Optional: Outlier Exposure
     oe_loader = None
@@ -285,17 +261,14 @@ def create_dataloaders():
             )
 
             print(
-                f"OE loader created with batch size: "
-                f"{int(BATCH_SIZE * OE_RATIO)}"
+                f"OE loader created with batch size: " f"{int(BATCH_SIZE * OE_RATIO)}"
             )
 
     # Create weighted sampler for balanced batches
-    if hasattr(train_dataset, 'samples'):
+    if hasattr(train_dataset, "samples"):
 
         # Single dataset
-        labels = [
-            label for _, label in train_dataset.samples
-        ]
+        labels = [label for _, label in train_dataset.samples]
 
     else:
 
@@ -303,17 +276,12 @@ def create_dataloaders():
         labels = []
 
         for dataset in train_dataset.datasets:
-            labels.extend(
-                [label for _, label in dataset.samples]
-            )
+            labels.extend([label for _, label in dataset.samples])
 
     # WeightedRandomSampler for balanced sampling
     class_counts = Counter(labels)
 
-    weights = [
-        1.0 / class_counts[label]
-        for label in labels
-    ]
+    weights = [1.0 / class_counts[label] for label in labels]
 
     sampler = WeightedRandomSampler(
         weights,
@@ -337,12 +305,8 @@ def create_dataloaders():
         pin_memory=PIN_MEMORY,
     )
 
-    print(
-        f"\nTraining Images   : {len(train_dataset)}"
-    )
-    print(
-        f"Validation Images : {len(val_dataset)}\n"
-    )
+    print(f"\nTraining Images   : {len(train_dataset)}")
+    print(f"Validation Images : {len(val_dataset)}\n")
 
     return (
         train_loader,
@@ -355,6 +319,7 @@ def create_dataloaders():
 # ==========================================================
 # Train One Epoch
 # ==========================================================
+
 
 def train_one_epoch(
     model,
@@ -380,11 +345,7 @@ def train_one_epoch(
     )
 
     # Create OE iterator
-    oe_iter = (
-        iter(oe_loader)
-        if oe_loader is not None
-        else None
-    )
+    oe_iter = iter(oe_loader) if oe_loader is not None else None
 
     for images, labels in progress:
 
@@ -427,18 +388,11 @@ def train_one_epoch(
                     non_blocking=True,
                 )
 
-                oe_outputs = model(
-                    oe_images
-                )
+                oe_outputs = model(oe_images)
 
-                oe_l = oe_loss(
-                    oe_outputs
-                )
+                oe_l = oe_loss(oe_outputs)
 
-                loss = (
-                    loss
-                    + OE_LOSS_WEIGHT * oe_l
-                )
+                loss = loss + OE_LOSS_WEIGHT * oe_l
 
                 oe_loss_meter.update(
                     oe_l.item(),
@@ -458,26 +412,16 @@ def train_one_epoch(
 
         preds = outputs.argmax(dim=1)
 
-        predictions.extend(
-            preds.cpu().numpy()
-        )
+        predictions.extend(preds.cpu().numpy())
 
-        targets.extend(
-            labels.cpu().numpy()
-        )
+        targets.extend(labels.cpu().numpy())
 
-        postfix = {
-            'loss': f"{loss_meter.average:.4f}"
-        }
+        postfix = {"loss": f"{loss_meter.average:.4f}"}
 
         if oe_loader is not None:
-            postfix['oe_loss'] = (
-                f"{oe_loss_meter.average:.4f}"
-            )
+            postfix["oe_loss"] = f"{oe_loss_meter.average:.4f}"
 
-        progress.set_postfix(
-            postfix
-        )
+        progress.set_postfix(postfix)
 
     accuracy = accuracy_score(
         targets,
@@ -487,7 +431,7 @@ def train_one_epoch(
     macro_f1 = f1_score(
         targets,
         predictions,
-        average='macro',
+        average="macro",
     )
 
     return (
@@ -500,6 +444,7 @@ def train_one_epoch(
 # ==========================================================
 # Validation
 # ==========================================================
+
 
 def validate(
     model,
@@ -552,17 +497,11 @@ def validate(
 
             preds = outputs.argmax(dim=1)
 
-            predictions.extend(
-                preds.cpu().numpy()
-            )
+            predictions.extend(preds.cpu().numpy())
 
-            targets.extend(
-                labels.cpu().numpy()
-            )
+            targets.extend(labels.cpu().numpy())
 
-            progress.set_postfix(
-                loss=f"{loss_meter.average:.4f}"
-            )
+            progress.set_postfix(loss=f"{loss_meter.average:.4f}")
 
     accuracy = accuracy_score(
         targets,
@@ -572,7 +511,7 @@ def validate(
     macro_f1 = f1_score(
         targets,
         predictions,
-        average='macro',
+        average="macro",
     )
 
     cm = confusion_matrix(
@@ -592,14 +531,13 @@ def validate(
 # Training Engine
 # ==========================================================
 
+
 def train(seed=RANDOM_SEED):
 
     print(f"Device: {DEVICE}")
 
     if torch.cuda.is_available():
-        print(
-            f"GPU: {torch.cuda.get_device_name(0)}"
-        )
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
     else:
         print("Running on CPU")
 
@@ -635,10 +573,12 @@ def train(seed=RANDOM_SEED):
         },
     )
 
-    set_tags({
-        "model_name": MODEL_NAME,
-        "dataset": "UniversalImageDataset",
-    })
+    set_tags(
+        {
+            "model_name": MODEL_NAME,
+            "dataset": "UniversalImageDataset",
+        }
+    )
 
     # ==========================================================
     # Data
@@ -682,10 +622,7 @@ def train(seed=RANDOM_SEED):
             label_smoothing=LABEL_SMOOTHING,
         )
 
-        print(
-            f"Using CrossEntropy Loss "
-            f"(label_smoothing={LABEL_SMOOTHING})"
-        )
+        print(f"Using CrossEntropy Loss " f"(label_smoothing={LABEL_SMOOTHING})")
 
     # ==========================================================
     # Optimizer
@@ -712,9 +649,7 @@ def train(seed=RANDOM_SEED):
     # Mixed Precision
     # ==========================================================
 
-    scaler = GradScaler(
-        enabled=USE_AMP
-    )
+    scaler = GradScaler(enabled=USE_AMP)
 
     # ==========================================================
     # Early Stopping
@@ -735,9 +670,7 @@ def train(seed=RANDOM_SEED):
     for epoch in range(EPOCHS):
 
         print("=" * 60)
-        print(
-            f"Epoch {epoch+1}/{EPOCHS}"
-        )
+        print(f"Epoch {epoch+1}/{EPOCHS}")
         print("=" * 60)
 
         # ------------------------------------------------------
@@ -777,9 +710,7 @@ def train(seed=RANDOM_SEED):
         # Scheduler
         # ------------------------------------------------------
 
-        scheduler.step(
-            val_loss
-        )
+        scheduler.step(val_loss)
 
         # ------------------------------------------------------
         # Current Learning Rate
@@ -791,52 +722,38 @@ def train(seed=RANDOM_SEED):
         # Console Output
         # ------------------------------------------------------
 
-        print(
-            f"Train Loss : {train_loss:.4f}"
-        )
+        print(f"Train Loss : {train_loss:.4f}")
 
-        print(
-            f"Train Acc  : {train_acc:.4f}"
-        )
+        print(f"Train Acc  : {train_acc:.4f}")
 
-        print(
-            f"Train Macro F1: {train_f1:.4f}"
-        )
+        print(f"Train Macro F1: {train_f1:.4f}")
 
-        print(
-            f"Val Loss   : {val_loss:.4f}"
-        )
+        print(f"Val Loss   : {val_loss:.4f}")
 
-        print(
-            f"Val Acc    : {val_acc:.4f}"
-        )
+        print(f"Val Acc    : {val_acc:.4f}")
 
-        print(
-            f"Val Macro F1 : {val_f1:.4f}"
-        )
+        print(f"Val Macro F1 : {val_f1:.4f}")
 
-        print(
-            f"Learning Rate : {current_lr:.8f}"
-        )
+        print(f"Learning Rate : {current_lr:.8f}")
 
-        print(
-            f"Val Confusion Matrix:\n{val_cm}"
-        )
+        print(f"Val Confusion Matrix:\n{val_cm}")
 
         # ------------------------------------------------------
         # Save History
         # ------------------------------------------------------
 
-        history.append({
-            "epoch": epoch + 1,
-            "train_loss": train_loss,
-            "train_accuracy": train_acc,
-            "train_macro_f1": train_f1,
-            "val_loss": val_loss,
-            "val_accuracy": val_acc,
-            "val_macro_f1": val_f1,
-            "learning_rate": current_lr,
-        })
+        history.append(
+            {
+                "epoch": epoch + 1,
+                "train_loss": train_loss,
+                "train_accuracy": train_acc,
+                "train_macro_f1": train_f1,
+                "val_loss": val_loss,
+                "val_accuracy": val_acc,
+                "val_macro_f1": val_f1,
+                "learning_rate": current_lr,
+            }
+        )
 
         # ------------------------------------------------------
         # MLflow Epoch Metrics
@@ -890,9 +807,7 @@ def train(seed=RANDOM_SEED):
                 BEST_MODEL_PATH,
             )
 
-            print(
-                "Best model updated."
-            )
+            print("Best model updated.")
 
         # ------------------------------------------------------
         # Early Stopping
@@ -900,9 +815,7 @@ def train(seed=RANDOM_SEED):
 
         if early_stopping(val_loss):
 
-            print(
-                "Early stopping triggered."
-            )
+            print("Early stopping triggered.")
 
             break
 
@@ -917,15 +830,9 @@ def train(seed=RANDOM_SEED):
 
     print("\nTraining Finished")
 
-    print(
-        f"Best Validation Accuracy : "
-        f"{best_accuracy:.4f}"
-    )
+    print(f"Best Validation Accuracy : " f"{best_accuracy:.4f}")
 
-    print(
-        f"Best Validation Macro F1 : "
-        f"{best_macro_f1:.4f}"
-    )
+    print(f"Best Validation Macro F1 : " f"{best_macro_f1:.4f}")
 
     # ==========================================================
     # Post-training Calibration
@@ -934,9 +841,7 @@ def train(seed=RANDOM_SEED):
     if CALIBRATE_AFTER_TRAINING:
 
         print("\n" + "=" * 60)
-        print(
-            "Calibrating model with Temperature Scaling..."
-        )
+        print("Calibrating model with Temperature Scaling...")
         print("=" * 60)
 
         # Load best model for calibration
@@ -945,9 +850,7 @@ def train(seed=RANDOM_SEED):
             map_location=DEVICE,
         )
 
-        model.load_state_dict(
-            checkpoint["model_state_dict"]
-        )
+        model.load_state_dict(checkpoint["model_state_dict"])
 
         temp_scaler = calibrate_model(
             model,
@@ -958,10 +861,7 @@ def train(seed=RANDOM_SEED):
         )
 
         # Save calibration temperature
-        cal_path = (
-            BEST_MODEL_PATH.parent
-            / "temperature_scale.pth"
-        )
+        cal_path = BEST_MODEL_PATH.parent / "temperature_scale.pth"
 
         torch.save(
             {
@@ -971,15 +871,9 @@ def train(seed=RANDOM_SEED):
             cal_path,
         )
 
-        print(
-            f"Calibration temperature saved to "
-            f"{cal_path}"
-        )
+        print(f"Calibration temperature saved to " f"{cal_path}")
 
-        print(
-            f"Learned temperature: "
-            f"{temp_scaler.get_temperature():.4f}"
-        )
+        print(f"Learned temperature: " f"{temp_scaler.get_temperature():.4f}")
 
     # ==========================================================
     # MLflow Artifacts
@@ -996,8 +890,7 @@ def train(seed=RANDOM_SEED):
     )
 
     log_artifact_if_exists(
-        BEST_MODEL_PATH.parent
-        / "temperature_scale.pth",
+        BEST_MODEL_PATH.parent / "temperature_scale.pth",
         artifact_path="model",
     )
 
@@ -1014,43 +907,26 @@ def train(seed=RANDOM_SEED):
 # Ensemble Training
 # ==========================================================
 
+
 def train_ensemble():
     """Train ensemble of models with different seeds."""
 
-    print(
-        f"\nTraining ensemble of "
-        f"{ENSEMBLE_SIZE} models..."
-    )
+    print(f"\nTraining ensemble of " f"{ENSEMBLE_SIZE} models...")
 
     models = []
 
-    for i, seed in enumerate(
-        ENSEMBLE_SEEDS
-    ):
+    for i, seed in enumerate(ENSEMBLE_SEEDS):
 
-        print(
-            f"\n{'='*60}"
-        )
+        print(f"\n{'='*60}")
 
-        print(
-            f"Training ensemble model "
-            f"{i+1}/{ENSEMBLE_SIZE} "
-            f"(seed={seed})"
-        )
+        print(f"Training ensemble model " f"{i+1}/{ENSEMBLE_SIZE} " f"(seed={seed})")
 
-        print(
-            f"{'='*60}"
-        )
+        print(f"{'='*60}")
 
-        model = train(
-            seed=seed
-        )
+        model = train(seed=seed)
 
         # Save ensemble model
-        ensemble_path = (
-            BEST_MODEL_PATH.parent
-            / f"best_model_ensemble_{i}.pth"
-        )
+        ensemble_path = BEST_MODEL_PATH.parent / f"best_model_ensemble_{i}.pth"
 
         torch.save(
             model.state_dict(),
@@ -1059,10 +935,7 @@ def train_ensemble():
 
         models.append(model)
 
-        print(
-            f"Saved ensemble model "
-            f"{i} to {ensemble_path}"
-        )
+        print(f"Saved ensemble model " f"{i} to {ensemble_path}")
 
     return models
 

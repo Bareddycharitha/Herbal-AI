@@ -100,6 +100,7 @@ from ai.config import (
 # CHECKPOINT HELPERS
 # ==============================================================================
 
+
 def extract_state_dict(checkpoint):
     """
     Extract model state dictionary from supported checkpoint formats.
@@ -154,6 +155,7 @@ def normalize_herb_state_dict(state_dict):
 # STATE DICT VALIDATION
 # ==============================================================================
 
+
 def validate_state_dict(model, state_dict):
     """
     Validate checkpoint keys and tensor shapes before loading.
@@ -205,6 +207,7 @@ def validate_state_dict(model, state_dict):
 # GENERIC MODEL VERIFICATION
 # ==============================================================================
 
+
 def verify_model(
     model_name,
     checkpoint_path,
@@ -236,9 +239,7 @@ def verify_model(
 
     if not checkpoint_path.exists():
 
-        raise FileNotFoundError(
-            f"Checkpoint not found: {checkpoint_path}"
-        )
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     print("\n[1/5] Checkpoint exists ................. PASS")
 
@@ -268,15 +269,11 @@ def verify_model(
 
     if not isinstance(state_dict, dict):
 
-        raise TypeError(
-            "Checkpoint does not contain a valid state dictionary."
-        )
+        raise TypeError("Checkpoint does not contain a valid state dictionary.")
 
     if normalize_function is not None:
 
-        state_dict = normalize_function(
-            state_dict
-        )
+        state_dict = normalize_function(state_dict)
 
     # --------------------------------------------------------------------------
     # 4. Validate keys and shapes
@@ -299,13 +296,10 @@ def verify_model(
             print(f"  - {key}")
 
         if len(missing_keys) > 20:
-            print(
-                f"  ... and {len(missing_keys) - 20} more"
-            )
+            print(f"  ... and {len(missing_keys) - 20} more")
 
         raise RuntimeError(
-            f"{model_name}: checkpoint is missing "
-            f"{len(missing_keys)} model keys."
+            f"{model_name}: checkpoint is missing " f"{len(missing_keys)} model keys."
         )
 
     if unexpected_keys:
@@ -316,9 +310,7 @@ def verify_model(
             print(f"  - {key}")
 
         if len(unexpected_keys) > 20:
-            print(
-                f"  ... and {len(unexpected_keys) - 20} more"
-            )
+            print(f"  ... and {len(unexpected_keys) - 20} more")
 
         raise RuntimeError(
             f"{model_name}: checkpoint contains "
@@ -336,9 +328,7 @@ def verify_model(
         ) in shape_mismatches[:20]:
 
             print(
-                f"  - {key}: "
-                f"model={model_shape}, "
-                f"checkpoint={checkpoint_shape}"
+                f"  - {key}: " f"model={model_shape}, " f"checkpoint={checkpoint_shape}"
             )
 
         raise RuntimeError(
@@ -346,9 +336,7 @@ def verify_model(
             f"{len(shape_mismatches)} shape mismatches."
         )
 
-    print(
-        "[3/5] Checkpoint keys/shapes match ...... PASS"
-    )
+    print("[3/5] Checkpoint keys/shapes match ...... PASS")
 
     # --------------------------------------------------------------------------
     # 5. Load state dictionary
@@ -361,9 +349,7 @@ def verify_model(
 
     model.eval()
 
-    print(
-        "[4/5] Weights loaded + eval mode ........ PASS"
-    )
+    print("[4/5] Weights loaded + eval mode ........ PASS")
 
     # --------------------------------------------------------------------------
     # 6. Forward pass
@@ -383,9 +369,7 @@ def verify_model(
 
     if not isinstance(output, torch.Tensor):
 
-        raise TypeError(
-            f"{model_name}: model output is not a torch.Tensor."
-        )
+        raise TypeError(f"{model_name}: model output is not a torch.Tensor.")
 
     if output.ndim != 2:
 
@@ -398,8 +382,7 @@ def verify_model(
     if output.shape[0] != 1:
 
         raise RuntimeError(
-            f"{model_name}: expected batch dimension 1, "
-            f"got {output.shape[0]}"
+            f"{model_name}: expected batch dimension 1, " f"got {output.shape[0]}"
         )
 
     actual_classes = output.shape[1]
@@ -412,24 +395,14 @@ def verify_model(
             f"got {actual_classes}"
         )
 
-    print(
-        "[5/5] Forward pass ..................... PASS"
-    )
+    print("[5/5] Forward pass ..................... PASS")
 
     print("\nModel verification details:")
-    print(
-        f"  Output shape : {tuple(output.shape)}"
-    )
-    print(
-        f"  Output dtype : {output.dtype}"
-    )
-    print(
-        f"  Eval mode    : {not model.training}"
-    )
+    print(f"  Output shape : {tuple(output.shape)}")
+    print(f"  Output dtype : {output.dtype}")
+    print(f"  Eval mode    : {not model.training}")
 
-    print(
-        f"\n>>> {model_name}: PASS"
-    )
+    print(f"\n>>> {model_name}: PASS")
 
     return True
 
@@ -438,6 +411,7 @@ def verify_model(
 # MAIN
 # ==============================================================================
 
+
 def main():
 
     print("\n" + "#" * 75)
@@ -445,10 +419,7 @@ def main():
     print("LOCAL MODEL-LOAD VERIFICATION")
     print("#" * 75)
 
-    print(
-        "\nThis verification performs "
-        "NO training and NO MLflow registration."
-    )
+    print("\nThis verification performs " "NO training and NO MLflow registration.")
 
     print(
         "\nPyTorch version :",
@@ -488,13 +459,9 @@ def main():
 
         results["Universal Classifier"] = False
 
-        print(
-            "\n>>> Universal Classifier: FAIL"
-        )
+        print("\n>>> Universal Classifier: FAIL")
 
-        print(
-            f"Reason: {type(exc).__name__}: {exc}"
-        )
+        print(f"Reason: {type(exc).__name__}: {exc}")
 
     # ==========================================================================
     # HERB
@@ -519,13 +486,9 @@ def main():
 
         results["Herb Classifier"] = False
 
-        print(
-            "\n>>> Herb Classifier: FAIL"
-        )
+        print("\n>>> Herb Classifier: FAIL")
 
-        print(
-            f"Reason: {type(exc).__name__}: {exc}"
-        )
+        print(f"Reason: {type(exc).__name__}: {exc}")
 
     # ==========================================================================
     # SKIN
@@ -549,13 +512,9 @@ def main():
 
         results["Skin Disease Classifier"] = False
 
-        print(
-            "\n>>> Skin Disease Classifier: FAIL"
-        )
+        print("\n>>> Skin Disease Classifier: FAIL")
 
-        print(
-            f"Reason: {type(exc).__name__}: {exc}"
-        )
+        print(f"Reason: {type(exc).__name__}: {exc}")
 
     # ==========================================================================
     # FINAL SUMMARY
@@ -567,10 +526,7 @@ def main():
 
     for model_name, status in results.items():
 
-        print(
-            f"{model_name:<30} : "
-            f"{'PASS' if status else 'FAIL'}"
-        )
+        print(f"{model_name:<30} : " f"{'PASS' if status else 'FAIL'}")
 
     all_passed = all(results.values())
 
@@ -578,40 +534,25 @@ def main():
 
     if all_passed:
 
-        print(
-            "RESULT: ALL THREE MODELS PASSED "
-            "LOCAL VERIFICATION"
-        )
+        print("RESULT: ALL THREE MODELS PASSED " "LOCAL VERIFICATION")
 
         print("-" * 75)
 
-        print(
-            "\nPhase 4.1 is COMPLETE."
-        )
+        print("\nPhase 4.1 is COMPLETE.")
 
-        print(
-            "Safe to proceed to Phase 4.2:"
-        )
+        print("Safe to proceed to Phase 4.2:")
 
-        print(
-            "MLflow Model Logging + Model Registry"
-        )
+        print("MLflow Model Logging + Model Registry")
 
     else:
 
-        print(
-            "RESULT: ONE OR MORE MODELS FAILED"
-        )
+        print("RESULT: ONE OR MORE MODELS FAILED")
 
         print("-" * 75)
 
-        print(
-            "\nDO NOT register the models yet."
-        )
+        print("\nDO NOT register the models yet.")
 
-        print(
-            "Fix the failed model verification first."
-        )
+        print("Fix the failed model verification first.")
 
     print("\n" + "#" * 75)
 

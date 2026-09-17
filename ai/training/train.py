@@ -77,6 +77,7 @@ AMP_DEVICE = DEVICE.type
 # FOCAL LOSS
 # ============================================================
 
+
 class FocalLoss(nn.Module):
 
     def __init__(
@@ -113,9 +114,7 @@ class FocalLoss(nn.Module):
             reduction="none",
         )
 
-        focal_loss = (
-            (1.0 - pt) ** self.gamma
-        ) * ce_loss
+        focal_loss = ((1.0 - pt) ** self.gamma) * ce_loss
 
         return focal_loss.mean()
 
@@ -123,6 +122,7 @@ class FocalLoss(nn.Module):
 # ============================================================
 # OUTLIER EXPOSURE LOSS
 # ============================================================
+
 
 def oe_loss(logits, temperature=1.0):
 
@@ -150,9 +150,8 @@ def oe_loss(logits, temperature=1.0):
 # BINARY DATASET
 # ============================================================
 
-class BinarySkinDataset(
-    torch.utils.data.Dataset
-):
+
+class BinarySkinDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
@@ -190,15 +189,11 @@ class BinarySkinDataset(
 
         path, binary_label = self.samples[idx]
 
-        image = np.array(
-            Image.open(path).convert("RGB")
-        )
+        image = np.array(Image.open(path).convert("RGB"))
 
         if self.transform:
 
-            image = self.transform(
-                image=image
-            )["image"]
+            image = self.transform(image=image)["image"]
 
         return image, binary_label
 
@@ -207,20 +202,18 @@ class BinarySkinDataset(
 # BINARY DATASET CREATION
 # ============================================================
 
+
 def create_binary_dataset(
     dataset,
     healthy_class_name="Unknown_Normal",
 ):
 
-    healthy_idx = dataset.class_to_idx.get(
-        healthy_class_name
-    )
+    healthy_idx = dataset.class_to_idx.get(healthy_class_name)
 
     if healthy_idx is None:
 
         raise ValueError(
-            f"Healthy class '{healthy_class_name}' "
-            "not found in dataset"
+            f"Healthy class '{healthy_class_name}' " "not found in dataset"
         )
 
     binary_samples = [
@@ -238,14 +231,12 @@ def create_binary_dataset(
 # OUTLIER DATASET
 # ============================================================
 
+
 def create_oe_dataset():
 
     if not OE_DATASET_DIR.exists():
 
-        print(
-            f"OE dataset not found at "
-            f"{OE_DATASET_DIR}, skipping OE"
-        )
+        print(f"OE dataset not found at " f"{OE_DATASET_DIR}, skipping OE")
 
         return None
 
@@ -262,6 +253,7 @@ def create_oe_dataset():
 # DATALOADERS + CLASS WEIGHTS
 # ============================================================
 
+
 def create_dataloaders_with_oe():
 
     (
@@ -273,25 +265,15 @@ def create_dataloaders_with_oe():
 
     train_dataset = train_loader.dataset
 
-    train_labels = [
-        label
-        for _, label in train_dataset.samples
-    ]
+    train_labels = [label for _, label in train_dataset.samples]
 
-    train_counts = Counter(
-        train_labels
-    )
+    train_counts = Counter(train_labels)
 
     print("\nClass distribution:")
 
-    for cls_idx, count in sorted(
-        train_counts.items()
-    ):
+    for cls_idx, count in sorted(train_counts.items()):
 
-        print(
-            f"  {class_names[cls_idx]}: "
-            f"{count}"
-        )
+        print(f"  {class_names[cls_idx]}: " f"{count}")
 
     # --------------------------------------------------------
     # V4-A: Standard balanced class weights
@@ -310,14 +292,9 @@ def create_dataloaders_with_oe():
             dtype=torch.float32,
         ).to(DEVICE)
 
-        print(
-            "\nV4-A: Using standard "
-            "balanced class weights:"
-        )
+        print("\nV4-A: Using standard " "balanced class weights:")
 
-        print(
-            class_weights.cpu().numpy()
-        )
+        print(class_weights.cpu().numpy())
 
     else:
 
@@ -326,13 +303,9 @@ def create_dataloaders_with_oe():
             dtype=torch.float32,
         ).to(DEVICE)
 
-        print(
-            "\nUsing configured class weights:"
-        )
+        print("\nUsing configured class weights:")
 
-        print(
-            class_weights.cpu().numpy()
-        )
+        print(class_weights.cpu().numpy())
 
     # --------------------------------------------------------
     # OE disabled
@@ -350,10 +323,7 @@ def create_dataloaders_with_oe():
                 oe_dataset,
                 batch_size=max(
                     1,
-                    int(
-                        BATCH_SIZE
-                        * OE_RATIO
-                    ),
+                    int(BATCH_SIZE * OE_RATIO),
                 ),
                 shuffle=True,
                 num_workers=NUM_WORKERS,
@@ -374,39 +344,26 @@ def create_dataloaders_with_oe():
 # BINARY DATALOADERS
 # ============================================================
 
+
 def create_binary_dataloaders():
 
-    full_dataset = ImageFolder(
-        TRAIN_DIR
-    )
+    full_dataset = ImageFolder(TRAIN_DIR)
 
     samples = full_dataset.samples
 
-    labels = [
-        label
-        for _, label in samples
-    ]
+    labels = [label for _, label in samples]
 
-    healthy_idx = (
-        full_dataset.class_to_idx.get(
-            "Unknown_Normal"
-        )
-    )
+    healthy_idx = full_dataset.class_to_idx.get("Unknown_Normal")
 
     if healthy_idx is None:
 
-        raise ValueError(
-            "Unknown_Normal class not found "
-            "in training dataset."
-        )
+        raise ValueError("Unknown_Normal class not found " "in training dataset.")
 
-    train_samples, val_samples = (
-        train_test_split(
-            samples,
-            test_size=VAL_SPLIT,
-            random_state=RANDOM_SEED,
-            stratify=labels,
-        )
+    train_samples, val_samples = train_test_split(
+        samples,
+        test_size=VAL_SPLIT,
+        random_state=RANDOM_SEED,
+        stratify=labels,
     )
 
     binary_train = BinarySkinDataset(
@@ -421,15 +378,9 @@ def create_binary_dataloaders():
         get_valid_transforms(),
     )
 
-    train_labels = [
-        label
-        for _, label
-        in binary_train.samples
-    ]
+    train_labels = [label for _, label in binary_train.samples]
 
-    train_counts = Counter(
-        train_labels
-    )
+    train_counts = Counter(train_labels)
 
     print(
         f"\nBinary Training: "
@@ -448,15 +399,9 @@ def create_binary_dataloaders():
         dtype=torch.float32,
     ).to(DEVICE)
 
-    print(
-        "Binary Class weights: "
-        f"{class_weights.cpu().numpy()}"
-    )
+    print("Binary Class weights: " f"{class_weights.cpu().numpy()}")
 
-    weights = [
-        1.0 / train_counts[label]
-        for label in train_labels
-    ]
+    weights = [1.0 / train_counts[label] for label in train_labels]
 
     sampler = WeightedRandomSampler(
         weights,
@@ -491,6 +436,7 @@ def create_binary_dataloaders():
 # AVERAGE METER
 # ============================================================
 
+
 class AverageMeter:
 
     def __init__(self):
@@ -512,14 +458,13 @@ class AverageMeter:
 
         self.count += n
 
-        self.avg = (
-            self.sum / self.count
-        )
+        self.avg = self.sum / self.count
 
 
 # ============================================================
 # TRAIN ONE EPOCH
 # ============================================================
+
 
 def train_one_epoch(
     model,
@@ -544,11 +489,7 @@ def train_one_epoch(
         leave=False,
     )
 
-    oe_iter = (
-        iter(oe_loader)
-        if oe_loader
-        else None
-    )
+    oe_iter = iter(oe_loader) if oe_loader else None
 
     for images, labels in progress:
 
@@ -562,9 +503,7 @@ def train_one_epoch(
             non_blocking=True,
         )
 
-        optimizer.zero_grad(
-            set_to_none=True
-        )
+        optimizer.zero_grad(set_to_none=True)
 
         with autocast(
             device_type=AMP_DEVICE,
@@ -582,50 +521,33 @@ def train_one_epoch(
 
                 try:
 
-                    oe_images, _ = next(
-                        oe_iter
-                    )
+                    oe_images, _ = next(oe_iter)
 
                 except StopIteration:
 
-                    oe_iter = iter(
-                        oe_loader
-                    )
+                    oe_iter = iter(oe_loader)
 
-                    oe_images, _ = next(
-                        oe_iter
-                    )
+                    oe_images, _ = next(oe_iter)
 
                 oe_images = oe_images.to(
                     DEVICE,
                     non_blocking=True,
                 )
 
-                oe_outputs = model(
-                    oe_images
-                )
+                oe_outputs = model(oe_images)
 
-                oe_l = oe_loss(
-                    oe_outputs
-                )
+                oe_l = oe_loss(oe_outputs)
 
-                loss = (
-                    loss
-                    + OE_LOSS_WEIGHT * oe_l
-                )
+                loss = loss + OE_LOSS_WEIGHT * oe_l
 
                 oe_loss_meter.update(
                     oe_l.item(),
                     oe_images.size(0),
                 )
 
-        scaler.scale(
-            loss
-        ).backward()
+        scaler.scale(loss).backward()
 
-        scaler.step(
-            optimizer
-        )
+        scaler.step(optimizer)
 
         scaler.update()
 
@@ -634,36 +556,19 @@ def train_one_epoch(
             images.size(0),
         )
 
-        preds = outputs.argmax(
-            dim=1
-        )
+        preds = outputs.argmax(dim=1)
 
-        predictions.extend(
-            preds.detach()
-            .cpu()
-            .numpy()
-        )
+        predictions.extend(preds.detach().cpu().numpy())
 
-        targets.extend(
-            labels.detach()
-            .cpu()
-            .numpy()
-        )
+        targets.extend(labels.detach().cpu().numpy())
 
-        postfix = {
-            "loss":
-                f"{loss_meter.avg:.4f}"
-        }
+        postfix = {"loss": f"{loss_meter.avg:.4f}"}
 
         if oe_loader:
 
-            postfix["oe_loss"] = (
-                f"{oe_loss_meter.avg:.4f}"
-            )
+            postfix["oe_loss"] = f"{oe_loss_meter.avg:.4f}"
 
-        progress.set_postfix(
-            postfix
-        )
+        progress.set_postfix(postfix)
 
     accuracy = accuracy_score(
         targets,
@@ -686,6 +591,7 @@ def train_one_epoch(
 # ============================================================
 # VALIDATION
 # ============================================================
+
 
 def validate(
     model,
@@ -743,31 +649,15 @@ def validate(
                 dim=1,
             )
 
-            preds = outputs.argmax(
-                dim=1
-            )
+            preds = outputs.argmax(dim=1)
 
-            predictions.extend(
-                preds.detach()
-                .cpu()
-                .numpy()
-            )
+            predictions.extend(preds.detach().cpu().numpy())
 
-            targets.extend(
-                labels.detach()
-                .cpu()
-                .numpy()
-            )
+            targets.extend(labels.detach().cpu().numpy())
 
-            all_probs.append(
-                probs.detach()
-                .cpu()
-            )
+            all_probs.append(probs.detach().cpu())
 
-            progress.set_postfix(
-                loss=
-                f"{loss_meter.avg:.4f}"
-            )
+            progress.set_postfix(loss=f"{loss_meter.avg:.4f}")
 
     accuracy = accuracy_score(
         targets,
@@ -803,6 +693,7 @@ def validate(
 # TRAINING STAGE
 # ============================================================
 
+
 def train_stage(
     model,
     train_loader,
@@ -822,24 +713,15 @@ def train_stage(
 
     patience_counter = 0
 
-    print(
-        f"\n{'=' * 60}"
-    )
+    print(f"\n{'=' * 60}")
 
-    print(
-        f"{stage_name} Training Started"
-    )
+    print(f"{stage_name} Training Started")
 
-    print(
-        f"{'=' * 60}"
-    )
+    print(f"{'=' * 60}")
 
     for epoch in range(epochs):
 
-        print(
-            f"\nEpoch "
-            f"{epoch + 1}/{epochs}"
-        )
+        print(f"\nEpoch " f"{epoch + 1}/{epochs}")
 
         (
             train_loss,
@@ -866,13 +748,9 @@ def train_stage(
             criterion,
         )
 
-        scheduler.step(
-            val_loss
-        )
+        scheduler.step(val_loss)
 
-        current_lr = (
-            optimizer.param_groups[0]["lr"]
-        )
+        current_lr = optimizer.param_groups[0]["lr"]
 
         print(
             f"Train Loss: "
@@ -888,10 +766,7 @@ def train_stage(
             f"Macro F1: {val_f1:.4f}"
         )
 
-        print(
-            f"Learning Rate: "
-            f"{current_lr:.6f}"
-        )
+        print(f"Learning Rate: " f"{current_lr:.6f}")
 
         history.append(
             {
@@ -930,12 +805,9 @@ def train_stage(
         torch.save(
             {
                 "epoch": epoch + 1,
-                "model_state_dict":
-                    model.state_dict(),
-                "optimizer_state_dict":
-                    optimizer.state_dict(),
-                "best_macro_f1":
-                    best_metric,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "best_macro_f1": best_metric,
             },
             LAST_MODEL_PATH,
         )
@@ -944,9 +816,7 @@ def train_stage(
         # Save best checkpoint
         # ----------------------------------------------------
 
-        if val_f1 > (
-            best_metric + MIN_DELTA
-        ):
+        if val_f1 > (best_metric + MIN_DELTA):
 
             best_metric = val_f1
 
@@ -955,21 +825,14 @@ def train_stage(
             torch.save(
                 {
                     "epoch": epoch + 1,
-                    "model_state_dict":
-                        model.state_dict(),
-                    "optimizer_state_dict":
-                        optimizer.state_dict(),
-                    "best_macro_f1":
-                        best_metric,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "best_macro_f1": best_metric,
                 },
                 BEST_MODEL_PATH,
             )
 
-            print(
-                f"Best model updated! "
-                f"Macro F1 = "
-                f"{best_metric:.4f}"
-            )
+            print(f"Best model updated! " f"Macro F1 = " f"{best_metric:.4f}")
 
         else:
 
@@ -1002,47 +865,34 @@ def train_stage(
 # TRANSFER BINARY BACKBONE
 # ============================================================
 
+
 def transfer_binary_backbone(
     binary_model,
     multiclass_model,
 ):
 
-    binary_state = (
-        binary_model.state_dict()
-    )
+    binary_state = binary_model.state_dict()
 
-    multiclass_state = (
-        multiclass_model.state_dict()
-    )
+    multiclass_state = multiclass_model.state_dict()
 
     transferred = 0
 
     for key, value in binary_state.items():
 
-        if key.startswith(
-            "classifier."
-        ):
+        if key.startswith("classifier."):
 
             continue
 
-        if (
-            key in multiclass_state
-            and multiclass_state[key].shape
-            == value.shape
-        ):
+        if key in multiclass_state and multiclass_state[key].shape == value.shape:
 
             multiclass_state[key] = value
 
             transferred += 1
 
-    multiclass_model.load_state_dict(
-        multiclass_state
-    )
+    multiclass_model.load_state_dict(multiclass_state)
 
     print(
-        f"\nTransferred {transferred} "
-        "backbone parameters from "
-        "Stage 1 → Stage 2."
+        f"\nTransferred {transferred} " "backbone parameters from " "Stage 1 → Stage 2."
     )
 
     return multiclass_model
@@ -1052,21 +902,17 @@ def transfer_binary_backbone(
 # MULTICLASS TRAINING
 # ============================================================
 
+
 def train_multiclass(
     binary_model=None,
     seed=RANDOM_SEED,
 ):
 
-    print(
-        f"Device: {DEVICE}"
-    )
+    print(f"Device: {DEVICE}")
 
     if torch.cuda.is_available():
 
-        print(
-            f"GPU: "
-            f"{torch.cuda.get_device_name(0)}"
-        )
+        print(f"GPU: " f"{torch.cuda.get_device_name(0)}")
 
     torch.manual_seed(seed)
 
@@ -1074,9 +920,7 @@ def train_multiclass(
 
     if torch.cuda.is_available():
 
-        torch.cuda.manual_seed_all(
-            seed
-        )
+        torch.cuda.manual_seed_all(seed)
 
     # ========================================================
     # MLflow Training Run
@@ -1089,11 +933,7 @@ def train_multiclass(
             "model_name": MODEL_NAME,
             "learning_rate": LEARNING_RATE,
             "batch_size": BATCH_SIZE,
-            "epochs": (
-                STAGE2_EPOCHS
-                if USE_TWO_STAGE
-                else EPOCHS
-            ),
+            "epochs": (STAGE2_EPOCHS if USE_TWO_STAGE else EPOCHS),
             "image_size": IMAGE_SIZE,
             "optimizer": "AdamW",
             "weight_decay": WEIGHT_DECAY,
@@ -1107,17 +947,18 @@ def train_multiclass(
             "oe_ratio": OE_RATIO,
             "oe_loss_weight": OE_LOSS_WEIGHT,
             "use_two_stage": USE_TWO_STAGE,
-            "calibrate_after_training":
-                CALIBRATE_AFTER_TRAINING,
+            "calibrate_after_training": CALIBRATE_AFTER_TRAINING,
         },
     )
 
-    set_tags({
-        "model_name": MODEL_NAME,
-        "dataset": "SkinDisease",
-        "training_version": "V4-A",
-        "experiment": "V4-A Recovery",
-    })
+    set_tags(
+        {
+            "model_name": MODEL_NAME,
+            "dataset": "SkinDisease",
+            "training_version": "V4-A",
+            "experiment": "V4-A Recovery",
+        }
+    )
 
     (
         train_loader,
@@ -1127,9 +968,7 @@ def train_multiclass(
         class_names,
     ) = create_dataloaders_with_oe()
 
-    model = build_model(
-        num_classes=NUM_CLASSES
-    ).to(DEVICE)
+    model = build_model(num_classes=NUM_CLASSES).to(DEVICE)
 
     if binary_model is not None:
 
@@ -1144,10 +983,7 @@ def train_multiclass(
             model,
         )
 
-        print(
-            "Stage 1 backbone transfer "
-            "completed."
-        )
+        print("Stage 1 backbone transfer " "completed.")
 
     # --------------------------------------------------------
     # Loss
@@ -1161,9 +997,7 @@ def train_multiclass(
             label_smoothing=LABEL_SMOOTHING,
         )
 
-        print(
-            "\nLoss: Focal Loss"
-        )
+        print("\nLoss: Focal Loss")
 
     else:
 
@@ -1172,9 +1006,7 @@ def train_multiclass(
             label_smoothing=LABEL_SMOOTHING,
         )
 
-        print(
-            "\nLoss: Weighted CrossEntropy"
-        )
+        print("\nLoss: Weighted CrossEntropy")
 
     # --------------------------------------------------------
     # Optimizer
@@ -1186,15 +1018,9 @@ def train_multiclass(
         weight_decay=WEIGHT_DECAY,
     )
 
-    print(
-        f"Learning rate: "
-        f"{LEARNING_RATE}"
-    )
+    print(f"Learning rate: " f"{LEARNING_RATE}")
 
-    print(
-        f"Weight decay: "
-        f"{WEIGHT_DECAY}"
-    )
+    print(f"Weight decay: " f"{WEIGHT_DECAY}")
 
     # --------------------------------------------------------
     # Scheduler
@@ -1211,15 +1037,9 @@ def train_multiclass(
     # AMP
     # --------------------------------------------------------
 
-    scaler = GradScaler(
-        enabled=USE_AMP
-    )
+    scaler = GradScaler(enabled=USE_AMP)
 
-    epochs = (
-        STAGE2_EPOCHS
-        if USE_TWO_STAGE
-        else EPOCHS
-    )
+    epochs = STAGE2_EPOCHS if USE_TWO_STAGE else EPOCHS
 
     # --------------------------------------------------------
     # Training
@@ -1238,10 +1058,7 @@ def train_multiclass(
         oe_loader=oe_loader,
     )
 
-    print(
-        f"\nBest validation "
-        f"Macro F1: {best_f1:.4f}"
-    )
+    print(f"\nBest validation " f"Macro F1: {best_f1:.4f}")
 
     # --------------------------------------------------------
     # Load best model
@@ -1252,9 +1069,7 @@ def train_multiclass(
         map_location=DEVICE,
     )
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     # --------------------------------------------------------
     # Temperature Calibration
@@ -1262,10 +1077,7 @@ def train_multiclass(
 
     if CALIBRATE_AFTER_TRAINING:
 
-        print(
-            "\nCalibrating with "
-            "Temperature Scaling..."
-        )
+        print("\nCalibrating with " "Temperature Scaling...")
 
         temp_scaler = calibrate_model(
             model,
@@ -1275,30 +1087,19 @@ def train_multiclass(
             CALIBRATION_MAX_ITER,
         )
 
-        cal_path = (
-            CHECKPOINT_DIR
-            / "temperature_scale.pth"
-        )
+        cal_path = CHECKPOINT_DIR / "temperature_scale.pth"
 
         torch.save(
             {
-                "temperature":
-                    temp_scaler.get_temperature(),
-                "model_state_dict":
-                    model.state_dict(),
+                "temperature": temp_scaler.get_temperature(),
+                "model_state_dict": model.state_dict(),
             },
             cal_path,
         )
 
-        print(
-            f"Calibration saved: "
-            f"{cal_path}"
-        )
+        print(f"Calibration saved: " f"{cal_path}")
 
-        print(
-            f"Temperature: "
-            f"{temp_scaler.get_temperature():.4f}"
-        )
+        print(f"Temperature: " f"{temp_scaler.get_temperature():.4f}")
 
     # --------------------------------------------------------
     # MLflow Artifacts
@@ -1315,14 +1116,12 @@ def train_multiclass(
     )
 
     log_artifact_if_exists(
-        CHECKPOINT_DIR
-        / "temperature_scale.pth",
+        CHECKPOINT_DIR / "temperature_scale.pth",
         artifact_path="model",
     )
 
     log_artifact_if_exists(
-        CHECKPOINT_DIR
-        / "training_history.csv",
+        CHECKPOINT_DIR / "training_history.csv",
         artifact_path="training",
     )
 
@@ -1342,20 +1141,16 @@ def train_multiclass(
 # BINARY TRAINING
 # ============================================================
 
+
 def train_binary(
     seed=RANDOM_SEED,
 ):
 
-    print(
-        f"Device: {DEVICE}"
-    )
+    print(f"Device: {DEVICE}")
 
     if torch.cuda.is_available():
 
-        print(
-            f"GPU: "
-            f"{torch.cuda.get_device_name(0)}"
-        )
+        print(f"GPU: " f"{torch.cuda.get_device_name(0)}")
 
     torch.manual_seed(seed)
 
@@ -1363,9 +1158,7 @@ def train_binary(
 
     if torch.cuda.is_available():
 
-        torch.cuda.manual_seed_all(
-            seed
-        )
+        torch.cuda.manual_seed_all(seed)
 
     # ========================================================
     # MLflow Binary Training Run
@@ -1390,17 +1183,18 @@ def train_binary(
             "pretrained": PRETRAINED,
             "use_oe": False,
             "use_two_stage": True,
-            "calibrate_after_training":
-                CALIBRATE_AFTER_TRAINING,
+            "calibrate_after_training": CALIBRATE_AFTER_TRAINING,
         },
     )
 
-    set_tags({
-        "model_name": MODEL_NAME,
-        "dataset": "SkinDisease",
-        "training_version": "V4-A",
-        "stage": "binary",
-    })
+    set_tags(
+        {
+            "model_name": MODEL_NAME,
+            "dataset": "SkinDisease",
+            "training_version": "V4-A",
+            "stage": "binary",
+        }
+    )
 
     (
         train_loader,
@@ -1408,9 +1202,7 @@ def train_binary(
         class_weights,
     ) = create_binary_dataloaders()
 
-    model = build_model(
-        num_classes=2
-    ).to(DEVICE)
+    model = build_model(num_classes=2).to(DEVICE)
 
     criterion = FocalLoss(
         gamma=FOCAL_GAMMA,
@@ -1431,9 +1223,7 @@ def train_binary(
         patience=2,
     )
 
-    scaler = GradScaler(
-        enabled=USE_AMP
-    )
+    scaler = GradScaler(enabled=USE_AMP)
 
     _, best_f1 = train_stage(
         model=model,
@@ -1452,21 +1242,14 @@ def train_binary(
         map_location=DEVICE,
     )
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
-    binary_path = (
-        CHECKPOINT_DIR
-        / "best_binary_model.pth"
-    )
+    binary_path = CHECKPOINT_DIR / "best_binary_model.pth"
 
     torch.save(
         {
-            "model_state_dict":
-                model.state_dict(),
-            "best_macro_f1":
-                best_f1,
+            "model_state_dict": model.state_dict(),
+            "best_macro_f1": best_f1,
         },
         binary_path,
     )
@@ -1485,10 +1268,7 @@ def train_binary(
         artifact_path="model",
     )
 
-    print(
-        f"\nBest binary model saved to: "
-        f"{binary_path}"
-    )
+    print(f"\nBest binary model saved to: " f"{binary_path}")
 
     end_run()
 
@@ -1499,37 +1279,24 @@ def train_binary(
 # TWO-STAGE TRAINING
 # ============================================================
 
+
 def train_two_stage(
     seed=RANDOM_SEED,
 ):
 
-    print(
-        "\n" + "=" * 60
-    )
+    print("\n" + "=" * 60)
 
-    print(
-        "STAGE 1: BINARY TRAINING"
-    )
+    print("STAGE 1: BINARY TRAINING")
 
-    print(
-        "=" * 60
-    )
+    print("=" * 60)
 
-    binary_model = train_binary(
-        seed=seed
-    )
+    binary_model = train_binary(seed=seed)
 
-    print(
-        "\n" + "=" * 60
-    )
+    print("\n" + "=" * 60)
 
-    print(
-        "STAGE 2: MULTICLASS TRAINING"
-    )
+    print("STAGE 2: MULTICLASS TRAINING")
 
-    print(
-        "=" * 60
-    )
+    print("=" * 60)
 
     return train_multiclass(
         binary_model=binary_model,
@@ -1541,59 +1308,37 @@ def train_two_stage(
 # ENSEMBLE
 # ============================================================
 
+
 def train_ensemble():
 
-    print(
-        f"\nTraining ensemble of "
-        f"{ENSEMBLE_SIZE} models..."
-    )
+    print(f"\nTraining ensemble of " f"{ENSEMBLE_SIZE} models...")
 
     models = []
 
-    for i, seed in enumerate(
-        ENSEMBLE_SEEDS
-    ):
+    for i, seed in enumerate(ENSEMBLE_SEEDS):
 
-        print(
-            "\n" + "=" * 60
-        )
+        print("\n" + "=" * 60)
 
-        print(
-            f"Ensemble Model "
-            f"{i + 1}/{ENSEMBLE_SIZE} "
-            f"(seed={seed})"
-        )
+        print(f"Ensemble Model " f"{i + 1}/{ENSEMBLE_SIZE} " f"(seed={seed})")
 
-        print(
-            "=" * 60
-        )
+        print("=" * 60)
 
         if USE_TWO_STAGE:
 
-            model, _ = train_two_stage(
-                seed=seed
-            )
+            model, _ = train_two_stage(seed=seed)
 
         else:
 
-            model, _ = train_multiclass(
-                seed=seed
-            )
+            model, _ = train_multiclass(seed=seed)
 
-        ensemble_path = (
-            CHECKPOINT_DIR
-            / f"best_model_ensemble_{i}.pth"
-        )
+        ensemble_path = CHECKPOINT_DIR / f"best_model_ensemble_{i}.pth"
 
         torch.save(
             model.state_dict(),
             ensemble_path,
         )
 
-        print(
-            f"Saved ensemble model "
-            f"{i} to {ensemble_path}"
-        )
+        print(f"Saved ensemble model " f"{i} to {ensemble_path}")
 
         models.append(model)
 
@@ -1606,78 +1351,39 @@ def train_ensemble():
 
 if __name__ == "__main__":
 
-    print(
-        "\n" + "=" * 70
-    )
+    print("\n" + "=" * 70)
 
-    print(
-        "HERBAL-AI SKIN DISEASE MODEL"
-    )
+    print("HERBAL-AI SKIN DISEASE MODEL")
 
-    print(
-        "V4-A WINNER RECOVERY"
-    )
+    print("V4-A WINNER RECOVERY")
 
-    print(
-        "=" * 70
-    )
+    print("=" * 70)
 
-    print(
-        "\nV4-A configuration:"
-    )
+    print("\nV4-A configuration:")
 
-    print(
-        f"  Image size       : {IMAGE_SIZE}"
-    )
+    print(f"  Image size       : {IMAGE_SIZE}")
 
-    print(
-        f"  Batch size       : {BATCH_SIZE}"
-    )
+    print(f"  Batch size       : {BATCH_SIZE}")
 
-    print(
-        f"  Epochs           : {EPOCHS}"
-    )
+    print(f"  Epochs           : {EPOCHS}")
 
-    print(
-        f"  Learning rate    : {LEARNING_RATE}"
-    )
+    print(f"  Learning rate    : {LEARNING_RATE}")
 
-    print(
-        f"  Weight decay     : {WEIGHT_DECAY}"
-    )
+    print(f"  Weight decay     : {WEIGHT_DECAY}")
 
-    print(
-        f"  Label smoothing  : "
-        f"{LABEL_SMOOTHING}"
-    )
+    print(f"  Label smoothing  : " f"{LABEL_SMOOTHING}")
 
-    print(
-        "  Class weighting  : "
-        "Standard balanced"
-    )
+    print("  Class weighting  : " "Standard balanced")
 
-    print(
-        "\nV4-A previously achieved:"
-    )
+    print("\nV4-A previously achieved:")
 
-    print(
-        "  Test Accuracy    : 0.8034"
-    )
+    print("  Test Accuracy    : 0.8034")
 
-    print(
-        "  Test Macro F1    : 0.7755"
-    )
+    print("  Test Macro F1    : 0.7755")
 
-    print(
-        "\nThis run is only to "
-        "recreate the selected "
-        "V4-A checkpoint."
-    )
+    print("\nThis run is only to " "recreate the selected " "V4-A checkpoint.")
 
-    print(
-        "No new experiment is "
-        "being introduced."
-    )
+    print("No new experiment is " "being introduced.")
 
     if USE_TWO_STAGE:
 
@@ -1687,14 +1393,8 @@ if __name__ == "__main__":
 
         train_multiclass()
 
-    print(
-        "\n" + "=" * 70
-    )
+    print("\n" + "=" * 70)
 
-    print(
-        "V4-A RECOVERY TRAINING COMPLETE"
-    )
+    print("V4-A RECOVERY TRAINING COMPLETE")
 
-    print(
-        "=" * 70
-    )
+    print("=" * 70)
