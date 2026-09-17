@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # ----------------------------------------------------------
 # Copy application code
@@ -53,7 +53,8 @@ RUN mkdir -p \
     /app/ai/results \
     /app/ai/logs \
     /app/ai/image_classifier/results \
-    /app/ai/image_classifier/logs
+    /app/ai/image_classifier/logs \
+    /tmp/herbal_ai_gradcam
 
 # ----------------------------------------------------------
 # Verify required runtime knowledge base files

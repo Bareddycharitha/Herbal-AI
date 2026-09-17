@@ -159,6 +159,7 @@ register_exception_handlers(app)
 # ==========================================================
 # Static Files (Grad-CAM Images)
 # ==========================================================
+GRADCAM_DIR.mkdir(parents=True, exist_ok=True)
 app.mount(
     "/results",
     StaticFiles(directory=str(GRADCAM_DIR)),

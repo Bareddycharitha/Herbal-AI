@@ -120,6 +120,13 @@ class HerbInference:
 
         self.num_classes = len(self.class_mapping) if self.class_mapping else 100
 
+        self.model = None
+        self.models = []
+        self.energy_ood = None
+        self.msp_ood = None
+        self.entropy_ood = None
+        self.combined_ood = None
+
         # Model load status tracking (for readiness checks)
         self.load_status: ModelLoadStatus = ModelLoadStatus(
             model_name="herb_classifier",
@@ -129,6 +136,21 @@ class HerbInference:
         # Load models — set load status if required checkpoint is missing/corrupt
         try:
             self._load_models(model_path)
+            # Calibration
+            self.use_calibration = use_calibration
+            if use_calibration and calibration_path and Path(calibration_path).exists():
+                self._load_calibration(calibration_path)
+
+            # OOD Detectors
+            self._init_ood_detectors()
+
+            # Set all models to eval
+            if self.use_ensemble:
+                for m in self.models:
+                    m.eval()
+            elif self.model is not None:
+                self.model.eval()
+
             self.load_status.loaded = True
         except Exception as e:
             self.load_status.loaded = False
@@ -149,28 +171,11 @@ class HerbInference:
             self.leaf_detector = None
             print("Leaf detector disabled")
 
-        # Calibration
-        self.use_calibration = use_calibration
-        if use_calibration and calibration_path and Path(calibration_path).exists():
-            self._load_calibration(calibration_path)
-
-        # OOD Detectors
-        self._init_ood_detectors()
-
-        # Set all models to eval
-        if self.use_ensemble:
-            for m in self.models:
-                m.eval()
-        else:
-            self.model.eval()
-
         print("Herb Inference initialized")
         print(f"  Ensemble: {self.use_ensemble} ({len(self.ensemble_paths)} models)")
         print(f"  Leaf detector: {self.use_leaf_detector}")
         print(f"  Calibration: {self.use_calibration}")
         print(f"  Classes: {self.num_classes}")
-
-        self.load_status.loaded = True
 
     def _remap_checkpoint_keys(self, key: str) -> str:
         """
@@ -256,7 +261,13 @@ class HerbInference:
 
     def _init_ood_detectors(self):
         """Initialize OOD detectors."""
-        base_model = self.models[0] if self.use_ensemble else self.model
+        base_model = (self.models[0] if self.models else None) if self.use_ensemble else self.model
+        if base_model is None:
+            self.energy_ood = None
+            self.msp_ood = None
+            self.entropy_ood = None
+            self.combined_ood = None
+            return
 
         self.energy_ood = EnergyBasedOOD(base_model, self.device)
         self.msp_ood = MSPBasedOOD(base_model, self.device)

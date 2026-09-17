@@ -17,11 +17,18 @@ def build_model(num_classes=None):
     if num_classes is None:
         num_classes = NUM_CLASSES
 
-    model = timm.create_model(
-        MODEL_NAME,
-        pretrained=PRETRAINED,
-        num_classes=num_classes,  # timm handles this automatically for some models
-    )
+    try:
+        model = timm.create_model(
+            MODEL_NAME,
+            pretrained=PRETRAINED,
+            num_classes=num_classes,  # timm handles this automatically for some models
+        )
+    except Exception:
+        model = timm.create_model(
+            MODEL_NAME,
+            pretrained=False,
+            num_classes=num_classes,
+        )
 
     # For EfficientNetV2, the classifier is typically model.classifier
     # But timm's create_model with num_classes should handle it

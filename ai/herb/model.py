@@ -91,12 +91,20 @@ class HerbClassifier(nn.Module):
         if timm is None:
             raise ImportError("timm is not installed.")
 
-        self.backbone = timm.create_model(
-            MODEL_NAME,
-            pretrained=PRETRAINED,
-            num_classes=0,  # Remove classifier, we'll add our own
-            global_pool='avg',  # Global average pooling
-        )
+        try:
+            self.backbone = timm.create_model(
+                MODEL_NAME,
+                pretrained=PRETRAINED,
+                num_classes=0,  # Remove classifier, we'll add our own
+                global_pool='avg',  # Global average pooling
+            )
+        except Exception:
+            self.backbone = timm.create_model(
+                MODEL_NAME,
+                pretrained=False,
+                num_classes=0,
+                global_pool='avg',
+            )
 
         # Get feature dimension
         self.feature_dim = self.backbone.num_features

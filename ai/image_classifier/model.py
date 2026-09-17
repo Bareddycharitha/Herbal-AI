@@ -29,11 +29,18 @@ class UniversalImageClassifier(nn.Module):
             raise ImportError("timm is not installed.")
 
         # Load pretrained EfficientNetV2
-        self.backbone = timm.create_model(
-            MODEL_NAME,
-            pretrained=PRETRAINED,
-            num_classes=NUM_CLASSES,
-        )
+        try:
+            self.backbone = timm.create_model(
+                MODEL_NAME,
+                pretrained=PRETRAINED,
+                num_classes=NUM_CLASSES,
+            )
+        except Exception:
+            self.backbone = timm.create_model(
+                MODEL_NAME,
+                pretrained=False,
+                num_classes=NUM_CLASSES,
+            )
 
     def forward(self, x):
         return self.backbone(x)
