@@ -73,5 +73,7 @@ jobs:
 
       # 8. Run test suite
       - name: Run tests
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           python -m pytest tests -v
