@@ -91,3 +91,6 @@ tqdm
 
 seaborn
 mlflow==3.16.0
+
+dvc==3.67.1
+dvc-s3==3.3.0

@@ -37,7 +37,20 @@ jobs:
           pip install -r requirements.txt
           pip install "black==25.9.0" pytest
 
-      # 4. Black formatting check
+      # 4. Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # 5. Pull DVC artifacts
+      - name: Pull DVC artifacts
+        run: |
+          dvc pull   
+
+      # 6. Black formatting check
       
       - name: Check formatting with Black
         run: |
@@ -53,12 +66,12 @@ jobs:
             ai/scripts/register_models.py \
             ai/scripts/verify_registry_models.py
 
-      # 5. Compile Python code
+      # 7. Compile Python code
       - name: Compile Python code
         run: |
           python -m compileall -q ai backend tests
 
-      # 6. Run test suite
+      # 8. Run test suite
       - name: Run tests
         run: |
           python -m pytest tests -v
