@@ -88,3 +88,5 @@ reportlab
 # --------------------------
 requests
 tqdm
+
+seaborn
