@@ -18,12 +18,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_TRACKING_DB = PROJECT_ROOT / "mlflow.db"
 
-load_dotenv()
+def get_tracking_uri():
+    """Return the configured MLflow tracking URI."""
 
-TRACKING_URI = os.getenv(
-    "MLFLOW_TRACKING_URI",
-    f"sqlite:///{DEFAULT_TRACKING_DB.resolve().as_posix()}",
-)
+    load_dotenv()
+
+    return os.getenv(
+        "MLFLOW_TRACKING_URI",
+        f"sqlite:///{DEFAULT_TRACKING_DB.resolve().as_posix()}",
+    )
 
 
 EXPERIMENTS = {
@@ -41,7 +44,7 @@ EXPERIMENTS = {
 def configure_mlflow():
     """Configure MLflow tracking URI."""
 
-    mlflow.set_tracking_uri(TRACKING_URI)
+    mlflow.set_tracking_uri(get_tracking_uri())
 
 
 # ==============================================================================
