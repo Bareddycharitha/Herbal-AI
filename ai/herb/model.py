@@ -81,7 +81,7 @@ class HerbClassifier(nn.Module):
     Herb Identification Model using EfficientNetV2-S with optional ArcFace head.
     """
 
-    def __init__(self, num_classes: int, use_arcface: bool = USE_ARCFACE):
+    def __init__(self, num_classes: int, use_arcface: bool = USE_ARCFACE, pretrained: bool = PRETRAINED):
         super().__init__()
 
         # --------------------------------------------------
@@ -94,7 +94,7 @@ class HerbClassifier(nn.Module):
         try:
             self.backbone = timm.create_model(
                 MODEL_NAME,
-                pretrained=PRETRAINED,
+                pretrained=pretrained,
                 num_classes=0,  # Remove classifier, we'll add our own
                 global_pool='avg',  # Global average pooling
             )
@@ -157,16 +157,25 @@ class HerbClassifier(nn.Module):
         return self.backbone(x)
 
 
-def build_model(num_classes: int, use_arcface: bool = USE_ARCFACE):
+def build_model(
+    num_classes: int,
+    use_arcface: bool = USE_ARCFACE,
+    pretrained: bool = PRETRAINED,
+):
     """
     Build Herb Identification Model
 
     Args:
         num_classes: Number of herb classes
         use_arcface: Whether to use ArcFace head
+        pretrained: Whether to load ImageNet pretrained weights
 
     Returns:
         HerbClassifier model
     """
-    model = HerbClassifier(num_classes, use_arcface)
+    model = HerbClassifier(
+        num_classes=num_classes,
+        use_arcface=use_arcface,
+        pretrained=pretrained,
+    )
     return model

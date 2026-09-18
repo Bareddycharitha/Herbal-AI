@@ -30,7 +30,7 @@ class LeafDetector(nn.Module):
         # MobileNetV3-Small - lightweight and fast
         self.backbone = timm.create_model(
             LEAF_DETECTOR_MODEL,
-            pretrained=True,
+            pretrained=False,
             num_classes=0,
             global_pool='avg',
         )

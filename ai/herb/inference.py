@@ -214,7 +214,10 @@ class HerbInference:
         if self.use_ensemble:
             self.models = []
             for i, path in enumerate(self.ensemble_paths):
-                model = build_model(self.num_classes).to(self.device)
+                model = build_model(
+                    self.num_classes,
+                    pretrained=False,
+                ).to(self.device)
                 safe_load_checkpoint(
                     checkpoint_path=path,
                     model=model,
@@ -228,7 +231,10 @@ class HerbInference:
             if model_path is None:
                 model_path = BEST_MODEL_PATH
 
-            self.model = build_model(self.num_classes).to(self.device)
+            self.model = build_model(
+                self.num_classes,
+                pretrained=False,
+            ).to(self.device)
 
             if Path(model_path).exists():
                 safe_load_checkpoint(
