@@ -1,0 +1,90 @@
+# ==========================================================
+# Herbal-AI Production Requirements
+# ==========================================================
+
+# --------------------------
+# Core Deep Learning
+# --------------------------
+torch==2.14.0+cpu
+torchvision==0.29.0+cpu
+timm
+
+# --------------------------
+# API & Server
+# --------------------------
+fastapi
+uvicorn[standard]
+python-multipart
+
+# --------------------------
+# Configuration & Validation
+# --------------------------
+pydantic
+pydantic-settings
+python-dotenv
+PyYAML
+email-validator
+
+# --------------------------
+# Image Processing
+# --------------------------
+Pillow
+opencv-python-headless
+albumentations
+
+# --------------------------
+# Data & Machine Learning
+# --------------------------
+numpy
+pandas
+scikit-learn
+scipy
+joblib
+
+# --------------------------
+# Model Explainability
+# --------------------------
+grad-cam
+
+# --------------------------
+# HTTP & Async
+# --------------------------
+httpx
+anyio
+
+# --------------------------
+# Logging & Monitoring
+# --------------------------
+structlog
+slowapi
+prometheus-client
+
+# --------------------------
+# Authentication & Security
+# --------------------------
+python-jose
+cryptography
+passlib
+bcrypt
+
+# --------------------------
+# Database
+# --------------------------
+supabase
+SQLAlchemy
+
+# --------------------------
+# File Validation
+# --------------------------
+python-magic
+
+# --------------------------
+# PDF Reports
+# --------------------------
+reportlab
+
+# --------------------------
+# Utilities
+# --------------------------
+requests
+tqdm

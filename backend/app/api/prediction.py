@@ -314,25 +314,80 @@ async def predict(
         # ==================================================
         # Medicinal Image in Disease Module — Reject
         # ==================================================
+                 # ==================================================
+        # Medicinal Pipeline (Herb Module)
+        # ==================================================
 
         elif image_type == "Medicinal":
             try:
-                temp_path.unlink(missing_ok=True)
-            except Exception:
-                pass
-            get_job_store().mark_no_gradcam(prediction_id)
-            return {
-                "success": False,
-                "prediction_id": prediction_id,
-                "image_type": image_type,
-                "classifier_confidence": confidence,
-                "classifier_ood_scores": image_result.get("ood_scores", {}),
-                "classifier_is_ood": image_result.get("is_ood", False),
-                "message": (
-                    "Please upload a medicinal herb image in the herb identification module."
-                ),
-            }
+                # Reuse the existing herb recommendation pipeline.
+                # It handles herb inference, validation, OOD checks,
+                # knowledge-base lookup, and recommendations.
+                result = await run_in_threadpool(
+                    get_herb_recommendation,
+                    str(temp_path),
+                )
 
+                result["prediction_id"] = prediction_id
+                result["image_type"] = image_type
+                result["classifier_confidence"] = confidence
+                result["classifier_ood_scores"] = image_result.get(
+                    "ood_scores", {}
+                )
+                result["classifier_is_ood"] = image_result.get(
+                    "is_ood", False
+                )
+
+                # Herb predictions do not use the skin Grad-CAM pipeline.
+                get_job_store().mark_no_gradcam(prediction_id)
+
+                # Record prediction in history if user is authenticated.
+                if current_user:
+                    background_tasks.add_task(
+                        _save_history_background,
+                        current_user.id,
+                        result,
+                        getattr(current_user, "email", None),
+                        getattr(current_user, "full_name", None),
+                    )
+
+                return result
+
+            except FileNotFoundError as e:
+                logger = get_logger(__name__)
+                logger.error(
+                    "Herb checkpoint missing",
+                    err=str(e),
+                    missing_path=(
+                        str(e.filename)
+                        if getattr(e, "filename", None)
+                        else None
+                    ),
+                )
+                raise ModelLoadError(
+                    model_path=str(
+                        getattr(e, "filename", "ai/herb/checkpoints/")
+                    ),
+                    reason=str(e),
+                )
+
+            except Exception as e:
+                logger = get_logger(__name__)
+                logger.error(
+                    "Herb prediction failed",
+                    err=str(e),
+                    error_type=type(e).__name__,
+                )
+                raise ModelError(
+                    message=f"Herb identification failed: {e}",
+                )
+
+            finally:
+                try:
+                    temp_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+        
         # ==================================================
         # Other Objects
         # ==================================================

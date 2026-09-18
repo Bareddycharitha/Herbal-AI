@@ -7,7 +7,8 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from io import BytesIO
 from PIL import Image
-
+from tests.conftest import test_client
+from ai.recommendation.herb_recommendation_engine import get_herb_recommendation
 
 class TestHealthEndpoints:
     """Tests for health and readiness endpoints."""
@@ -65,8 +66,11 @@ class TestPredictionEndpoint:
         assert "prediction" in data
         assert "disease_information" in data
 
-    def test_predict_rejects_medicinal_in_disease_module(self, test_client, valid_image_file, mock_classifier):
-        """Test that disease module rejects herb images with clear message."""
+    def test_predict_routes_medicinal_to_herb_pipeline(
+    self, test_client, valid_image_file, mock_classifier
+):
+        """Test that medicinal images are routed to the herb pipeline."""
+
         mock_classifier.predict.return_value = {
             "class": "Medicinal",
             "confidence": 90.0,
@@ -75,9 +79,20 @@ class TestPredictionEndpoint:
             "top_predictions": [],
         }
 
-        with patch("backend.app.api.prediction.run_in_threadpool", new_callable=AsyncMock) as mock_run:
-            mock_run.return_value = mock_classifier.predict.return_value
+        herb_result = {
+            "success": True,
+            "prediction": "Aloevera",
+            "herb": "Aloevera",
+            "confidence": 99.0,
+        }
 
+        with patch(
+            "backend.app.api.prediction.get_classifier",
+            return_value=mock_classifier,
+        ), patch(
+            "backend.app.api.prediction.get_herb_recommendation",
+            return_value=herb_result,
+        ):
             response = test_client.post(
                 "/api/v1/predict/",
                 files={"image": valid_image_file},
@@ -85,10 +100,12 @@ class TestPredictionEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is False
+        assert data["success"] is True
         assert data["image_type"] == "Medicinal"
-        assert "herb identification module" in data["message"]
-
+        assert data["prediction"] == "Aloevera"
+        assert data["herb"] == "Aloevera"
+        assert data["classifier_confidence"] == 90.0
+        
     def test_predict_rejects_other_image(self, test_client, valid_image_file, mock_classifier):
         """Test that disease module rejects unsupported images."""
         mock_classifier.predict.return_value = {
