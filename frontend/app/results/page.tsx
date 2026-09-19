@@ -43,6 +43,16 @@ type Message = {
   content: string;
 };
 
+const generateMessageId = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
 const suggestions = [
   "Explain this disease",
   "What precautions should I take?",
@@ -210,7 +220,7 @@ export default function ResultsPage() {
     if (!data || !question.trim()) return;
 
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: generateMessageId(),
       role: "user",
       content: question.trim(),
     };
@@ -232,7 +242,7 @@ export default function ResultsPage() {
       setChatMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: generateMessageId(),
           role: "assistant",
           content: response.answer || "I'm not able to answer that right now.",
         },
