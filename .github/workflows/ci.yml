@@ -142,9 +142,13 @@ jobs:
             echo "Waiting for backend health..."
             sleep 10
 
-            echo "Checking backend health..."
+                        echo "Checking backend health..."
             curl --fail --silent --show-error \
               http://localhost:8000/health
+
+            echo ""
+            echo "Cleaning unused Docker images..."
+            docker image prune -f
 
             echo ""
             echo "Deployment successful!"
