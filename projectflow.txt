@@ -1,578 +1,1470 @@
-Herbal-AI Complete MLOps & Deployment Roadmap
-PHASE 0 — Freeze the Application
+============================================================
+              HERBAL-AI — PROJECT DEVELOPMENT FLOW
+============================================================
 
-Goal: Stop changing models unnecessarily and establish a stable baseline.
+This document explains how Herbal-AI was developed from the
+initial idea to the final production deployment.
 
-Tasks
-Finalize Universal Image Classifier
-Finalize Herb Identification Model
-Finalize Skin Disease Model
-Finalize OOD detection
-Finalize calibration
-Finalize knowledge bases
-Complete end-to-end API testing
-Freeze validated checkpoints
-Output
-Herbal-AI v1.0 Baseline
+The project was developed in multiple stages, starting from
+individual machine learning models and gradually building the
+backend, frontend, AI features, MLOps pipeline, Docker
+containers, CI/CD workflow and AWS deployment.
 
-This is important because DVC and MLflow should track a stable system.
 
-PHASE 1 — GitHub & Project Cleanup
-Goal
+============================================================
+PHASE 1 — PROJECT IDEA AND PLANNING
+============================================================
 
-Make the repository professional and deployment-ready.
+The initial idea was to build an AI-powered platform that
+could combine skin disease analysis and medicinal plant
+identification in a single application.
 
-Tasks
-Herbal-AI/
-│
-├── ai/
-│   ├── image_classifier/
-│   ├── herb/
-│   ├── skin_disease/
-│   ├── datasets/
-│   └── utils/
-│
-├── backend/
-│
-├── frontend/
-│
-├── tests/
-│
-├── docker/
-│
-├── k8s/
-│
-├── monitoring/
-│
-├── scripts/
-│
-├── .github/
-│   └── workflows/
-│
-├── dvc.yaml
-├── params.yaml
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
-We will ensure
-Proper .gitignore
-.env.example
-No secrets in GitHub
-No unnecessary datasets in Git
-No huge checkpoints directly in Git
-Proper README
-Architecture diagram
-Installation instructions
-PHASE 2 — DVC
-Goal
+The main goals were:
 
-Version and reproduce your ML assets.
+1. Skin disease image classification
+2. Medicinal plant identification
+3. AI-assisted medical information
+4. Herbal recommendations
+5. Explainable AI
+6. User authentication
+7. Prediction history
+8. AI chatbot
+9. PDF report generation
+10. MLOps and model management
+11. Cloud deployment
 
-Your project has something more complex than your capstone because you have multiple models and datasets.
+Instead of building only a machine learning model, the goal
+was to create a complete end-to-end AI application.
 
-DVC will track
-Datasets
-    ↓
-Skin Disease Dataset
-Medicinal Leaf Dataset
-Medicinal Plant Dataset
-Other Objects Dataset
+The project was therefore divided into multiple components:
 
-Models
-    ↓
-Universal Classifier
-Herb Classifier
-Skin Disease Classifier
+- Dataset preparation
+- Model development
+- Model evaluation
+- Inference pipeline
+- Knowledge base
+- Recommendation system
+- Explainability
+- Backend API
+- Frontend
+- Authentication
+- Database
+- LLM integration
+- MLOps
+- Docker
+- CI/CD
+- AWS deployment
 
-Artifacts
-    ↓
-Checkpoints
-Evaluation Results
-Calibration Files
-Metrics
-Example structure
-ai/
-├── datasets/
-│   ├── SkinDisease/
-│   ├── Medicinal_Leaf_dataset/
-│   ├── Medicinal_plant_dataset/
-│   └── OtherObjects/
-│
-├── image_classifier/
-│   ├── checkpoints/
-│   └── results/
-│
-├── herb/
-│   ├── checkpoints/
-│   └── results/
-│
-└── skin_disease/
-    ├── checkpoints/
-    └── results/
-DVC pipeline
-Data
- ↓
+
+============================================================
+PHASE 2 — DATASET COLLECTION AND PREPARATION
+============================================================
+
+The next step was collecting and organizing the datasets
+required for the AI models.
+
+The project required datasets for three major purposes:
+
+1. Skin disease classification
+2. Medicinal plant classification
+3. Universal image classification
+
+The datasets were organized into separate directories so that
+they could be used independently during training.
+
+Skin disease data was organized into disease-specific classes.
+
+The medicinal plant dataset was organized into plant classes.
+
+An additional Other/negative dataset was used for the universal
+image classification problem.
+
+The dataset structure was designed so that the training,
+validation and test sets could be handled separately.
+
+
+============================================================
+PHASE 3 — SKIN DISEASE MODEL DEVELOPMENT
+============================================================
+
+After preparing the datasets, the first major AI component
+was the skin disease classifier.
+
+The skin disease model was developed using:
+
+- PyTorch
+- timm
+- EfficientNetV2-S
+
+The model was configured to classify 22 skin disease/condition
+categories.
+
+The development process included:
+
+1. Dataset loading
+2. Image preprocessing
+3. Image transformations
+4. Train/validation/test split
+5. Model creation
+6. Transfer learning
+7. Training
+8. Validation
+9. Checkpoint saving
+10. Evaluation
+11. Classification report
+12. Confusion matrix
+13. Inference testing
+
+
+The trained model checkpoint was saved and later integrated
+into the backend inference pipeline.
+
+
+============================================================
+PHASE 4 — MEDICINAL HERB MODEL DEVELOPMENT
+============================================================
+
+After the skin model, a separate model was developed for
+medicinal plant identification.
+
+The herb classifier also uses:
+
+EfficientNetV2-S
+
+Framework:
+
+PyTorch
+
+The production model contains:
+
+40 medicinal plant classes.
+
+
+The development process included:
+
+1. Dataset organization
+2. Dataset loader development
+3. Image transformations
+4. Model creation
+5. Transfer learning
+6. Training
+7. Validation
+8. Checkpoint management
+9. Evaluation
+10. Inference testing
+11. Knowledge-base integration
+
+
+Final herb model test evaluation:
+
+Training images: 4,729
+
+Validation images: 573
+
+Test images: 643
+
+Classes: 40
+
+Accuracy: 99.84%
+
+Precision: 99.85%
+
+Recall: 99.84%
+
+F1 Score: 99.84%
+
+
+The trained model was then connected to the herb inference
+pipeline.
+
+
+============================================================
+PHASE 5 — UNIVERSAL IMAGE CLASSIFIER
+============================================================
+
+After developing the specialized models, a major problem had
+to be addressed.
+
+If a user uploads an inappropriate image, the system should
+not blindly send that image to the skin or herb model.
+
+For example:
+
+A plant image should not be directly processed by the skin
+disease classifier.
+
+A skin image should not be directly processed by the herb
+classifier.
+
+To solve this, a Universal Image Classifier was developed.
+
+Architecture:
+
+EfficientNetV2-S
+
+
+Classes:
+
+0 -> Skin
+1 -> Medicinal
+2 -> Other
+
+
+The universal classifier became the first AI decision layer.
+
+The final routing became:
+
+                Uploaded Image
+                      |
+                      v
+              Universal Classifier
+                      |
+          +-----------+-----------+
+          |           |           |
+          v           v           v
+        Skin      Medicinal     Other
+          |           |
+          v           v
+     Skin Model    Herb Model
+
+
+This created a multi-model AI pipeline instead of using one
+model for every type of image.
+
+
+============================================================
+PHASE 6 — INFERENCE PIPELINE
+============================================================
+
+After the individual models were working, the next step was
+building the inference system.
+
+The inference pipeline was responsible for:
+
+- Loading trained checkpoints
+- Preprocessing uploaded images
+- Running model inference
+- Converting model outputs to probabilities
+- Mapping class indexes to class names
+- Returning confidence values
+- Returning top predictions
+- Handling model errors
+
+
+Separate inference modules were created for:
+
+- Universal classifier
+- Skin classifier
+- Herb classifier
+
+
+The inference system was then connected to the backend.
+
+
+============================================================
+PHASE 7 — OUT-OF-DISTRIBUTION DETECTION
+============================================================
+
+During testing, it became clear that classification confidence
+alone is not enough.
+
+A neural network can sometimes produce a high confidence
+prediction even for an image that is not really part of its
+expected data distribution.
+
+Therefore, an OOD detection layer was added.
+
+The system calculates:
+
+1. Energy score
+2. Maximum Softmax Probability
+3. Prediction entropy
+4. Combined OOD score
+
+
+These signals are used to identify potentially inappropriate
+inputs.
+
+The goal was to make the application more robust instead of
+simply trusting the highest probability class.
+
+
+============================================================
+PHASE 8 — KNOWLEDGE BASE
+============================================================
+
+Once model predictions were working, the next problem was:
+
+A prediction alone is not very useful to the user.
+
+For example:
+
+"Eczema — 80%"
+
+does not provide enough information.
+
+Therefore, structured knowledge bases were created.
+
+The disease knowledge base contains information such as:
+
+- Description
+- Symptoms
+- Causes
+- Prevention
+- Risk factors
+- When to consult a doctor
+- Medical disclaimer
+
+
+The herbal knowledge base contains information such as:
+
+- Common name
+- Botanical name
+- Benefits
+- Traditional uses
+- Preparation methods
+- Side effects
+- Contraindications
+- Evidence level
+
+
+Disease-to-herb mappings were also created.
+
+The architecture became:
+
+Model Prediction
+       |
+       v
+Knowledge Base
+       |
+       +---- Disease Information
+       |
+       +---- Herbal Information
+       |
+       +---- Recommendations
+
+
+This kept the machine learning model separate from the
+supporting domain knowledge.
+
+
+============================================================
+PHASE 9 — HERBAL RECOMMENDATION ENGINE
+============================================================
+
+The next stage was connecting predictions with relevant
+herbal information.
+
+The recommendation engine takes the model prediction and
+uses the knowledge base to find related herbs.
+
+The system can then provide:
+
+- Recommended herb
+- Botanical information
+- Benefits
+- Traditional uses
+- Preparation information
+- Precautions
+- Evidence information
+
+
+An important part of this stage was ensuring that herbal
+recommendations were not simply invented by the language model.
+
+The structured knowledge base provides the underlying
+information.
+
+
+============================================================
+PHASE 10 — EXPLAINABLE AI WITH GRAD-CAM
+============================================================
+
+After the prediction pipeline was working, explainability
+was added.
+
+The problem was:
+
+A user can see a prediction, but cannot see what part of the
+image influenced the model.
+
+To address this, Grad-CAM was implemented.
+
+Grad-CAM generates a heatmap showing important regions of
+the input image.
+
+The workflow became:
+
+Image
+  |
+  v
+Model Prediction
+  |
+  v
+Grad-CAM
+  |
+  v
+Attention / Heatmap
+  |
+  v
+User
+
+
+This makes the AI prediction easier to inspect and understand.
+
+
+============================================================
+PHASE 11 — BACKEND DEVELOPMENT
+============================================================
+
+After the AI components were working independently, the
+FastAPI backend was developed.
+
+Technology:
+
+- Python
+- FastAPI
+- Pydantic
+- Uvicorn
+
+
+The backend became the central layer connecting the frontend
+with the AI models.
+
+Major backend responsibilities:
+
+1. Image upload
+2. Image validation
+3. Universal classification
+4. Skin model inference
+5. Herb model inference
+6. OOD detection
+7. Grad-CAM
+8. Knowledge base retrieval
+9. Herbal recommendations
+10. AI summary
+11. AI chatbot
+12. Prediction history
+13. PDF generation
+14. Authentication
+15. Health checks
+16. Readiness checks
+
+
+Important APIs were created for these operations.
+
+
+============================================================
+PHASE 12 — IMAGE VALIDATION
+============================================================
+
+Before allowing an image to reach the AI models, an image
+validation layer was implemented.
+
+The validation process checks things such as:
+
+- Image dimensions
+- Image quality
+- Brightness
+- Blur
+- Skin ratio
+- Edge ratio
+
+
+This creates a validation layer before model inference.
+
+The final flow became:
+
+Upload
+  |
+  v
 Validation
- ↓
-Preprocessing
- ↓
+  |
+  v
+Universal Classifier
+  |
+  v
+Specialized Model
+
+
+============================================================
+PHASE 13 — FRONTEND DEVELOPMENT
+============================================================
+
+After the backend APIs were functional, the frontend was
+developed.
+
+Technology:
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Framer Motion
+- Axios
+
+
+The frontend provides the user interface for:
+
+- Authentication
+- Image upload
+- Prediction
+- Results
+- Disease information
+- Herbal recommendations
+- Grad-CAM
+- AI summary
+- AI chatbot
+- PDF reports
+- Prediction history
+
+
+The frontend communicates with the FastAPI backend through
+REST APIs.
+
+
+============================================================
+PHASE 14 — AUTHENTICATION
+============================================================
+
+Authentication was then integrated into the application.
+
+Clerk was selected for user authentication.
+
+The authentication flow became:
+
+User
+ |
+ v
+Clerk
+ |
+ v
+Authenticated Frontend
+ |
+ v
+Authenticated API Request
+ |
+ v
+FastAPI
+ |
+ v
+Protected Operation
+
+
+Authentication was integrated with user-specific features
+such as prediction history and AI summary persistence.
+
+
+============================================================
+PHASE 15 — DATABASE AND HISTORY
+============================================================
+
+After authentication, user history was implemented.
+
+Supabase was used for application data.
+
+The system stores information related to:
+
+- User profiles
+- Predictions
+- Prediction IDs
+- Confidence
+- Disease information
+- Recommended herbs
+- AI summaries
+- History records
+
+
+This allows authenticated users to access previous analyses.
+
+
+============================================================
+PHASE 16 — LLM INTEGRATION
+============================================================
+
+After the traditional ML pipeline was stable, Generative AI
+features were added.
+
+The initial goal was to allow the system to generate
+user-friendly explanations of predictions.
+
+The current architecture uses:
+
+OpenRouter
+
+
+The prediction context is sent to the LLM layer.
+
+The context can include:
+
+- Predicted condition
+- Confidence
+- Disease information
+- Herbal information
+
+
+The LLM generates an AI-assisted summary.
+
+A fallback mechanism was also implemented.
+
+If the external LLM service fails or times out, the backend
+returns a deterministic fallback response rather than
+breaking the application.
+
+
+============================================================
+PHASE 17 — AI CHATBOT
+============================================================
+
+After AI summaries were implemented, conversational interaction
+was added.
+
+The chatbot receives the current prediction context.
+
+Users can ask questions such as:
+
+- Explain this disease
+- What precautions should I take?
+- Are the recommended herbs safe?
+- How long does recovery usually take?
+- Can this condition spread?
+
+
+The chatbot uses the LLM through OpenRouter.
+
+The chatbot is contextual rather than completely generic
+because the current prediction information is included in
+the request.
+
+
+============================================================
+PHASE 18 — PDF REPORT GENERATION
+============================================================
+
+The next feature was PDF report generation.
+
+The goal was to allow users to download their AI analysis.
+
+The report can contain:
+
+- Uploaded image
+- Prediction
+- Confidence
+- Disease information
+- Herbal recommendations
+- AI summary
+- Explainability information
+
+
+This turned the prediction into a complete report rather
+than only displaying information on the website.
+
+
+============================================================
+PHASE 19 — LOCAL SYSTEM INTEGRATION
+============================================================
+
+Once the frontend, backend and AI components were available,
+the complete application was tested locally.
+
+The local architecture became:
+
+Next.js
+   |
+   v
+FastAPI
+   |
+   +---- Universal Model
+   |
+   +---- Skin Model
+   |
+   +---- Herb Model
+   |
+   +---- Knowledge Base
+   |
+   +---- OpenRouter
+   |
+   +---- Supabase
+   |
+   +---- Clerk
+
+
+The complete upload-to-result workflow was then tested.
+
+
+============================================================
+PHASE 20 — MLOPS INTRODUCTION
+============================================================
+
+After the AI application was functional, MLOps was added.
+
+The purpose was to manage:
+
+- Datasets
+- Experiments
+- Models
+- Evaluation
+- Reproducibility
+- Deployment
+
+
+The MLOps architecture became:
+
+Dataset
+   |
+   v
+DVC
+   |
+   v
 Training
- ↓
+   |
+   v
 Evaluation
- ↓
-Calibration
- ↓
+   |
+   v
+MLflow
+   |
+   v
 Model Registry
+   |
+   v
+Model Validation
+   |
+   v
+Deployment
 
-We'll create reproducible pipelines using:
 
-dvc.yaml
-params.yaml
+============================================================
+PHASE 21 — DVC DATA VERSIONING
+============================================================
 
-Potential pipeline:
+DVC was introduced to manage large datasets.
 
-prepare
-   ↓
-train_universal
-   ↓
-evaluate_universal
-   ↓
-calibrate_universal
+Instead of committing large datasets directly to Git:
 
-And similarly for the other models.
+Git
+ |
+ +---- Code
 
-PHASE 3 — MLflow
-Goal
+DVC
+ |
+ +---- Dataset versions
+          |
+          v
+         S3
 
-Track every experiment professionally.
 
-For each training run, MLflow should record:
+This made the dataset management process more reproducible.
 
-Parameters
-model_name
-learning_rate
-batch_size
-epochs
-image_size
-optimizer
-weight_decay
-seed
-label_smoothing
-focal_loss
-Metrics
-train_loss
-validation_loss
-train_accuracy
-validation_accuracy
-f1_score
-precision
-recall
-Herbal-AI-specific metrics
 
-For the Universal Classifier:
+============================================================
+PHASE 22 — MLFLOW EXPERIMENT TRACKING
+============================================================
 
-Skin Accuracy
-Medicinal Accuracy
-Other Accuracy
+MLflow was integrated into the training and evaluation
+pipelines.
 
-Skin → Other errors
-Medicinal → Other errors
-Other → Skin errors
+The training process logs information such as:
 
-OOD Detection Rate
-High Confidence Error Rate
+- Model parameters
+- Learning rate
+- Batch size
+- Epochs
+- Training metrics
+- Validation metrics
+- Test metrics
+- Artifacts
 
-This is especially valuable for interviews because you can explain:
 
-"I didn't evaluate the model only using accuracy. Since the classifier acts as a routing layer, I designed safety-oriented metrics to measure dangerous misrouting errors."
+Evaluation artifacts such as classification reports and
+confusion matrices can also be tracked.
 
-That is a very strong resume/project explanation.
 
-MLflow structure
-Experiment
-│
-├── Universal Classifier
-│   ├── Run 1
-│   ├── Run 2
-│   └── Best Model
-│
-├── Herb Classifier
-│   ├── Run 1
-│   └── Best Model
-│
-└── Skin Disease Classifier
-    ├── Run 1
-    └── Best Model
+============================================================
+PHASE 23 — MLFLOW MODEL REGISTRY
+============================================================
 
-We can use DagsHub + MLflow, like your capstone, or another MLflow backend later depending on the final architecture.
+After MLflow tracking was implemented, the trained models
+were registered.
 
-PHASE 4 — Model Registry
+Registered model families:
 
-This is an improvement over a basic project.
+- UniversalClassifier
+- HerbClassifier
+- SkinDiseaseClassifier
 
-Instead of:
 
-best_model.pth
+The models were packaged and registered so that they could
+be retrieved independently from the training process.
 
-only being a file, we will logically track:
+The workflow became:
 
-Model
-Version
-Metrics
-Dataset Version
-Git Commit
-Training Parameters
-Stage
+Training
+   |
+   v
+Model Artifact
+   |
+   v
+MLflow Registry
+   |
+   v
+Model Retrieval
+   |
+   v
+Model Validation
+   |
+   v
+Deployment
 
-Example:
 
-UniversalClassifier
+============================================================
+PHASE 24 — MODEL VALIDATION
+============================================================
 
-Version 1
-Accuracy: 99.32%
-Status: Production Candidate
-Git Commit: abc123
-Dataset Version: v1
+Before deployment, the registered models were retrieved and
+verified.
 
-This makes your project much more professional.
+Expected output shapes:
 
-PHASE 5 — Testing
+Universal Classifier:
+(1, 3)
 
-Before Docker and AWS, we create a proper automated testing system.
+Herb Classifier:
+(1, 40)
 
-Unit tests
-Dataset tests
-Model loading tests
-Inference tests
-OOD tests
-Calibration tests
-Knowledge base tests
-API tests
-/predict
-/herb
-/health
-/readiness
-Model tests
-Skin image → Skin pipeline
+Skin Classifier:
+(1, 22)
 
-Medicinal plant → Medicinal pipeline
 
-Bottle/object → Other
+The models were loaded independently and tested for successful
+deserialization and inference.
 
-OOD image → rejection/safe handling
-Regression tests
+This provided an additional verification step before
+deployment.
 
-We will keep a small fixed dataset:
 
-tests/
-└── fixtures/
-    ├── skin/
-    ├── medicinal/
-    └── other/
+============================================================
+PHASE 25 — DOCKERIZATION
+============================================================
 
-Whenever you modify the model:
+After the application was stable locally, Docker was
+introduced.
 
-pytest
+The purpose was to make the application reproducible and
+portable.
 
-The system verifies that the pipeline still works.
-
-PHASE 6 — Docker
-
-We'll containerize the application.
-
-Likely architecture:
-
-Frontend Container
-        │
-        ▼
-FastAPI Backend Container
-        │
-        ├──── Universal Classifier
-        │
-        ├──── Skin Disease Model
-        │
-        ├──── Herb Model
-        │
-        └──── Ollama / LLM
-
-We need to carefully decide how to deploy Ollama.
-
-For local development:
+The production architecture became:
 
 Docker Compose
+      |
+      +-------------------+
+      |                   |
+      v                   v
+ Next.js              FastAPI
+ Frontend              Backend
+                           |
+                 +---------+---------+
+                 |         |         |
+                 v         v         v
+             Universal   Skin      Herb
+               Model     Model     Model
 
-Possible services:
 
-frontend
-backend
-ollama
+The production backend uses a CPU-optimized Python image.
 
-Then:
+The goal was to avoid requiring a GPU for the production
+deployment.
 
-docker compose up
-PHASE 7 — CI/CD with GitHub Actions
 
-This will automatically run whenever you push code.
+============================================================
+PHASE 26 — PRODUCTION DOCKER IMAGE
+============================================================
 
-Developer Push
-      ↓
+A separate production Docker configuration was created.
+
+The production image:
+
+- Uses Python 3.11
+- Installs CPU-only PyTorch
+- Excludes unnecessary training dependencies
+- Includes the backend
+- Includes the AI inference code
+- Includes required model checkpoints
+- Includes required knowledge bases
+
+
+This reduced the production image size and kept the runtime
+environment focused on inference.
+
+
+============================================================
+PHASE 27 — GITHUB ACTIONS / CI-CD
+============================================================
+
+After Dockerization, CI/CD was introduced using GitHub Actions.
+
+The objective was to automate the software delivery process.
+
+General workflow:
+
+Developer
+   |
+   v
+Git Push
+   |
+   v
 GitHub
-      ↓
+   |
+   v
 GitHub Actions
-      ↓
-Run Tests
-      ↓
-Model Validation
-      ↓
-Build Docker Image
-      ↓
-Push Image to AWS ECR
-      ↓
-Deploy
-Pipeline stages
-1. Checkout Code
+   |
+   +---- Tests
+   |
+   +---- Validation
+   |
+   +---- Docker Build
+   |
+   v
+Amazon ECR
+   |
+   v
+AWS Deployment
 
-2. Install Dependencies
 
-3. Run Unit Tests
+The exact stages depend on the workflow currently configured
+in the repository.
 
-4. Run API Tests
 
-5. Run Model Tests
+============================================================
+PHASE 28 — AWS ECR
+============================================================
 
-6. Build Docker Image
+Amazon Elastic Container Registry was introduced to store
+the production Docker images.
 
-7. Security/Configuration Checks
+The workflow became:
 
-8. Push to AWS ECR
-
-9. Deploy to Kubernetes
-PHASE 8 — AWS
-
-Your previous capstone used AWS, and we'll build on that experience.
-
-AWS S3
-
-Used for:
-
-DVC Remote Storage
-
-Datasets
-Model Checkpoints
-Model Artifacts
-Evaluation Artifacts
-
-Architecture:
-
-Local DVC
-     ↓
-AWS S3
-     ↓
-Versioned ML Assets
-AWS ECR
-
-Stores Docker images.
-
+Source Code
+    |
+    v
+GitHub
+    |
+    v
 GitHub Actions
-       ↓
-Docker Build
-       ↓
-AWS ECR
-       ↓
-Kubernetes Deployment
-PHASE 9 — Kubernetes / EKS
+    |
+    v
+Docker Image
+    |
+    v
+Amazon ECR
 
-This will be one of the strongest parts of your resume.
 
-Architecture:
+ECR provides a centralized location for production container
+images.
 
-Internet
-    ↓
-Load Balancer
-    ↓
-Ingress
-    ↓
-Frontend Service
-    ↓
-Backend Service
-    ↓
-AI Models
 
-Kubernetes components:
+============================================================
+PHASE 29 — AWS EC2 DEPLOYMENT
+============================================================
 
-Deployment
-Service
-ConfigMap
-Secrets
-Ingress
-HPA
-Backend
-backend-deployment.yaml
-backend-service.yaml
-Frontend
-frontend-deployment.yaml
-frontend-service.yaml
-Configuration
-configmap.yaml
-secrets.yaml
-PHASE 10 — Monitoring
+After ECR was configured, the application was deployed to
+Amazon EC2.
 
-Like your capstone:
+The EC2 server runs the Docker containers.
+
+Production architecture:
+
+                    AWS EC2
+                       |
+             +---------+---------+
+             |                   |
+             v                   v
+        Frontend              Backend
+        Container             Container
+                                   |
+                       +-----------+-----------+
+                       |           |           |
+                       v           v           v
+                   Universal     Skin        Herb
+                     Model       Model       Model
+
+
+The backend provides the API and performs AI inference.
+
+
+============================================================
+PHASE 30 — DVC + AWS S3
+============================================================
+
+The dataset versioning system was also connected to AWS.
+
+DVC uses an S3-backed remote.
+
+The architecture is:
+
+Training Dataset
+       |
+       v
+      DVC
+       |
+       v
+   Amazon S3
+
+
+This keeps large datasets separate from the Git repository.
+
+
+============================================================
+PHASE 31 — PRODUCTION CONFIGURATION
+============================================================
+
+After deployment, production-specific configuration was
+completed.
+
+This included:
+
+- Environment variables
+- CORS configuration
+- Clerk configuration
+- Supabase configuration
+- OpenRouter configuration
+- Docker configuration
+- Frontend API URL
+- Backend API configuration
+
+
+Production secrets were kept outside the source code.
+
+
+============================================================
+PHASE 32 — PRODUCTION MODEL ISSUE AND DEBUGGING
+============================================================
+
+During production deployment, an important issue was
+discovered.
+
+The application could start successfully, but the production
+container did not initially contain the trained model
+checkpoints required for inference.
+
+As a result, the backend could run while the actual trained
+models were not available inside the production container.
+
+The issue was diagnosed by checking the production container
+and model loading logs.
+
+The trained model checkpoints were verified on the EC2
+environment.
+
+The Docker production image was then rebuilt with the required
+trained model checkpoints.
+
+The model files were verified inside the resulting Docker
+image.
+
+This confirmed that the production container contained the
+actual trained models rather than only the model architecture.
+
+
+============================================================
+PHASE 33 — PRODUCTION DATASET RECOVERY
+============================================================
+
+Another production issue occurred with the skin disease
+dataset required by the runtime class mapping.
+
+The production environment did not initially contain the
+required SkinDisease dataset.
+
+DVC was used to recover the dataset from the configured
+remote.
+
+The dataset was pulled into the EC2 environment.
+
+The class mapping was then verified.
+
+The production container was checked to confirm that the
+correct 22 skin disease classes were available.
+
+This fixed the issue where predictions could otherwise appear
+as generic labels such as:
+
+Class_17
+
+
+After verification, the correct mapping was restored:
+
+Unknown_Normal -> 17
+
+
+The production prediction then correctly returned:
+
+Eczema
+
+instead of an incorrect generic class label.
+
+
+============================================================
+PHASE 34 — CORS DEBUGGING
+============================================================
+
+During production testing, browser requests initially failed
+because the frontend origin and backend CORS configuration
+did not match.
+
+The production frontend was running from the current EC2
+public IP.
+
+The backend was still configured with the previous frontend
+origin.
+
+The CORS configuration was updated to the correct production
+frontend origin.
+
+The backend was restarted.
+
+After the change, browser preflight requests returned
+successfully and the frontend could communicate with the
+backend.
+
+
+============================================================
+PHASE 35 — PRODUCTION AI SUMMARY DEBUGGING
+============================================================
+
+The AI summary feature was also tested in production.
+
+The summary endpoint receives:
+
+- Prediction
+- Confidence
+- Disease information
+- Herbs
+- Prediction ID
+
+
+The backend then generates the AI summary through OpenRouter.
+
+A bug was found in the persistence path where the summary
+background task was not receiving the authenticated user's
+profile ID correctly.
+
+The API was corrected so that the authenticated user ID is
+passed when saving the AI summary.
+
+After the fix, the production flow was verified:
+
+Authentication
+     |
+     v
+Prediction
+     |
+     v
+Summary Generation
+     |
+     v
+OpenRouter
+     |
+     v
+Summary Response
+     |
+     v
+History Persistence
+
+
+============================================================
+PHASE 36 — FRONTEND PRODUCTION CHAT DEBUGGING
+============================================================
+
+After the production deployment, the prediction-page AI chat
+was tested.
+
+The browser showed an error related to:
+
+crypto.randomUUID()
+
+
+The issue was not with the AI model or backend.
+
+The frontend message ID generation depended directly on
+crypto.randomUUID().
+
+A safer message ID generation helper was added.
+
+The helper uses randomUUID when available and provides a
+fallback using crypto.getRandomValues.
+
+The frontend was then rebuilt and redeployed.
+
+
+============================================================
+PHASE 37 — FINAL PRODUCTION VERIFICATION
+============================================================
+
+After fixing the deployment issues, the complete production
+application was tested again.
+
+Verified components included:
+
+1. Frontend
+2. Backend
+3. Authentication
+4. Image upload
+5. Image validation
+6. Universal classifier
+7. Skin classifier
+8. Herb classifier
+9. OOD detection
+10. Grad-CAM
+11. Disease knowledge base
+12. Herbal recommendations
+13. AI summary
+14. AI chatbot
+15. Prediction history
+16. PDF report
+17. CORS
+18. Docker health checks
+19. Production model loading
+20. AWS deployment
+
+
+Example production skin prediction:
+
+Prediction:
+Eczema
+
+Confidence:
+80.09%
+
+Top predictions:
+
+Eczema                  80.09%
+Sun_Sunlight_Damage      4.21%
+Lupus                    3.62%
+
+
+Example production healthy-skin prediction:
+
+Prediction:
+Healthy Skin
+
+Confidence:
+66.47%
+
+Top predictions:
+
+Unknown_Normal          66.47%
+Acne                      8.09%
+Moles                     7.60%
+
+
+The production API successfully returned the expected
+structured prediction response.
+
+
+============================================================
+PHASE 38 — FINAL PROJECT STATE
+============================================================
+
+The final system contains:
+
+AI/ML
+-----
+- Universal Image Classifier
+- Skin Disease Classifier
+- Medicinal Herb Classifier
+- OOD Detection
+- Grad-CAM
+- Knowledge Base
+- Recommendation Engine
+
+
+Generative AI
+-------------
+- AI Medical Summary
+- Context-aware AI Chatbot
+- OpenRouter integration
+- LLM fallback mechanism
+
 
 Application
-     ↓
-Prometheus
-     ↓
-Grafana
+-----------
+- Next.js frontend
+- FastAPI backend
+- Clerk authentication
+- Supabase data persistence
+- Prediction history
+- PDF reports
 
-We'll monitor:
 
-API
-Request Count
-Error Rate
-Response Time
-Latency
-ML
-Prediction Count
-Confidence Distribution
-OOD Detection Rate
-Prediction Distribution
-Model Errors
-Infrastructure
-CPU
-Memory
-GPU (if available)
-Container Health
-Pod Restarts
-PHASE 11 — Production Security
+MLOps
+-----
+- DVC
+- Amazon S3
+- MLflow
+- MLflow Model Registry
+- DagsHub
+- Model validation
 
-Before public deployment:
 
-Secrets Management
-JWT Security
-CORS Restrictions
-Rate Limiting
-File Upload Validation
-Image Size Limits
-Input Sanitization
-Secure Headers
-HTTPS
-Environment Separation
+Deployment
+----------
+- Docker
+- Docker Compose
+- GitHub Actions
+- Amazon ECR
+- Amazon EC2
 
-You already have some of these implemented, so we'll audit rather than rebuild everything.
 
-PHASE 12 — Final Deployment
+============================================================
+FINAL DEVELOPMENT JOURNEY
+============================================================
 
-Final architecture:
 
-                    USER
-                     │
-                     ▼
-               Frontend
-                     │
-                     ▼
-              Load Balancer
-                     │
-                     ▼
-               Kubernetes
-                     │
-            ┌────────┴────────┐
-            ▼                 ▼
-       FastAPI API        AI Services
-            │
-            ├──────────────┐
-            ▼              ▼
-      Universal Model   Other Models
-            │
-            ▼
-      Intelligent Routing
-            │
-       ┌────┴─────┐
-       ▼          ▼
-   Skin Model   Herb Model
-       │          │
-       └────┬─────┘
-            ▼
-      Knowledge Base
-            │
-            ▼
-           LLM
-            │
-            ▼
-        Response
-The exact order we should follow
+IDEA
+ |
+ v
+Dataset Collection
+ |
+ v
+Dataset Preparation
+ |
+ v
+Skin Disease Model
+ |
+ v
+Herb Model
+ |
+ v
+Universal Classifier
+ |
+ v
+Inference Pipeline
+ |
+ v
+OOD Detection
+ |
+ v
+Knowledge Base
+ |
+ v
+Recommendation Engine
+ |
+ v
+Grad-CAM
+ |
+ v
+FastAPI Backend
+ |
+ v
+Next.js Frontend
+ |
+ v
+Authentication
+ |
+ v
+Supabase History
+ |
+ v
+OpenRouter AI Summary
+ |
+ v
+AI Chatbot
+ |
+ v
+PDF Reports
+ |
+ v
+Local Integration
+ |
+ v
+DVC
+ |
+ v
+MLflow Tracking
+ |
+ v
+MLflow Model Registry
+ |
+ v
+Model Validation
+ |
+ v
+Docker
+ |
+ v
+GitHub Actions
+ |
+ v
+Amazon ECR
+ |
+ v
+AWS EC2
+ |
+ v
+Production Debugging
+ |
+ v
+Production Verification
+ |
+ v
+FINAL HERBAL-AI APPLICATION
 
-This is important. We should not jump randomly between technologies.
 
-Step 1
+============================================================
+WHAT THIS PROJECT DEMONSTRATES
+============================================================
 
-✅ Complete model fixes — done
+Herbal-AI demonstrates the complete lifecycle of an AI
+application:
 
-Step 2
+                    DATA
+                     |
+                     v
+                 TRAINING
+                     |
+                     v
+                EVALUATION
+                     |
+                     v
+              MODEL MANAGEMENT
+                     |
+                     v
+                  INFERENCE
+                     |
+                     v
+                AI FEATURES
+                     |
+                     v
+                APPLICATION
+                     |
+                     v
+              CONTAINERIZATION
+                     |
+                     v
+                  CI/CD
+                     |
+                     v
+              CLOUD DEPLOYMENT
+                     |
+                     v
+               PRODUCTION
+                     |
+                     v
+              DEBUGGING &
+              VERIFICATION
 
-🔄 Final application freeze + complete testing
 
-Step 3
+The project was developed not as an isolated machine learning
+experiment, but as a complete production-oriented AI system.
 
-GitHub cleanup and production repository structure
+The development journey covered machine learning, deep
+learning, computer vision, explainable AI, generative AI,
+backend engineering, frontend engineering, authentication,
+database integration, MLOps, containerization, CI/CD and
+cloud deployment.
 
-Step 4
-
-DVC setup and dataset/model versioning
-
-Step 5
-
-MLflow experiment tracking
-
-Step 6
-
-DVC pipelines for reproducible training
-
-Step 7
-
-Complete automated testing
-
-Step 8
-
-Dockerize the complete application
-
-Step 9
-
-Local Docker Compose testing
-
-Step 10
-
-GitHub Actions CI
-
-Step 11
-
-AWS setup (S3 + ECR)
-
-Step 12
-
-Push Docker images to ECR
-
-Step 13
-
-Kubernetes manifests
-
-Step 14
-
-Deploy to AWS EKS
-
-Step 15
-
-Prometheus monitoring
-
-Step 16
-
-Grafana dashboards
-
-Step 17
-
-Production security audit
-
-Step 18
-
-Final public deployment
+============================================================
+                    END OF PROJECT FLOW
+============================================================
