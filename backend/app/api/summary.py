@@ -157,6 +157,7 @@ async def generate_summary(
         if request.prediction_id:
             background_tasks.add_task(
                 get_history_service().update_summary,
+                current_user.id,
                 request.prediction_id,
                 summary_text,
             )
