@@ -91,6 +91,35 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install DVC
+        run: |
+          python -m pip install --upgrade pip
+          pip install "dvc[s3]==3.67.1"
+
+      - name: Pull production model artifacts
+        run: |
+          dvc pull train_universal train_skin train_herb
+
+      - name: Verify production model artifacts
+        run: |
+          test -f ai/image_classifier/checkpoints/best_model.pth
+          test -f ai/checkpoints/best_model.pth
+          test -f ai/herb/checkpoints/best_model.pth
+
+          echo "Universal model:"
+          sha256sum ai/image_classifier/checkpoints/best_model.pth
+
+          echo "Skin model:"
+          sha256sum ai/checkpoints/best_model.pth
+
+          echo "Herb model:"
+          sha256sum ai/herb/checkpoints/best_model.pth
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
