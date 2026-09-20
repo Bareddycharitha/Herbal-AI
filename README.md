@@ -6,7 +6,7 @@ Herbal-AI is an end-to-end AI-powered healthcare and herbal intelligence platfor
 
 The platform allows users to upload images and receive AI-assisted analysis for skin conditions and medicinal plants, along with confidence scores, explainability through Grad-CAM, disease/herbal information, AI-generated summaries, recommendations, conversational assistance, and downloadable PDF reports.
 
-# ⚠️ Medical Disclaimer: Herbal-AI is an educational and research-oriented AI system. Its predictions and generated information are not a medical diagnosis and should not replace evaluation, diagnosis, or treatment from a qualified healthcare professional.
+ ⚠️ Medical Disclaimer: Herbal-AI is an educational and research-oriented AI system. Its predictions and generated information are not a medical diagnosis and should not replace evaluation, diagnosis, or treatment from a qualified healthcare professional.
 
 # ✨ Key Features
 
