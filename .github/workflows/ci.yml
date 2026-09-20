@@ -195,17 +195,32 @@ jobs:
 
             docker compose up -d backend frontend
 
-            echo "Waiting for backend health..."
+                        echo "Waiting for backend health..."
 
-            sleep 30
+            for i in {1..12}; do
+              if curl --fail --silent --show-error \
+                http://localhost:8000/health; then
+                echo ""
+                echo "Backend is healthy."
+                break
+              fi
 
-            echo "Checking backend health..."
+              if [ "$i" -eq 12 ]; then
+                echo ""
+                echo "Backend failed to become healthy."
+                echo ""
+                docker compose ps
+                echo ""
+                echo "Backend logs:"
+                docker compose logs --tail=100 backend
+                exit 1
+              fi
 
-            curl --fail --silent --show-error \
-              http://localhost:8000/health
+              echo "Backend not ready yet... attempt $i/12"
+              sleep 10
+            done
 
             echo ""
-
             echo "Checking frontend..."
 
             curl --fail --silent --show-error \
