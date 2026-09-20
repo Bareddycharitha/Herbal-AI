@@ -55,7 +55,30 @@ from ai.utils.history import HistoryLogger
 # ==========================================================
 
 class_names = None  # Will be loaded lazily
-
+SKIN_CLASS_NAMES = [
+    "Acne",
+    "Actinic_Keratosis",
+    "Benign_tumors",
+    "Bullous",
+    "Candidiasis",
+    "DrugEruption",
+    "Eczema",
+    "Infestations_Bites",
+    "Lichen",
+    "Lupus",
+    "Moles",
+    "Psoriasis",
+    "Rosacea",
+    "Seborrh_Keratoses",
+    "SkinCancer",
+    "Sun_Sunlight_Damage",
+    "Tinea",
+    "Unknown_Normal",
+    "Vascular_Tumors",
+    "Vasculitis",
+    "Vitiligo",
+    "Warts",
+]
 
 def get_class_names():
     """Get class names, loading from dataset if needed."""
@@ -65,9 +88,7 @@ def get_class_names():
             from ai.config import TRAIN_DIR
             _, _, class_names, _ = create_dataloaders(TRAIN_DIR)
         except Exception:
-            # Fallback: default 22 classes
-            from ai.config import NUM_CLASSES
-            class_names = [f"Class_{i}" for i in range(NUM_CLASSES)]
+            class_names = SKIN_CLASS_NAMES.copy()
     return class_names
 
 
@@ -92,7 +113,7 @@ def load_class_names_from_checkpoint(checkpoint_path):
         return class_names
     except Exception:
         # Last resort: default class names from config
-        return [f"Class_{i}" for i in range(NUM_CLASSES)]
+        return SKIN_CLASS_NAMES.copy()
 
 
 # ==========================================================
